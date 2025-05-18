@@ -53,6 +53,30 @@ class NetworkInference(NetworkAnalysis):
             )
         self.target = target
 
+    def _check_multiple_targets(self, targets, n_processes):
+        """Set and check the targets provided by the user."""
+        if not isinstance(targets, list):
+            raise RuntimeError(
+                f"The multiple targets need to be given as a list of integers."
+            )
+        if not all(isinstance(x, int) for x in targets):
+            raise RuntimeError(
+                f"The multiple targets need to be given as a list of integers."
+            )
+        for i in targets:
+            if i < 0:
+                raise RuntimeError(
+                    f"targets list need to contain positive integers."
+                )
+            if i > n_processes:
+                raise RuntimeError(
+                    f"Trying to analyse target with index {targets}, which greater than the "
+                    f"number of processes in the data ({n_processes})."
+                )
+        self.target = min(targets)
+        self.targets = targets
+
+
     def _check_source_set(self, sources, n_processes):
         """Set default if no source set was provided by the user."""
         if sources == "all":
@@ -83,7 +107,10 @@ class NetworkInference(NetworkAnalysis):
 
         self.source_set = sources
         if self.settings["verbose"]:
-            print(f"\nTarget: {self.target} - testing sources {self.source_set}")
+            if "nonlinear_prepared" in self.settings:
+                print(f"\nTargets: {self.targets} - testing sources {self.source_set}")
+            else:
+                print(f"\nTarget: {self.target} - testing sources {self.source_set}")
 
     def _include_candidates(self, candidate_set, data):
         """Include informative candidates into the conditioning set.
@@ -441,8 +468,13 @@ class NetworkInferenceTE(NetworkInference):
         # Set CMI estimator.
         self._set_cmi_estimator()
 
-        # Check the provided target and sources.
-        self._check_target(target, data.n_processes)
+        # Check the provided target(s) depending on usage.
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+            self._check_multiple_targets(target, data.n_processes)
+        else:
+            self._check_target(target, data.n_processes)
+
+        # Check the provided sources.
         self._check_source_set(sources, data.n_processes)
 
         # Check provided search depths (lags) for source and target, set the
@@ -492,6 +524,28 @@ class NetworkInferenceTE(NetworkInference):
     def _include_target_candidates(self, data):
         """Test candidates from the target's past."""
         procs = [self.target]
+        # Make samples
+        samples = np.arange(
+            self.current_value[1] - 1,
+            self.current_value[1] - self.settings["max_lag_target"] - 1,
+            -self.settings["tau_target"],
+        ).tolist()
+        candidates = self._define_candidates(procs, samples)
+        sources_found = self._include_candidates(candidates, data)
+
+        # If no candidates were found in the target's past, add at least one
+        # sample so we are still calculating a proper TE.
+        if not sources_found:
+            print(
+                "\nNo informative sources in the target's past - "
+                "adding target sample with lag 1."
+            )
+            idx = (self.current_value[0], self.current_value[1] - 1)
+            self._append_selected_vars(data, [idx])
+
+    def _include_multiple_target_candidates(self, data):
+        """Test candidates from the target's past."""
+        procs = self.targets
         # Make samples
         samples = np.arange(
             self.current_value[1] - 1,
