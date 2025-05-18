@@ -279,7 +279,11 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
 
         # Main algorithm.
         print("\n---------------------------- (1) include target candidates")
-        self._include_target_candidates(data)
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+            print("                                  using multiple targets")
+            self._include_multiple_target_candidates(data)
+        else:
+            self._include_target_candidates(data)
         print("\n---------------------------- (2) include source candidates")
         self._include_source_candidates(data)
         print("\n---------------------------- (3) prune source candidate")
