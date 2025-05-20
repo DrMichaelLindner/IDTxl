@@ -1,4 +1,4 @@
-"""Run test on nonlinear data preparation and linear vs nonlinear JidtGaussianCMI estimator
+"""Run test on nonlinear data preparation and linear vs nonlinear JidtGaussianCMI estimation
 
 """
 import os
@@ -14,7 +14,7 @@ start_time = time.time()
 
 data = Data()  # initialise an empty data object
 data.normalise = False
-data.generate_nonlinear_data(n_samples=200, n_replications=10)
+data.generate_nonlinear_data(n_samples=1000, n_replications=10)
 data_nonlin = copy.deepcopy(data)
 
 settings = {
@@ -36,7 +36,7 @@ results0 = nonlinear_analysis0.analyse_single_target(settings, data,
                                                      sources=settings["sources"])
 
 path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_gauss_0"), "wb") as output_file:
+with open(path.joinpath("test_nonlinear_granger_orig"), "wb") as output_file:
     pickle.dump(results0, output_file)
 
 # prepare data object for nonlinear analysis
@@ -49,8 +49,8 @@ results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data_nonli
                                                      sources=settings_nonlin["nonlinear_all_sources"])
 
 path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_gauss_1"), "wb") as output_file:
-    pickle.dump(results0, output_file)
+with open(path.joinpath("test_nonlinear_granger_nonlin"), "wb") as output_file:
+    pickle.dump(results1, output_file)
 
 runtime = time.time() - start_time
 print("---- {0:.2f} minutes".format(runtime / 60))
