@@ -280,7 +280,7 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
         # Main algorithm.
         print("\n---------------------------- (1) include target candidates")
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
-            print("                                  using multiple targets")
+            print("                                  using original and nonlinear target")
             self._include_multiple_target_candidates(data)
         else:
             self._include_target_candidates(data)
@@ -308,22 +308,44 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
             n_realisations=data.n_realisations(self.current_value),
             normalised=data.normalise,
         )
-        results._add_single_result(
-            target=self.target,
-            settings=self.settings,
-            results={
-                "sources_tested": self.source_set,
-                "current_value": self.current_value,
-                "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
-                "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
-                "selected_sources_pval": self.pvalues_sign_sources,
-                "selected_sources_te": self.statistic_sign_sources,
-                "omnibus_te": self.statistic_omnibus,
-                "omnibus_pval": self.pvalue_omnibus,
-                "omnibus_sign": self.sign_omnibus,
-                "te": self.statistic_single_link,
-            },
-        )
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+            results._add_single_result(
+                target=self.target,
+                settings=self.settings,
+                results={
+                    "performed_nonlinear_analysis": True,
+                    "targets_tested": self.targets,
+                    "sources_tested": self.source_set,
+                    "nonlinear_process_desc": self.settings["nonlinear_process_desc"],
+                    "current_value": self.current_value,
+                    "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
+                    "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
+                    "selected_sources_pval": self.pvalues_sign_sources,
+                    "selected_sources_te": self.statistic_sign_sources,
+                    "omnibus_te": self.statistic_omnibus,
+                    "omnibus_pval": self.pvalue_omnibus,
+                    "omnibus_sign": self.sign_omnibus,
+                    "te": self.statistic_single_link,
+                },
+            )
+        else:
+            results._add_single_result(
+                target=self.target,
+                settings=self.settings,
+                results={
+                    "sources_tested": self.source_set,
+                    "current_value": self.current_value,
+                    "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
+                    "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
+                    "selected_sources_pval": self.pvalues_sign_sources,
+                    "selected_sources_te": self.statistic_sign_sources,
+                    "omnibus_te": self.statistic_omnibus,
+                    "omnibus_pval": self.pvalue_omnibus,
+                    "omnibus_sign": self.sign_omnibus,
+                    "te": self.statistic_single_link,
+                },
+            )
+
         self._reset()  # remove attributes
         return results
 
