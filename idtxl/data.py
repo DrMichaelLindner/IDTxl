@@ -883,7 +883,7 @@ class Data():
 
         x = np.zeros((n_processes, n_samples + 3, n_replications))
         x[:, 0:3, :] = np.random.normal(size=(n_processes, 3, n_replications))
-        term_1 = weight * np.sqrt(2)
+        term_1 = 0.95 * np.sqrt(2)
         for r in range(n_replications):
             for n in range(3, n_samples + 3):
                 x[0, n, r] = (
@@ -891,7 +891,7 @@ class Data():
                     - 0.9025 * x[0, n - 2, r]
                     + np.random.normal()
                 )
-                x[1, n, r] = 0.5 * x[0, n - 2, r] ** 2 + np.random.normal()
+                x[1, n, r] = weight * x[0, n - 2, r] ** 2 + np.random.normal()
 
         self.set_data(x[:, 3:, :], "psr")
 
