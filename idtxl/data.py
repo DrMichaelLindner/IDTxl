@@ -870,7 +870,7 @@ class Data():
                 )
         self.set_data(x[:, 3:, :], "psr")
 
-    def generate_nonlinear_data(self, n_samples=1000, n_replications=10):
+    def generate_nonlinear_data(self, n_samples=1000, n_replications=10, weight=0.95):
         """Generate example data for nonlinear granger testing.
 
         Generate example data and overwrite the instance's current data.
@@ -883,7 +883,7 @@ class Data():
 
         x = np.zeros((n_processes, n_samples + 3, n_replications))
         x[:, 0:3, :] = np.random.normal(size=(n_processes, 3, n_replications))
-        term_1 = 0.95 * np.sqrt(2)
+        term_1 = weight * np.sqrt(2)
         for r in range(n_replications):
             for n in range(3, n_samples + 3):
                 x[0, n, r] = (
