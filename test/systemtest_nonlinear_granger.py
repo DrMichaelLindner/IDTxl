@@ -29,15 +29,17 @@ settings = {
     "min_lag_sources": 1,
 }
 
-# perform JidtGaussianCMI without nonlinear data
+"""
+# (optional) perform JidtGaussianCMI without nonlinear data
 nonlinear_analysis0 = MultivariateTE()
 results0 = nonlinear_analysis0.analyse_single_target(settings, data,
                                                      target=settings["target"],
                                                      sources=settings["sources"])
 
 path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_granger_orig"), "wb") as output_file:
+with open(path.joinpath("test_nonlinear_granger_orig.p"), "wb") as output_file:
     pickle.dump(results0, output_file)
+"""
 
 # prepare data object for nonlinear analysis
 settings_nonlin, data_nonlin = data.prepare_nonlinear(settings, data_nonlin)
@@ -49,7 +51,7 @@ results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data_nonli
                                                      sources=settings_nonlin["nonlinear_all_sources"])
 
 path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_granger_nonlin"), "wb") as output_file:
+with open(path.joinpath("test_nonlinear_granger.p"), "wb") as output_file:
     pickle.dump(results1, output_file)
 
 runtime = time.time() - start_time
