@@ -284,7 +284,7 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                 raise RuntimeError(
                     "For nonlinear analysis only the JidtGaussianCMI estimator can be used!"
                 )
-            print("                                  using original and nonlinear target")
+            print("                                  using original and nonlinear targets")
             self._include_multiple_target_candidates(data)
         else:
             self._include_target_candidates(data)
