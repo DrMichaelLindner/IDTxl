@@ -47,8 +47,8 @@ settings_nonlin, data_nonlin = data.prepare_nonlinear(settings, data_nonlin)
 # perform JidtGaussianCMI WITH nonlinear data
 nonlinear_analysis1 = MultivariateTE()
 results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data_nonlin,
-                                                     target=settings_nonlin["nonlinear_all_targets"],
-                                                     sources=settings_nonlin["nonlinear_all_sources"])
+                                                     target=settings_nonlin["nonlinear_settings"]["nonlinear_all_targets"],
+                                                     sources=settings_nonlin["nonlinear_settings"]["nonlinear_all_sources"])
 
 path = Path(os.path.dirname(__file__)).joinpath("data")
 with open(path.joinpath("test_nonlinear_granger.p"), "wb") as output_file:
