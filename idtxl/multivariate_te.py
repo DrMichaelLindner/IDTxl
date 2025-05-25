@@ -10,7 +10,7 @@ Note:
 from .network_inference import NetworkInferenceMultivariate, NetworkInferenceTE
 from .results import ResultsNetworkInference
 from .stats import network_fdr
-
+import copy
 
 class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
     """Perform network inference using multivariate transfer entropy.
@@ -130,9 +130,14 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
         settings.setdefault("verbose", True)
         settings.setdefault("fdr_correction", True)
 
+        if "nonlinear_prepared" in settings and data.get_nonlinear_status() == True:
+            n_processes = int(data.n_processes/2)
+        else:
+            n_processes = data.n_processes
+
         # Check which targets and sources are requested for analysis.
         if targets == "all":
-            targets = list(range(data.n_processes))
+            targets = list(range(n_processes))
         if sources == "all":
             sources = ["all" for t in targets]
         elif isinstance(sources, list) and isinstance(sources[0], int):
@@ -150,15 +155,35 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
 
         # Perform TE estimation for each target individually
         results = ResultsNetworkInference(
-            n_nodes=data.n_processes,
+            n_nodes=n_processes,
             n_realisations=data.n_realisations(),
             normalised=data.normalise,
         )
         for t, target in enumerate(targets):
-            if settings["verbose"]:
-                print(f"\n####### analysing target with index {t} from list {targets}")
-            res_single = self.analyse_single_target(settings, data, target, sources[t])
-            results.combine_results(res_single)
+            if "nonlinear_prepared" in settings and data.get_nonlinear_status() == True:
+                # get nonlinear targets and sources
+                nt, ns, pd = data.get_nonlinear_targets_and_sources(target, sources[t], data.n_processes)
+                settings["nonlinear_settings"] = {"nonlinear_target": targets,
+                                                  "nonlinear_all_targets": nt,
+                                                  "nonlinear_all_sources": ns,
+                                                  "nonlinear_process_desc": pd
+                                                  }
+
+                if settings["verbose"]:
+                    print(f"\n####### analysing nonlinear targets with indices"
+                          f" {nt} ")
+                          #f" {settings_nonlin['nonlinear_settings']['nonlinear_all_targets']} ")
+
+                res_single = self.analyse_single_target(settings,
+                                                        data,
+                                                        nt,
+                                                        ns)
+                results.combine_results(res_single)
+            else:
+                if settings["verbose"]:
+                    print(f"\n####### analysing target with index {t} from list {targets}")
+                res_single = self.analyse_single_target(settings, data, target, sources[t])
+                results.combine_results(res_single)
 
         # Get no. realisations actually used for estimation from single target
         # analysis.
@@ -313,14 +338,18 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
             normalised=data.normalise,
         )
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+            nonlinear_settings = self.settings["nonlinear_settings"]
+            del self.settings["nonlinear_settings"]
+
             results._add_single_result(
                 target=self.target,
                 settings=self.settings,
                 results={
                     "performed_nonlinear_analysis": True,
-                    "targets_tested": self.targets,
+                    "nonlinear_targets_tested": nonlinear_settings["nonlinear_all_targets"],
+                    "nonlinear_sources_tested": nonlinear_settings["nonlinear_all_sources"],
+                    "nonlinear_process_desc": nonlinear_settings["nonlinear_process_desc"],
                     "sources_tested": self.source_set,
-                    "nonlinear_process_desc": self.settings["nonlinear_process_desc"],
                     "current_value": self.current_value,
                     "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
                     "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
