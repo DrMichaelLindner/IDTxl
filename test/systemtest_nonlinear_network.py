@@ -5,7 +5,9 @@ from idtxl.data import Data
 
 start_time = time.time()
 data = Data()  # initialise an empty data object
-data.generate_nonlinear_network_data(n_samples=1000, n_replications=10)
+#data.generate_nonlinear_network_data(n_samples=1000, n_replications=10)
+data.generate_mute_data(n_samples=1000, n_replications=10)
+data.normalise = False
 settings = {
     "cmi_estimator": "JidtGaussianCMI",
     "n_perm_max_stat": 500,
@@ -16,6 +18,10 @@ settings = {
     "min_lag_sources": 1,
 }
 
+# prepare data object for nonlinear analysis
+settings, data = data.prepare_nonlinear(settings, data)
+
+# perform JidtGaussianCMI WITH nonlinear data
 network_analysis = MultivariateTE()
 results = network_analysis.analyse_network(settings, data)
 runtime = time.time() - start_time
