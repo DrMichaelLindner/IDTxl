@@ -216,10 +216,42 @@ class Data():
         self.n_samples = data.shape[1]
         self.n_replications = data.shape[2]
 
+    def get_nonlinear_targets_and_sources(self, target, sources, n_processes):   # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!??????????????????????????????
+        """get new targets and sources for nonlinear data"""
+
+        # define targets
+        targets = [int(target), int(target + n_processes / 2)]
+
+        # create source list depending on input
+        if sources == "all":
+            s = list(range(0, int(n_processes)))
+            orig_sources = 'all'
+            # cut targets from source list
+            sources = [j for i, j in enumerate(s) if i not in targets]
+        else:
+            if type(sources) == int:
+                sources = [sources, int(sources + n_processes / 2)]
+            elif type(sources) == list:
+                sources = sources + [x + int(n_processes / 2) for x in sources]
+            else:
+                raise RuntimeError("Sources need to be give as int or list of int!")
+
+        # create lists for nonlinear processes
+        nonlinear_process_desc = [[0 for i in range(n_processes)] for j in range(2)]
+        for i in sources:
+            nonlinear_process_desc[0][i] = "source"
+        for i in range(len(targets)):
+            nonlinear_process_desc[0][targets[i]] = "target"
+        for i in range(int(n_processes / 2)):
+            nonlinear_process_desc[1][i] = "orig"
+            nonlinear_process_desc[1][i + int(n_processes / 2)] = "squared"
+
+        return targets, sources, nonlinear_process_desc
+
     def prepare_nonlinear(self, settings, data):
         """ prepare data for nonlinear data analysis (nonlin_granger)
 
-        adding squared processes to data and overiting data
+        adding squared processes to data and overwriting data
         e.g.
             original data
                 2 processes, n samples, m replications
@@ -236,8 +268,8 @@ class Data():
         OUTPUT: settings, data
             add to settings
                 settings["nonlinear_prepared"] = True
-                settings["nonlinear_target"] - original target (int)
-                settings["nonlinear_orig_sources"] - orig_sources (list)
+
+                ONLY IF target was specified in settings for analyse_single_target
                 settings["nonlinear_all_targets"] - all targets (list)
                 settings["nonlinear_all_sources"] - all sources (list)
                 settings["nonlinear_process_desc"] - (list) n*2 x 2 infos sources vs targets and orig vs squared
@@ -247,19 +279,18 @@ class Data():
             add to data
                 overwrite data
                 new attr. nonlinear_prepared = True
-                new attr. nonlinear_process_desc (list) n*2 x 2 infos sources vs targets and orig vs squared
-                    e.g. [["target", "source", "target", "source"]
-                          ["orig", "orig", "squared", "squared"]]
+
 
         Args:
             data : idtxl Data Object (NOT NORMALIZED!)
 
             settings : DICT
-                target : int
-                    specifies the target process in the data
+
+                target : int  (ONLY NEEDED FOR: analyse_single_target)
+                    specify the target process in the data
+
                 sources(optional) : int, list of int, or "all". (default: "all")
                     specifies sources in the data
-
 
         """
 
@@ -275,57 +306,27 @@ class Data():
         # Flag data
         data.nonlinear_prepared = True
 
-        # define targets
-        if "target" not in settings:
-            raise RuntimeError("Target not specified in settings!")
-        else:
-            targets = [int(settings["target"]), int(settings["target"] + data.n_processes / 2)]
-
-        # create source list depending on input
-        if "sources" not in settings:
-            s = list(range(0, int(data.n_processes)))
-            orig_sources = 'all'
-            # cut targets from source list
-            sources = [j for i, j in enumerate(s) if i not in targets]
-        elif settings["sources"] == "all":
-            s = list(range(0, int(data.n_processes)))
-            orig_sources = 'all'
-            # cut targets from source list
-            sources = [j for i, j in enumerate(s) if i not in targets]
-        else:
-            if type(settings["sources"]) == int:
-                sl = [settings["sources"]]
-            elif type(settings["sources"]) == list:
-                sl = settings["sources"]
-            else:
-                raise RuntimeError("Sources need to be give as int or list of int!")
-
-            sources = sl + [x + int(data.n_processes/2) for x in sl]
-            orig_sources = settings["sources"]
-
-        ## cut targets from source list
-        #sources = [j for i, j in enumerate(s) if i not in targets]
-
-        # create lists for nonlinear processes
-        nonlinear_process_desc = [[0 for i in range(data.n_processes)] for j in range(2)]
-        #for i in range(len(sources)):
-        for i in sources:
-            nonlinear_process_desc[0][i] = "source"
-        for i in range(len(targets)):
-            nonlinear_process_desc[0][targets[i]] = "target"
-        for i in range(int(data.n_processes/2)):
-            nonlinear_process_desc[1][i] = "orig"
-            nonlinear_process_desc[1][i+int(data.n_processes/2)] = "squared"
-
-        data.nonlinear_process_desc = nonlinear_process_desc
-
         # update settings
         settings["nonlinear_prepared"] = True
-        settings["nonlinear_target"] = settings["target"]
-        settings["nonlinear_orig_sources"] = orig_sources
-        settings["nonlinear_all_targets"] = targets
-        settings["nonlinear_all_sources"] = sources
-        settings["nonlinear_process_desc"] = nonlinear_process_desc
+
+        # define targets and sources if set
+        if "target" in settings:
+            targets = settings["target"]
+
+            if "sources" not in settings:
+                sources = 'all'
+            else:
+                sources = settings["sources"]
+
+            # get nonlinear targets and sources
+            nt, ns, pd = self.get_nonlinear_targets_and_sources(targets, sources, data.n_processes)
+
+            # add settings for nonlinear granger
+            settings["nonlinear_settings"] = {"nonlinear_target": targets,
+                                              "nonlinear_all_targets": nt,
+                                              "nonlinear_all_sources": ns,
+                                              "nonlinear_process_desc": pd
+                                              }
 
         return settings, data
 
