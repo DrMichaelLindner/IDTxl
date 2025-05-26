@@ -1,3 +1,6 @@
+"""Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation in network_analysis
+
+"""
 import pickle
 import time
 from idtxl.multivariate_te import MultivariateTE
@@ -5,7 +8,6 @@ from idtxl.data import Data
 
 start_time = time.time()
 data = Data()  # initialise an empty data object
-#data.generate_nonlinear_network_data(n_samples=1000, n_replications=10)
 data.generate_mute_data(n_samples=1000, n_replications=10)
 data.normalise = False
 settings = {
