@@ -249,7 +249,7 @@ class Data():
         return targets, sources, nonlinear_process_desc
 
     def prepare_nonlinear(self, settings, data):
-        """ prepare data for nonlinear data analysis (nonlin_granger)
+        """ prepare data for nonlinear data analysis (nonlinear granger)
 
         adding squared processes to data and overwriting data
         e.g.
@@ -286,7 +286,7 @@ class Data():
 
             settings : DICT
 
-                target : int  (ONLY NEEDED FOR: analyse_single_target)
+                target (ONLY NEEDED FOR analyse_single_target - FOR network_analysis DO NOT SPECIFY A TARGET!) : int
                     specify the target process in the data
 
                 sources(optional) : int, list of int, or "all". (default: "all")
@@ -294,7 +294,7 @@ class Data():
 
         """
 
-        if data.normalise == True:
+        if data.normalise:
             raise RuntimeError("Data needs to be NOT normalized!")
 
         # prepare normalising data
