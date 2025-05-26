@@ -1,4 +1,4 @@
-"""Run test on nonlinear data preparation and linear vs nonlinear JidtGaussianCMI estimation
+"""Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation
 
 """
 import os
