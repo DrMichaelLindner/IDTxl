@@ -816,7 +816,7 @@ class Data():
 
         Generate example data and overwrite the instance's current data. The
         network is used as an example the paper on the MuTE toolbox (Montalto,
-        PLOS ONE, 2014, eq. 14) and was orginally proposed by Baccala &
+        PLOS ONE, 2014, eq. 14) and was originally proposed by Baccala &
         Sameshima (2001). The network consists of five auto-regressive (AR)
         processes with model orders 2 and the following (non-linear) couplings:
 
