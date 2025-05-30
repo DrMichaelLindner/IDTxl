@@ -1,6 +1,6 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation using MPI
 
-start script using (depending on you installed MPI implementation):
+start script using (depending on your installed MPI implementation):
     mpirun -n 8 python systemtest_nonlinear_granger_mpi.py
     srun -n 8 python systemtest_nonlinear_granger_mpi.py
     mpiexec -n 8 python systemtest_nonlinear_granger_mpi.py
