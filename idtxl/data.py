@@ -216,7 +216,7 @@ class Data():
         self.n_samples = data.shape[1]
         self.n_replications = data.shape[2]
 
-    def get_nonlinear_targets_and_sources(self, target, sources, n_processes):   # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!??????????????????????????????
+    def get_nonlinear_targets_and_sources(self, target, sources, n_processes):
         """get new targets and sources for nonlinear data"""
 
         # define targets

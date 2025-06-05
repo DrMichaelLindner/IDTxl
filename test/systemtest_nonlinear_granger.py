@@ -15,7 +15,6 @@ start_time = time.time()
 data = Data()  # initialise an empty data object
 data.normalise = False
 data.generate_nonlinear_data(n_samples=1000, n_replications=10)
-data_nonlin = copy.deepcopy(data)
 
 settings = {
     "target": 1,
@@ -29,24 +28,12 @@ settings = {
     "min_lag_sources": 1,
 }
 
-"""
-# (optional) perform JidtGaussianCMI without nonlinear data
-nonlinear_analysis0 = MultivariateTE()
-results0 = nonlinear_analysis0.analyse_single_target(settings, data,
-                                                     target=settings["target"],
-                                                     sources=settings["sources"])
-
-path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_granger_orig.p"), "wb") as output_file:
-    pickle.dump(results0, output_file)
-"""
-
 # prepare data object for nonlinear analysis
-settings_nonlin, data_nonlin = data.prepare_nonlinear(settings, data_nonlin)
+settings_nonlin, data_nonlin = data.prepare_nonlinear(settings, data)
 
 # perform JidtGaussianCMI WITH nonlinear data
 nonlinear_analysis1 = MultivariateTE()
-results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data_nonlin,
+results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data,
                                                      target=settings_nonlin["nonlinear_settings"]["nonlinear_all_targets"],
                                                      sources=settings_nonlin["nonlinear_settings"]["nonlinear_all_sources"])
 
