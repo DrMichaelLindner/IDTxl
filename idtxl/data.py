@@ -216,10 +216,12 @@ class Data():
         self.n_samples = data.shape[1]
         self.n_replications = data.shape[2]
 
-    def get_nonlinear_targets_and_sources(self, target, sources, n_processes):
+    def get_lin_and_nonlin_targets_and_sources(self, target, sources, n_processes):
         """get new targets and sources for nonlinear data"""
 
         # define targets
+        # ATTENTION: n_processes contain already the squared processes!
+        # Hence, n_processes / 2
         targets = [int(target), int(target + n_processes / 2)]
 
         # create source list depending on input
@@ -236,7 +238,8 @@ class Data():
             else:
                 raise RuntimeError("Sources need to be give as int or list of int!")
 
-        # create lists for nonlinear processes
+        # Book keeping of which processes are the original and squared ones and which of them are used for targets and
+        # sources
         nonlinear_process_desc = [[0 for i in range(n_processes)] for j in range(2)]
         for i in sources:
             nonlinear_process_desc[0][i] = "source"
@@ -270,8 +273,8 @@ class Data():
                 settings["nonlinear_prepared"] = True
 
                 ONLY IF target was specified in settings for analyse_single_target
-                settings["nonlinear_all_targets"] - all targets (list)
-                settings["nonlinear_all_sources"] - all sources (list)
+                settings["nonlinear_target_predictors"] - all targets (list)
+                settings["nonlinear_source_predictors"] - all sources (list)
                 settings["nonlinear_process_desc"] - (list) n*2 x 2 infos sources vs targets and orig vs squared
                     e.g. [["target", "source", "target", "source"]
                           ["orig", "orig", "squared", "squared"]]
@@ -295,7 +298,8 @@ class Data():
         """
 
         if data.normalise:
-            raise RuntimeError("Data needs to be NOT normalized!")
+            raise RuntimeError("Input data to prepare_nonlinear needs to be NOT normalized! - "
+                               "will ne normalised internally")
 
         # prepare normalising data
         data.normalise = True
@@ -319,12 +323,11 @@ class Data():
                 sources = settings["sources"]
 
             # get nonlinear targets and sources
-            nt, ns, pd = self.get_nonlinear_targets_and_sources(targets, sources, data.n_processes)
+            nt, ns, pd = self.get_lin_and_nonlin_targets_and_sources(targets, sources, data.n_processes)
 
             # add settings for nonlinear granger
-            settings["nonlinear_settings"] = {"nonlinear_target": targets,
-                                              "nonlinear_all_targets": nt,
-                                              "nonlinear_all_sources": ns,
+            settings["nonlinear_settings"] = {"nonlinear_target_predictors": nt,
+                                              "nonlinear_source_predictors": ns,
                                               "nonlinear_process_desc": pd
                                               }
 

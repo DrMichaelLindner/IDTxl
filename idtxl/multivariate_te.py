@@ -130,7 +130,7 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
         settings.setdefault("verbose", True)
         settings.setdefault("fdr_correction", True)
 
-        if "nonlinear_prepared" in settings and data.get_nonlinear_status() == True:
+        if "nonlinear_prepared" in settings and data.get_nonlinear_status():
             n_processes = int(data.n_processes/2)
         else:
             n_processes = data.n_processes
@@ -160,19 +160,17 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
             normalised=data.normalise,
         )
         for t, target in enumerate(targets):
-            if "nonlinear_prepared" in settings and data.get_nonlinear_status() == True:
+            if "nonlinear_prepared" in settings and data.get_nonlinear_status():
                 # get nonlinear targets and sources
-                nt, ns, pd = data.get_nonlinear_targets_and_sources(target, sources[t], data.n_processes)
-                settings["nonlinear_settings"] = {"nonlinear_target": targets,
-                                                  "nonlinear_all_targets": nt,
-                                                  "nonlinear_all_sources": ns,
+                nt, ns, pd = data.get_lin_and_nonlin_targets_and_sources(target, sources[t], data.n_processes)
+                settings["nonlinear_settings"] = {"nonlinear_target_predictors": nt,
+                                                  "nonlinear_source_predictors": ns,
                                                   "nonlinear_process_desc": pd
                                                   }
 
                 if settings["verbose"]:
                     print(f"\n####### analysing nonlinear targets with indices"
                           f" {nt} ")
-                          #f" {settings_nonlin['nonlinear_settings']['nonlinear_all_targets']} ")
 
                 res_single = self.analyse_single_target(settings,
                                                         data,
@@ -304,13 +302,13 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
 
         # Main algorithm.
         print("\n---------------------------- (1) include target candidates")
-        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
             if settings["cmi_estimator"] != 'JidtGaussianCMI':
                 raise RuntimeError(
                     "For nonlinear analysis only the JidtGaussianCMI estimator can be used!"
                 )
-            print("                                  using original and nonlinear targets")
-            self._include_multiple_target_candidates(data)
+            print("                                  using original and nonlinear target candidates")
+            self._include_lin_and_nonlin_target_candidates(data)
         else:
             self._include_target_candidates(data)
         print("\n---------------------------- (2) include source candidates")
@@ -337,7 +335,10 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
             n_realisations=data.n_realisations(self.current_value),
             normalised=data.normalise,
         )
-        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            # In contrast to standard settings, the nonlinear setting change from target to target.
+            # When combining results from single target analyses, equality of settings is checked.
+            # Hence, the nonlinear settings are removed and stored separately in the results.
             nonlinear_settings = self.settings["nonlinear_settings"]
             del self.settings["nonlinear_settings"]
 
@@ -346,8 +347,8 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                 settings=self.settings,
                 results={
                     "performed_nonlinear_analysis": True,
-                    "nonlinear_targets_tested": nonlinear_settings["nonlinear_all_targets"],
-                    "nonlinear_sources_tested": nonlinear_settings["nonlinear_all_sources"],
+                    "lin_and_nonlin_target_predictors_tested": nonlinear_settings["nonlinear_target_predictors"],
+                    "lin_and_nonlin_sources_tested": nonlinear_settings["nonlinear_source_predictors"],
                     "nonlinear_process_desc": nonlinear_settings["nonlinear_process_desc"],
                     "sources_tested": self.source_set,
                     "current_value": self.current_value,

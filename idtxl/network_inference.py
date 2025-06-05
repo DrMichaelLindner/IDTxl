@@ -53,7 +53,7 @@ class NetworkInference(NetworkAnalysis):
             )
         self.target = target
 
-    def _check_multiple_targets(self, targets, n_processes):
+    def _check_lin_and_nonlin_targets(self, targets, n_processes):
         """Set and check the targets provided by the user."""
         if not isinstance(targets, list):
             raise RuntimeError(
@@ -73,6 +73,8 @@ class NetworkInference(NetworkAnalysis):
                     f"Trying to analyse target with index {targets}, which greater than the "
                     f"number of processes in the data ({n_processes})."
                 )
+        # for nonlinear analysis squared data are added after original processes
+        # Hence, original target always has the smallest index
         self.target = min(targets)
         self.targets = targets
 
@@ -469,8 +471,8 @@ class NetworkInferenceTE(NetworkInference):
         self._set_cmi_estimator()
 
         # Check the provided target(s) depending on usage.
-        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status() == True:
-            self._check_multiple_targets(target, data.n_processes)
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            self._check_lin_and_nonlin_targets(target, data.n_processes)
         else:
             self._check_target(target, data.n_processes)
 
@@ -543,7 +545,7 @@ class NetworkInferenceTE(NetworkInference):
             idx = (self.current_value[0], self.current_value[1] - 1)
             self._append_selected_vars(data, [idx])
 
-    def _include_multiple_target_candidates(self, data):
+    def _include_lin_and_nonlin_target_candidates(self, data):
         """Test candidates from the target's past."""
         procs = self.targets
         # Make samples
