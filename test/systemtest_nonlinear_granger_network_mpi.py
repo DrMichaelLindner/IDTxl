@@ -1,9 +1,9 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation in network_analysis
 
 start script using (depending on your installed MPI implementation):
-    mpirun -n 16 python systemtest_nonlinear_network_mpi.py
-    srun -n 16 python systemtest_nonlinear_network_mpi.py
-    mpiexec -n 16 python systemtest_nonlinear_network_mpi.py
+    mpirun -n 16 python systemtest_nonlinear_granger_network_mpi.py
+    srun -n 16 python systemtest_nonlinear_granger_network_mpi.py
+    mpiexec -n 16 python systemtest_nonlinear_granger_network_mpi.py
 """
 
 import pickle
