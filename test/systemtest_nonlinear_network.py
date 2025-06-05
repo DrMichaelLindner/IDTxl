@@ -30,4 +30,4 @@ runtime = time.time() - start_time
 print("---- {0} minutes".format(runtime / 60))
 
 # Save results
-pickle.dump(results, open('test_nonlinear_network_results.p', 'wb'))
+# pickle.dump(results, open('test_nonlinear_network_results.p', 'wb'))

@@ -13,12 +13,12 @@ from idtxl.data import Data
 start_time = time.time()
 
 data = Data()  # initialise an empty data object
-data.normalise = False
 data.generate_nonlinear_data(n_samples=1000, n_replications=10)
+data.normalise = False
 
 settings = {
-    "target": 1,
-    "sources": 0,
+    "target": 1,   # mandatory in settings for nonlinear analysis
+    "sources": 0,  # optional in settings for nonlinear analysis
     "cmi_estimator": "JidtGaussianCMI",
     "n_perm_max_stat": 500,
     "n_perm_min_stat": 200,
@@ -29,17 +29,19 @@ settings = {
 }
 
 # prepare data object for nonlinear analysis
-settings_nonlin, data_nonlin = data.prepare_nonlinear(settings, data)
+settings, data = data.prepare_nonlinear(settings, data)
 
 # perform JidtGaussianCMI WITH nonlinear data
-nonlinear_analysis1 = MultivariateTE()
-results1 = nonlinear_analysis1.analyse_single_target(settings_nonlin, data,
-                                                     target=settings_nonlin["nonlinear_settings"]["nonlinear_all_targets"],
-                                                     sources=settings_nonlin["nonlinear_settings"]["nonlinear_all_sources"])
-
-path = Path(os.path.dirname(__file__)).joinpath("data")
-with open(path.joinpath("test_nonlinear_granger.p"), "wb") as output_file:
-    pickle.dump(results1, output_file)
+nonlin_analysis = MultivariateTE()
+results = nonlin_analysis.analyse_single_target(settings, data,
+                                                 target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
+                                                 sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
 
 runtime = time.time() - start_time
 print("---- {0:.2f} minutes".format(runtime / 60))
+
+# Save results
+# path = Path(os.path.dirname(__file__)).joinpath("data")
+# with open(path.joinpath("test_nonlinear_granger.p"), "wb") as output_file:
+#     pickle.dump(results, output_file)
+

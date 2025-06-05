@@ -16,8 +16,8 @@ data = Data()  # initialise an empty data object
 data.generate_mute_data(n_samples=1000, n_replications=10)
 data.normalise = False
 settings = {
-    "MPI": True,
-    "num_threads": 16,
+    "MPI": True,        # mandatory in settings for using MPI
+    "num_threads": 16,  # mandatory in settings for using MPI
     "cmi_estimator": "JidtGaussianCMI",
     "n_perm_max_stat": 500,
     "n_perm_min_stat": 200,
@@ -37,4 +37,4 @@ runtime = time.time() - start_time
 print("---- {0} minutes".format(runtime / 60))
 
 # Save results
-pickle.dump(results, open('test_nonlinear_network_mpi_results.p', 'wb'))
+# pickle.dump(results, open('test_nonlinear_network_mpi_results.p', 'wb'))
