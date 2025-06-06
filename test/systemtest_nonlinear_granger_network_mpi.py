@@ -1,5 +1,8 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation in network_analysis
 
+    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
+                You should use the data function data.set_data(data, dimorder) to prepare your data.
+
 start script using (depending on your installed MPI implementation):
     mpirun -n 16 python systemtest_nonlinear_granger_network_mpi.py
     srun -n 16 python systemtest_nonlinear_granger_network_mpi.py

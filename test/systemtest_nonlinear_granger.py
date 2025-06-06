@@ -1,5 +1,7 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation
 
+    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
+                You should use the data function data.set_data(data, dimorder) to prepare your data.
 """
 import os
 import time

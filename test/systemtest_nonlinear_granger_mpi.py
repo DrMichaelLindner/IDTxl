@@ -1,5 +1,8 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation using MPI
 
+    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
+                You should use the data function data.set_data(data, dimorder) to prepare your data.
+
 start script using (depending on your installed MPI implementation):
     mpirun -n 8 python systemtest_nonlinear_granger_mpi.py
     srun -n 8 python systemtest_nonlinear_granger_mpi.py
