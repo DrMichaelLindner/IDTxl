@@ -1,7 +1,11 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation in network_analysis
 
-    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
-                You should use the data function data.set_data(data, dimorder) to prepare your data.
+    ATTENTION:  For nonlinear granger analysis the data need to be NOT normalised (for data.prepare_nonlinear)
+                and has to be in order: processes x samples x replications.
+                Hence, you should use the data function data.set_data(data, dimorder) to prepare your data.
+                e.g.
+                    data = Data(normalise=False)  # initialise an empty data object without normalisation
+                    data.set_data(<your_data>, <your_dimorder>)
 """
 import pickle
 import time
@@ -9,9 +13,9 @@ from idtxl.multivariate_te import MultivariateTE
 from idtxl.data import Data
 
 start_time = time.time()
-data = Data()  # initialise an empty data object
+data = Data(normalise=False)  # initialise an empty data object
 data.generate_mute_data(n_samples=1000, n_replications=10)
-data.normalise = False
+
 settings = {
     "cmi_estimator": "JidtGaussianCMI",
     "n_perm_max_stat": 500,

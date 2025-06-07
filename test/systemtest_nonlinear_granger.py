@@ -1,7 +1,11 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation
 
-    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
-                You should use the data function data.set_data(data, dimorder) to prepare your data.
+    ATTENTION:  For nonlinear granger analysis the data need to be NOT normalised (for data.prepare_nonlinear)
+                and has to be in order: processes x samples x replications.
+                Hence, you should use the data function data.set_data(data, dimorder) to prepare your data.
+                e.g.
+                    data = Data(normalise=False)  # initialise an empty data object without normalisation
+                    data.set_data(<your_data>, <your_dimorder>)
 """
 import os
 import time
@@ -14,13 +18,13 @@ from idtxl.data import Data
 
 start_time = time.time()
 
-data = Data()  # initialise an empty data object
+data = Data(normalise=False)  # initialise an empty data object
 data.generate_nonlinear_data(n_samples=1000, n_replications=10)
-data.normalise = False
+
 
 settings = {
-    "target": 1,   # mandatory in settings for nonlinear analysis
-    "sources": 0,  # optional in settings for nonlinear analysis
+    "target": 1,   # mandatory in settings for nonlinear single target analysis
+    "sources": 0,  # optional in settings for nonlinear  single targetanalysis
     "cmi_estimator": "JidtGaussianCMI",
     "n_perm_max_stat": 500,
     "n_perm_min_stat": 200,

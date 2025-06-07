@@ -1,12 +1,16 @@
 """Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation in network_analysis
 
-    ATTENTION:  For nonlinear analysis the data has to be in order: processes x samples x replications.
-                You should use the data function data.set_data(data, dimorder) to prepare your data.
+    ATTENTION:  For nonlinear granger analysis the data need to be NOT normalised (for data.prepare_nonlinear)
+                and has to be in order: processes x samples x replications.
+                Hence, you should use the data function data.set_data(data, dimorder) to prepare your data.
+                e.g.
+                    data = Data(normalise=False)  # initialise an empty data object without normalisation
+                    data.set_data(<your_data>, <your_dimorder>)
 
-start script using (depending on your installed MPI implementation):
-    mpirun -n 16 python systemtest_nonlinear_granger_network_mpi.py
-    srun -n 16 python systemtest_nonlinear_granger_network_mpi.py
-    mpiexec -n 16 python systemtest_nonlinear_granger_network_mpi.py
+    start script using (depending on your installed MPI implementation):
+        mpirun -n 16 python systemtest_nonlinear_granger_network_mpi.py
+        srun -n 16 python systemtest_nonlinear_granger_network_mpi.py
+        mpiexec -n 16 python systemtest_nonlinear_granger_network_mpi.py
 """
 
 import pickle
@@ -15,9 +19,9 @@ from idtxl.multivariate_te import MultivariateTE
 from idtxl.data import Data
 
 start_time = time.time()
-data = Data()  # initialise an empty data object
+data = Data(normalise=False)  # initialise an empty data object
 data.generate_mute_data(n_samples=1000, n_replications=10)
-data.normalise = False
+
 settings = {
     "MPI": True,        # mandatory in settings for using MPI
     "num_threads": 16,  # mandatory in settings for using MPI
