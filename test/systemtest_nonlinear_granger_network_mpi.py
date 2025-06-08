@@ -13,8 +13,8 @@
         mpiexec -n 16 python systemtest_nonlinear_granger_network_mpi.py
 """
 
-import pickle
 import time
+import pickle
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.data import Data
 
@@ -44,4 +44,4 @@ runtime = time.time() - start_time
 print("---- {0} minutes".format(runtime / 60))
 
 # Save results
-# pickle.dump(results, open('test_nonlinear_network_mpi_results.p', 'wb'))
+# pickle.dump(results, open('test_nonlinear_granger_network_mpi_results.p', 'wb'))

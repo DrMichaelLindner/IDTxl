@@ -7,17 +7,14 @@
                     data = Data(normalise=False)  # initialise an empty data object without normalisation
                     data.set_data(<your_data>, <your_dimorder>)
 
-start script using (depending on your installed MPI implementation):
-    mpirun -n 8 python systemtest_nonlinear_granger_mpi.py
-    srun -n 8 python systemtest_nonlinear_granger_mpi.py
-    mpiexec -n 8 python systemtest_nonlinear_granger_mpi.py
+    start script using (depending on your installed MPI implementation):
+        mpirun -n 8 python systemtest_nonlinear_granger_mpi.py
+        srun -n 8 python systemtest_nonlinear_granger_mpi.py
+        mpiexec -n 8 python systemtest_nonlinear_granger_mpi.py
 """
-import os
+
 import time
 import pickle
-from pathlib import Path
-import copy
-
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.data import Data
 
@@ -53,8 +50,6 @@ runtime = time.time() - start_time
 print("---- {0:.2f} minutes".format(runtime / 60))
 
 # Save results
-# path = Path(os.path.dirname(__file__)).joinpath("data")
-# with open(path.joinpath("test_nonlinear_granger_mpi.p"), "wb") as output_file:
-#     pickle.dump(results, output_file)
+# pickle.dump(results, open('test_nonlinear_granger_mpi_results.p', 'wb'))
 
 

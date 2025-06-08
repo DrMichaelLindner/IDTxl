@@ -7,12 +7,9 @@
                     data = Data(normalise=False)  # initialise an empty data object without normalisation
                     data.set_data(<your_data>, <your_dimorder>)
 """
-import os
+
 import time
 import pickle
-from pathlib import Path
-import copy
-
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.data import Data
 
@@ -20,7 +17,6 @@ start_time = time.time()
 
 data = Data(normalise=False)  # initialise an empty data object
 data.generate_nonlinear_data(n_samples=1000, n_replications=10)
-
 
 settings = {
     "target": 1,   # mandatory in settings for nonlinear single target analysis
@@ -47,7 +43,5 @@ runtime = time.time() - start_time
 print("---- {0:.2f} minutes".format(runtime / 60))
 
 # Save results
-# path = Path(os.path.dirname(__file__)).joinpath("data")
-# with open(path.joinpath("test_nonlinear_granger.p"), "wb") as output_file:
-#     pickle.dump(results, output_file)
+# pickle.dump(results, open('test_nonlinear_granger_results.p', 'wb'))
 
