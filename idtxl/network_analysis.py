@@ -246,10 +246,17 @@ class NetworkAnalysis:
                 self.selected_vars_full.append(i)
         # separate indices into source and target indices
         for i in idx:
-            if i[0] == self.target:
-                self.selected_vars_target.append(i)
+
+            if "nonlinear_prepared" in self.settings:
+                if i[0] in self.targets:
+                    self.selected_vars_target.append(i)
+                else:
+                    self.selected_vars_sources.append(i)
             else:
-                self.selected_vars_sources.append(i)
+                if i[0] == self.target:
+                    self.selected_vars_target.append(i)
+                else:
+                    self.selected_vars_sources.append(i)
 
     def _append_selected_vars(self, data, idx):
         """Append indices and realisation of selected variables.
