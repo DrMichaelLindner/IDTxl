@@ -330,17 +330,44 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                     self._idx_to_lag(self.selected_vars_target)
                 )
             )
-        results = ResultsNetworkInference(
-            n_nodes=data.n_processes,
-            n_realisations=data.n_realisations(self.current_value),
-            normalised=data.normalise,
-        )
+
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            results = ResultsNetworkInference(
+                n_nodes=data.n_processes/2,
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise
+            )
             # In contrast to standard settings, the nonlinear setting change from target to target.
             # When combining results from single target analyses, equality of settings is checked.
             # Hence, the nonlinear settings are removed and stored separately in the results.
             nonlinear_settings = self.settings["nonlinear_settings"]
             del self.settings["nonlinear_settings"]
+
+            # set original sources in selected sources and add flag if orig or squared sources were used
+            sel_sources = self._idx_to_lag(self.selected_vars_sources)
+            selected_vars_sources_type = [None] * len(sel_sources)
+            count = 0
+            for i in sel_sources:
+                if i[0] >= data.n_processes / 2:
+                    s = list(i)
+                    s[0] = int(i[0] - data.n_processes / 2)
+                    sel_sources[count] = tuple(s)
+                # create flag for selected sources
+                selected_vars_sources_type[count] = nonlinear_settings["nonlinear_process_desc"][1][i[0]]
+                count = count + 1
+
+            # set original target in selected target and add flag if orig or squared target was used
+            sel_targets = self._idx_to_lag(self.selected_vars_target)
+            selected_vars_targets_type = [None] * len(sel_targets)
+            count = 0
+            for i in sel_targets:
+                if i[0] >= data.n_processes / 2:
+                    t = list(i)
+                    t[0] = int(i[0] - data.n_processes / 2)
+                    sel_targets[count] = tuple(t)
+                # create flag for selected targets
+                selected_vars_targets_type[count] = nonlinear_settings["nonlinear_process_desc"][1][i[0]]
+                count = count + 1
 
             results._add_single_result(
                 target=self.target,
@@ -352,8 +379,10 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                     "nonlinear_process_desc": nonlinear_settings["nonlinear_process_desc"],
                     "sources_tested": self.source_set,
                     "current_value": self.current_value,
-                    "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
-                    "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
+                    "selected_vars_target": sel_targets,
+                    "selected_vars_sources": sel_sources,
+                    "selected_vars_sources_type": selected_vars_sources_type,
+                    "selected_vars_targets_type": selected_vars_targets_type,
                     "selected_sources_pval": self.pvalues_sign_sources,
                     "selected_sources_te": self.statistic_sign_sources,
                     "omnibus_te": self.statistic_omnibus,
@@ -362,7 +391,13 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                     "te": self.statistic_single_link,
                 },
             )
+
         else:
+            results = ResultsNetworkInference(
+                n_nodes=data.n_processes,
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise,
+            )
             results._add_single_result(
                 target=self.target,
                 settings=self.settings,
