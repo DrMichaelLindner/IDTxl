@@ -32,7 +32,7 @@ def main(args):
     start_time = time.time()
 
     data = Data(normalise=False)  # initialise an empty data object
-    data.generate_nonlinear_data(n_samples=1000, n_replications=5)
+    data.generate_nonlinear_data(n_samples=1000, n_replications=10)
 
     settings = {
         "target": 1,        # mandatory in settings for nonlinear single target analysis

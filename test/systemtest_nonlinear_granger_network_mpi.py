@@ -31,7 +31,7 @@ def main(args):
 
     start_time = time.time()
     data = Data(normalise=False)  # initialise an empty data object
-    data.generate_mute_data(n_samples=1000, n_replications=5)
+    data.generate_mute_data(n_samples=1000, n_replications=10)
 
     settings = {
         "cmi_estimator": "JidtGaussianCMI",
