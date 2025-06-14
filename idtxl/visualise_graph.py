@@ -70,12 +70,13 @@ def plot_network(results, weights, fdr=True):
     ax1 = plt.subplot(121)  # plot graph
     _plot_graph(graph, ax1, weights)
     plt.subplot(122)  # plot adjacency matrix
-    if hasattr(results.settings, "nonlinear_prepared"):
+    if hasattr(results.settings, "nonlinear_prepared") and results.settings.nonlinear_prepared:
         a = results.get_nonlinear_adjacency_matrix(weights=weights, fdr=fdr)
         types = a.type_matrix
         _plot_nonlinear_adj_matrix(results.get_adjacency_matrix(weights, fdr), type_matrix=types, cbar_label=weights)
     else:
         _plot_adj_matrix(results.get_adjacency_matrix(weights, fdr), cbar_label=weights)
+
     return graph, fig
 
 
