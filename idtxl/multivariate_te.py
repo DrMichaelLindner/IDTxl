@@ -331,13 +331,12 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
                 )
             )
 
-        results = ResultsNetworkInference(
-            n_nodes=data.n_processes / 2,
-            n_realisations=data.n_realisations(self.current_value),
-            normalised=data.normalise
-        )
-
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            results = ResultsNetworkInference(
+                n_nodes=data.n_processes / 2,
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise
+            )
 
             # In contrast to standard settings, the nonlinear setting change from target to target.
             # When combining results from single target analyses, equality of settings is checked.
@@ -397,6 +396,11 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
             )
 
         else:
+            results = ResultsNetworkInference(
+                n_nodes=data.n_processes,
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise
+            )
             results._add_single_result(
                 target=self.target,
                 settings=self.settings,
