@@ -19,12 +19,13 @@ Hence, you should use the data function data.set_data(data, dimorder) to prepare
 
 2) Specify the settings
     e.g.
+    ATTENTION: nonlinear granger analysis works only with estimator "JidtGaussianCMI"!
     >>> settings = {
     >>> "cmi_estimator": "JidtGaussianCMI",
     >>> "max_lag_sources": 5,
     >>> "min_lag_sources": 1,
-    >>> "MPI": max_workers > 0,
-    >>> "max_workers": max_workers,
+    >>> "MPI": max_workers > 0,  # mandatory in settings for using MPI
+    >>> "max_workers": max_workers,  # mandatory in settings for using MPI
     }
 
 3) Use data.prepare_nonlinear to on your data set. This function adds squared processes to data and overwrites the data
@@ -121,16 +122,19 @@ def main(args):
     data = Data(normalise=False)  # initialise an empty data object
 
     # b) add data
-    # data.generate_mute_data(n_samples=1000, n_replications=5)
-    data.generate_mute_data(n_samples=200, n_replications=5)
+    data.generate_mute_data(n_samples=1000, n_replications=5)
 
     # c) specify settings
     settings = {
         "cmi_estimator": "JidtGaussianCMI",
+        "n_perm_max_stat": 500,
+        "n_perm_min_stat": 200,
+        "n_perm_omnibus": 500,
+        "n_perm_max_seq": 500,
         "max_lag_sources": 5,
         "min_lag_sources": 1,
-        "MPI": max_workers > 0,
-        "max_workers": max_workers,
+        "MPI": max_workers > 0,  # mandatory in settings for using MPI
+        "max_workers": max_workers,  # mandatory in settings for using MPI
     }
 
     # d) prepare data object for nonlinear analysis
