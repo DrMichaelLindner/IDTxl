@@ -333,7 +333,7 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
 
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
             results = ResultsNetworkInference(
-                n_nodes=data.n_processes / 2,
+                n_nodes=int(data.n_processes / 2),
                 n_realisations=data.n_realisations(self.current_value),
                 normalised=data.normalise
             )
