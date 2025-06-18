@@ -322,6 +322,17 @@ class Data():
             else:
                 sources = settings["sources"]
 
+            if isinstance(sources, list):
+                if targets in sources:
+                    raise RuntimeError(
+                        f"The target ({targets}) should not be in the list of sources ({sources})."
+                    )
+            else:
+                if targets == sources:
+                    raise RuntimeError(
+                        f"The target ({targets}) should not be in the list of sources ({sources})."
+                    )
+
             # get nonlinear targets and sources
             nt, ns, pd = self.get_lin_and_nonlin_targets_and_sources(targets, sources, data.n_processes)
 
