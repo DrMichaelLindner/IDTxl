@@ -1,16 +1,10 @@
-
 """Provide unit tests for multivariate TE estimation."""
-import itertools as it
+
 
 import numpy as np
 import pytest
-from test_checkpointing import _clear_ckp
-from test_estimators_jidt import _get_gauss_data, jpype_missing
-from test_results import _get_discrete_gauss_data
-
+from test_estimators_jidt import _get_gauss_data
 from idtxl.data import Data
-from idtxl.estimators_jidt import JidtGaussianCMI, JidtGaussianMI, JidtGaussianTE
-from idtxl.idtxl_utils import calculate_mi
 from idtxl.multivariate_te import MultivariateTE
 
 SEED = 0
@@ -80,7 +74,7 @@ def test_gauss_data():
     #        .format(sources1[0], sources2[0]))
 
 
-def test_flags_and_resultoutput():
+def test_flags_and_result_output():
     """Test nonlinear granger estimation from nonlinear coupled AR processes."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -100,6 +94,7 @@ def test_flags_and_resultoutput():
     # prepare data object for nonlinear analysis
     settings, data = data.prepare_nonlinear(settings, data)
 
+    # check if flags in data and settings were set and the if the nonlinear_settings exist in the settings
     assert "nonlinear_prepared" in settings, "Flag nonlinear_prepared was not set in settings"
     assert "nonlinear_settings" in settings, "Nonlinear_settings were not addes to settings"
     assert data.get_nonlinear_status(), "Flag nonlinear_prepared was not set in data"
@@ -113,34 +108,31 @@ def test_flags_and_resultoutput():
                                                         "nonlinear_source_predictors"])
 
     single_target = results.get_single_target(1, fdr=False)
-    assert (
-        "performed_nonlinear_analysis" in single_target,
-        "Results do no contain 'performed_nonlinear_analysis'")
-    assert (
-        "lin_and_nonlin_target_predictors_tested" in single_target,
-        "Results do no contain 'lin_and_nonlin_target_predictors_tested'")
-    assert (
-        "lin_and_nonlin_sources_tested" in single_target,
-        "Results do no contain 'lin_and_nonlin_sources_tested'")
-    assert ("nonlinear_process_desc" in single_target, "Results do no contain 'nonlinear_process_desc'")
-    assert ("selected_vars_sources_type" in single_target, "Results do no contain 'selected_vars_sources_type'")
-    assert ("selected_vars_targets_type" in single_target, "Results do no contain 'selected_vars_targets_type'")
-    assert ("selected_vars_target_orig" in single_target, "Results do no contain 'selected_vars_target_orig'")
-    assert ("selected_vars_sources_orig" in single_target, "Results do no contain 'selected_vars_sources_orig'")
 
-    assert (
-        single_target.selected_vars_sources[0][0] > results.data_properties['n_nodes'],
-        "Selected var sources were not transformed back to number processes")
-    assert (
-        single_target.selected_vars_target[0][0] > results.data_properties['n_nodes'],
-        "Selected var target were not transformed back to number processes")
+    # Test if all result outputs exist
+    assert "performed_nonlinear_analysis" in single_target, \
+        "Results do no contain 'performed_nonlinear_analysis'"
+    assert "lin_and_nonlin_target_predictors_tested" in single_target, \
+        "Results do no contain 'lin_and_nonlin_target_predictors_tested'"
+    assert "lin_and_nonlin_sources_tested" in single_target, \
+        "Results do no contain 'lin_and_nonlin_sources_tested'"
+    assert "nonlinear_process_desc" in single_target, "Results do no contain 'nonlinear_process_desc'"
+    assert "selected_vars_sources_type" in single_target, "Results do no contain 'selected_vars_sources_type'"
+    assert "selected_vars_targets_type" in single_target, "Results do no contain 'selected_vars_targets_type'"
+    assert "selected_vars_target_orig" in single_target, "Results do no contain 'selected_vars_target_orig'"
+    assert "selected_vars_sources_orig" in single_target, "Results do no contain 'selected_vars_sources_orig'"
 
-    assert (
-        single_target.selected_vars_sources_orig[0][0] != 2,
-        "Nonlinear source was not detected in nonlinear data")
-    assert (
-        single_target.selected_vars_sources_type[0] != "squared",
-        "Nonlinear source was not detected in nonlinear data")
+    # check transformation of selected squared sources back to original in selected_vars_...
+    assert single_target.selected_vars_sources[0][0] < results.data_properties['n_nodes'],\
+        "Selected var sources were not transformed back to number processes"
+    assert single_target.selected_vars_target[0][0] < results.data_properties['n_nodes'],\
+        "Selected var target were not transformed back to number processes"
+
+    # check if expected squared source was found
+    assert single_target.selected_vars_sources_orig[0][0] == 2, \
+        "Nonlinear source was not detected in nonlinear data"
+    assert single_target.selected_vars_sources_type[0] == "squared",\
+        "Nonlinear source was not detected in nonlinear data"
 
 
 def test_check_target_and_source_set():
@@ -160,6 +152,7 @@ def test_check_target_and_source_set():
     # prepare data object for nonlinear analysis
     settings, data = data.prepare_nonlinear(settings, data)
 
+    # test target and sources after prepare_nonlinear
     nonlin_target = settings["nonlinear_settings"]["nonlinear_target_predictors"]
     assert nonlin_target[0] == target
     assert nonlin_target[1] == target + int(data.n_processes/2)
@@ -170,6 +163,9 @@ def test_check_target_and_source_set():
     nw_0 = MultivariateTE()
     nw_0.settings = {"verbose": True}
 
+    nw_0._check_lin_and_nonlin_targets(nonlin_target, data.n_processes)
+    assert nw_0.target == target
+    assert nw_0.targets == nonlin_target
     nw_0._check_source_set(nonlin_sources, data.n_processes)
     assert nw_0.source_set == nonlin_sources, "Sources were not added correctly."
 
@@ -198,13 +194,18 @@ def test_check_target_and_source_set():
     # prepare data object for nonlinear analysis
     settings, data = data.prepare_nonlinear(settings, data)
 
+    # check if targets are set correctly in the analysis
     nonlin_target = settings["nonlinear_settings"]["nonlinear_target_predictors"]
     assert nonlin_target[0] == target
     assert nonlin_target[1] == target + int(data.n_processes / 2)
+    nw_0._check_lin_and_nonlin_targets(nonlin_target, data.n_processes)
+    assert nw_0.target == target
+    assert nw_0.targets == nonlin_target
+
+    # check if sources are set correctly in the analysis
     nonlin_sources = settings["nonlinear_settings"]["nonlinear_source_predictors"]
     assert nonlin_sources[:len(nonlin_sources) // 2] == [sources]
     assert nonlin_sources[len(nonlin_sources) // 2:] == [sources + int(data.n_processes / 2)]
-
     nw_0._check_source_set(nonlin_sources, data.n_processes)
     assert type(nw_0.source_set) is list
 
@@ -221,40 +222,207 @@ def test_check_target_and_source_set():
     # prepare data object for nonlinear analysis
     settings, data = data.prepare_nonlinear(settings, data)
 
+    # check if targets are set correctly in the analysis
     nonlin_target = settings["nonlinear_settings"]["nonlinear_target_predictors"]
     assert nonlin_target[0] == target
     assert nonlin_target[1] == target + int(data.n_processes / 2)
+    nw_0._check_lin_and_nonlin_targets(nonlin_target, data.n_processes)
+    assert nw_0.target == target
+    assert nw_0.targets == nonlin_target
+
+    # check if sources are set correctly in the analysis
     nonlin_sources = settings["nonlinear_settings"]["nonlinear_source_predictors"]
     assert nonlin_sources[:len(nonlin_sources) // 2] == [1, 2, 3, 4]
     assert nonlin_sources[len(nonlin_sources) // 2:] == [i+int(data.n_processes/2) for i in [1, 2, 3, 4]]
+    # no need to nw_0._check_source_set("all", data.n_processes) - can not happen in nonlinear analysis
 
-    nw_0.target = target
-    nw_0._check_source_set("all", data.n_processes)
-    assert nw_0.source_set == nonlin_sources, "Sources were not added correctly."
+
+def test_nonlinear_result_defs():
+    """Test nonlinear results function for nonlinear granger analysis."""
+    data = Data(normalise=False)  # initialise an empty data object
+    data.generate_nonlinear_data(n_samples=1000, n_replications=1)
+
+    target = 1
+    expected_source = 2
+    expected_u = 2
+    # prepare settings
+    settings = {
+        "target": target,  # mandatory for analyse_single_target (nonlinear granger)
+        "cmi_estimator": "JidtGaussianCMI",
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_omnibus": 21,
+        "n_perm_max_seq": 21,
+        "max_lag_sources": 3,
+        "min_lag_sources": 1,
+    }
+
+    # prepare data object for nonlinear analysis
+    settings, data = data.prepare_nonlinear(settings, data)
+
+    # perform JidtGaussianCMI WITH nonlinear data
+    nonlin_analysis = MultivariateTE()
+    results = nonlin_analysis.analyse_single_target(settings, data,
+                                                    target=settings["nonlinear_settings"][
+                                                        "nonlinear_target_predictors"],
+                                                    sources=settings["nonlinear_settings"][
+                                                        "nonlinear_source_predictors"])
+
+    # test output of nonlinear result functions
+    target_sources = results.get_nonlinear_target_sources(target, fdr=False)
+    assert target_sources == expected_source
+    source_variables = results.get_nonlinear_source_variables(fdr=False)
+    assert source_variables[0]["target"] == target
+    assert source_variables[0]["selected_vars_sources"][0][0] == expected_source
+    assert source_variables[0]["selected_vars_sources"][0][1] == expected_u
+
+    criterion = ["max_te", "max_p"]
+    for c in criterion:
+        target_delays = results.get_nonlinear_target_delays(target, criterion=c, fdr=False)
+        assert target_delays == expected_u
+
+    weights = ["max_te_lag", "max_p_lag"]
+    for w in weights:
+        adj_mat = results.get_nonlinear_adjacency_matrix(w, fdr=False)
+        assert adj_mat.type_matrix[0][1] > 0
+        assert adj_mat.edge_matrix[0][1]
+
+
+def test_nonlinear_network_analysis():
+    """Test method for full network analysis."""
+
+    # Test all to all analysis
+    # -----------------------------------------------
+    data = Data(seed=SEED, normalise=False)
+    data.generate_mute_data(10, 5)
+    settings = {
+        "cmi_estimator": "JidtGaussianCMI",
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_max_seq": 21,
+        "n_perm_omnibus": 21,
+        "max_lag_sources": 5,
+        "min_lag_sources": 4,
+        "max_lag_target": 5,
+    }
+    # prepare data object for nonlinear analysis
+    settings, data = data.prepare_nonlinear(settings, data)
+
+    nw_0 = MultivariateTE()
+    results = nw_0.analyse_network(settings, data, targets="all", sources="all")
+
+    # test analysed targets
+    targets_analysed = results.targets_analysed
+    assert all(
+        np.array(targets_analysed) == np.arange(int(data.n_processes/2))
+    ), "Network analysis did not run on all targets."
+
+    # test sources per target
+    sources = np.arange(data.n_processes)
+    for t in results.targets_analysed:
+        s = np.array(list(set(sources) - set([t, t+int(data.n_processes/2)])))
+        assert all(
+            np.array(results._single_target[t].sources_tested) == s
+        ), f"Network analysis did not run on all sources for target {t}"
+
+    # Test analysis for subset of targets
+    # -----------------------------------------------
+    data = Data(seed=SEED, normalise=False)
+    data.generate_mute_data(10, 5)
+    target_list = [1, 2, 3]
+    settings = {
+        "cmi_estimator": "JidtGaussianCMI",
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_max_seq": 21,
+        "n_perm_omnibus": 21,
+        "max_lag_sources": 5,
+        "min_lag_sources": 4,
+        "max_lag_target": 5,
+    }
+    settings, data = data.prepare_nonlinear(settings, data)
+    nw_0 = MultivariateTE()
+    results = nw_0.analyse_network(settings, data,
+                                    targets=target_list,
+                                    sources="all")
+
+    # check if nonlinear network analysis did run on all targets
+    targets_analysed = results.targets_analysed
+    assert all(
+        np.array(targets_analysed) == np.array(target_list)
+    ), "Network analysis did not run on correct subset of targets."
+
+    # check if nonlinear network analysis did run on all sources
+    for t in results.targets_analysed:
+        s = np.array(list(set(sources) - set([t, t+int(data.n_processes/2)])))
+        assert all(
+            np.array(results._single_target[t].sources_tested) == s
+        ), f"Network analysis did not run on all sources for target {t}"
+
+    # Test analysis for subset of sources
+    # -----------------------------------------------
+    data = Data(seed=SEED, normalise=False)
+    data.generate_mute_data(10, 5)
+    source_list = [1, 2, 3]
+    target_list = [0, 4]
+    settings = {
+        "cmi_estimator": "JidtGaussianCMI",
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_max_seq": 21,
+        "n_perm_omnibus": 21,
+        "max_lag_sources": 5,
+        "min_lag_sources": 4,
+        "max_lag_target": 5,
+    }
+    settings, data = data.prepare_nonlinear(settings, data)
+    nw_0 = MultivariateTE()
+    results = nw_0.analyse_network(
+        settings, data, targets=target_list, sources=source_list
+    )
+
+    # check if nonlinear network analysis did run on all targets
+    targets_analysed = results.targets_analysed
+    assert all(
+        np.array(targets_analysed) == np.array(target_list)
+    ), "Network analysis did not run for all targets."
+
+    # check if nonlinear network analysis did run on all sources
+    for t in results.targets_analysed:
+        assert all(
+            results._single_target[t].sources_tested == np.array(source_list + [i+int(data.n_processes/2) for i in source_list])
+        ), f"Network analysis did not run on the correct subset of sources for target {t}"
+
+
+# def test_add_conditional_manually():
+    # """Enforce the conditioning on additional variables."""
+    # settings = {
+    #     "cmi_estimator": "JidtKraskovCMI",
+    #     "max_lag_sources": 5,
+    #     "min_lag_sources": 3,
+    #     "max_lag_target": 7,
+    # }
+    # nw = MultivariateTE()
+    # data = Data(seed=SEED)
+    # data.generate_mute_data()
     #
-    # # Test invalid inputs.
-    # with pytest.raises(RuntimeError):  # sources greater than no. procs
-    #     nw_0._check_source_set(8, data.n_processes)
-    # with pytest.raises(RuntimeError):  # negative value as source
-    #     nw_0._check_source_set(-3, data.n_processes)
-
-
-# def test_nonlinear_initialize():
-#     """"""
-
-
-# def test_nonlinear_result_defs():
-#     """Test nonlinear results function for nonlinear granger analysis."""
-#
-#     add_nonlinear_edge_list(self, i_list, j_list, weights, types)
-#     get_nonlinear_target_sources(self, target, fdr=True)
-#     get_nonlinear_source_variables(self, fdr=True)
-#     get_nonlinear_target_delays(self, target, criterion="max_te", fdr=True)  "max_p"
-#     get_nonlinear_adjacency_matrix(self, weights, fdr=True)
-#         "max_te_lag", "max_p_lag", "vars_count", "binary"
-#
-#
-#     _print_nonlinear_edge_list(self, adjacency_matrix, weights)
+    # # Add a conditional with a lag bigger than the max_lag requested above
+    # settings["add_conditionals"] = (8, 0)
+    # # with pytest.raises(IndexError):
+    # #    nw._initialise(settings, data, sources=[1, 2], target=0)
+    #
+    # # Add valid conditionals and test if they were added
+    # settings["add_conditionals"] = [(0, 1), (1, 3)]
+    # nw._initialise(settings=settings, data=data, target=0, sources=[1, 2])
+    # # Get list of conditionals after intialisation and convert absolute samples
+    # # back to lags for comparison.
+    # cond_list = nw._idx_to_lag(nw.selected_vars_full)
+    # assert (
+    #         settings["add_conditionals"][0] in cond_list
+    # ), "First enforced conditional is missing from results."
+    # assert (
+    #         settings["add_conditionals"][1] in cond_list
+    # ), "Second enforced conditional is missing from results."
 
 
 # def test_return_local_values():
@@ -354,106 +522,14 @@ def test_check_target_and_source_set():
     # )
 
 
-
-
-# def test_analyse_network():
-    # """Test method for full network analysis."""
-    # n_processes = 5  # the MuTE network has 5 nodes
-    # data = Data(seed=SEED)
-    # data.generate_mute_data(10, 5)
-    # settings = {
-    #     "cmi_estimator": "JidtKraskovCMI",
-    #     "n_perm_max_stat": 21,
-    #     "n_perm_min_stat": 21,
-    #     "n_perm_max_seq": 21,
-    #     "n_perm_omnibus": 21,
-    #     "max_lag_sources": 5,
-    #     "min_lag_sources": 4,
-    #     "max_lag_target": 5,
-    # }
-    # nw_0 = MultivariateTE()
-    #
-    # # Test all to all analysis
-    # results = nw_0.analyse_network(settings, data, targets="all", sources="all")
-    # targets_analysed = results.targets_analysed
-    # sources = np.arange(n_processes)
-    # assert all(
-    #     np.array(targets_analysed) == np.arange(n_processes)
-    # ), "Network analysis did not run on all targets."
-    # for t in results.targets_analysed:
-    #     s = np.array(list(set(sources) - set([t])))
-    #     assert all(
-    #         np.array(results._single_target[t].sources_tested) == s
-    #     ), f"Network analysis did not run on all sources for target {t}"
-    # # Test analysis for subset of targets
-    # target_list = [1, 2, 3]
-    # results = nw_0.analyse_network(settings, data, targets=target_list, sources="all")
-    # targets_analysed = results.targets_analysed
-    # assert all(
-    #     np.array(targets_analysed) == np.array(target_list)
-    # ), "Network analysis did not run on correct subset of targets."
-    # for t in results.targets_analysed:
-    #     s = np.array(list(set(sources) - set([t])))
-    #     assert all(
-    #         np.array(results._single_target[t].sources_tested) == s
-    #     ), f"Network analysis did not run on all sources for target {t}"
-    #
-    # # Test analysis for subset of sources
-    # source_list = [1, 2, 3]
-    # target_list = [0, 4]
-    # results = nw_0.analyse_network(
-    #     settings, data, targets=target_list, sources=source_list
-    # )
-    #
-    # targets_analysed = results.targets_analysed
-    # assert all(
-    #     np.array(targets_analysed) == np.array(target_list)
-    # ), "Network analysis did not run for all targets."
-    # for t in results.targets_analysed:
-    #     assert all(
-    #         results._single_target[t].sources_tested == np.array(source_list)
-    #     ), f"Network analysis did not run on the correct subset of sources for target {t}"
-
-# def test_add_conditional_manually():
-    # """Enforce the conditioning on additional variables."""
-    # settings = {
-    #     "cmi_estimator": "JidtKraskovCMI",
-    #     "max_lag_sources": 5,
-    #     "min_lag_sources": 3,
-    #     "max_lag_target": 7,
-    # }
-    # nw = MultivariateTE()
-    # data = Data(seed=SEED)
-    # data.generate_mute_data()
-    #
-    # # Add a conditional with a lag bigger than the max_lag requested above
-    # settings["add_conditionals"] = (8, 0)
-    # # with pytest.raises(IndexError):
-    # #    nw._initialise(settings, data, sources=[1, 2], target=0)
-    #
-    # # Add valid conditionals and test if they were added
-    # settings["add_conditionals"] = [(0, 1), (1, 3)]
-    # nw._initialise(settings=settings, data=data, target=0, sources=[1, 2])
-    # # Get list of conditionals after intialisation and convert absolute samples
-    # # back to lags for comparison.
-    # cond_list = nw._idx_to_lag(nw.selected_vars_full)
-    # assert (
-    #         settings["add_conditionals"][0] in cond_list
-    # ), "First enforced conditional is missing from results."
-    # assert (
-    #         settings["add_conditionals"][1] in cond_list
-    # ), "Second enforced conditional is missing from results."
-
 if __name__ == '__main__':
-    # Done
-    # test_gauss_data()
-    # test_flags_and_resultoutput()
-
-    # in progress
+    test_gauss_data()
+    test_flags_and_result_output()
     test_check_target_and_source_set()
-    # test_nonlinear_initialize()
-    # test_nonlinear_result_defs()
-
+    test_nonlinear_result_defs()
+    test_nonlinear_network_analysis()
 
     # TODO
     # test_return_local_values()
+    # test_add_conditional_manually()
+
