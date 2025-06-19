@@ -991,33 +991,33 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
                 sources = self.get_target_sources(target=t, fdr=fdr)
                 delays = self.get_target_delays(target=t, criterion="max_p", fdr=fdr)
                 sources_type = self.get_target_source_types(target=t, fdr=fdr)
-                adjacency_matrix.add_edge_list(
+                adjacency_matrix.add_nonlinear_edge_list(
                     sources, np.ones(len(sources), dtype=int) * t, delays, sources_type
                 )
-        elif weights == "vars_count":
-            for t in self.targets_analysed:
-                single_result = self.get_single_target(target=t, fdr=fdr)
-                sources = np.zeros(len(single_result.selected_vars_sources))
-                weights = np.zeros(len(single_result.selected_vars_sources))
-                sources_type = self.get_target_source_types(target=t, fdr=fdr)
-                for i, s in enumerate(single_result.selected_vars_sources):
-                    sources[i] = s[0]
-                    weights[i] += 1
-                adjacency_matrix.add_edge_list(
-                    sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
-                )
-        elif weights == "binary":
-            for t in self.targets_analysed:
-                single_result = self.get_single_target(target=t, fdr=fdr)
-                sources = np.zeros(len(single_result.selected_vars_sources), dtype=int)
-                weights = np.zeros(len(single_result.selected_vars_sources), dtype=int)
-                sources_type = self.get_target_source_types(target=t, fdr=fdr)
-                for i, s in enumerate(single_result.selected_vars_sources):
-                    sources[i] = s[0]
-                    weights[i] = 1
-                adjacency_matrix.add_edge_list(
-                    sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
-                )
+        # elif weights == "vars_count":
+        #     for t in self.targets_analysed:
+        #         single_result = self.get_single_target(target=t, fdr=fdr)
+        #         sources = np.zeros(len(single_result.selected_vars_sources))
+        #         weights = np.zeros(len(single_result.selected_vars_sources))
+        #         sources_type = self.get_target_source_types(target=t, fdr=fdr)
+        #         for i, s in enumerate(single_result.selected_vars_sources):
+        #             sources[i] = s[0]
+        #             weights[i] += 1
+        #         adjacency_matrix.add_nonlinear_edge_list(
+        #             sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
+        #         )
+        # elif weights == "binary":
+        #     for t in self.targets_analysed:
+        #         single_result = self.get_single_target(target=t, fdr=fdr)
+        #         sources = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+        #         weights = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+        #         sources_type = self.get_target_source_types(target=t, fdr=fdr)
+        #         for i, s in enumerate(single_result.selected_vars_sources):
+        #             sources[i] = s[0]
+        #             weights[i] = 1
+        #         adjacency_matrix.add_nonlinear_edge_list(
+        #             sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
+        #         )
         else:
             raise RuntimeError("Invalid weights value")
         return adjacency_matrix
