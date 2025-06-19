@@ -315,7 +315,14 @@ class Data():
 
         # define targets and sources if set
         if "target" in settings:
-            targets = settings["target"]
+            if isinstance(settings["target"], list):
+                raise RuntimeError(
+                    "For analise_sinlge_target the target needs to be give as INT. For analyse_network do not specify "
+                    "target in settings . Specify the targets when callling the analyse_network(targets = "
+                    "<your_target_list> "
+                )
+            else:
+                targets = settings["target"]
 
             if "sources" not in settings:
                 sources = 'all'
