@@ -237,7 +237,7 @@ def test_check_target_and_source_set():
     # no need to nw_0._check_source_set("all", data.n_processes) - can not happen in nonlinear analysis
 
 
-def test_nonlinear_result_defs():
+def test_nonlinear_result_functions():
     """Test nonlinear results function for nonlinear granger analysis."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -390,14 +390,111 @@ def test_nonlinear_network_analysis():
     # check if nonlinear network analysis did run on all sources
     for t in results.targets_analysed:
         assert all(
-            results._single_target[t].sources_tested == np.array(source_list + [i+int(data.n_processes/2) for i in source_list])
+            results._single_target[t].sources_tested == np.array(
+                source_list + [i+int(data.n_processes/2) for i in source_list])
         ), f"Network analysis did not run on the correct subset of sources for target {t}"
+
+
+def test_return_local_values():
+    """Test estimation of local values."""
+    max_lag = 5
+    data = Data(seed=SEED, normalise=False)
+    data.generate_nonlinear_data(n_samples=1000, n_replications=1)
+
+    target = 1
+    sources = 0
+
+    settings = {
+        "cmi_estimator": "JidtGaussianCMI",
+        "noise_level": 0,
+        "local_values": True,  # request calculation of local values
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_max_seq": 21,
+        "n_perm_omnibus": 21,
+        "max_lag_sources": max_lag,
+        "min_lag_sources": 4,
+        "max_lag_target": max_lag,
+        "target": target,
+        "sources": sources
+    }
+
+    # prepare data object for nonlinear analysis
+    settings, data = data.prepare_nonlinear(settings, data)
+
+    te = MultivariateTE()
+    results = te.analyse_single_target(settings, data,
+                                                 target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
+                                                 sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
+    settings["local_values"] = False
+    results_avg = te.analyse_single_target(settings, data,
+                                           target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
+                                           sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
+
+    # Test if any sources were inferred. If not, return (this may happen
+    # sometimes due to too few samples, however, a higher no. samples is not
+    # feasible for a unit test).
+    if results.get_single_target(target, fdr=False)["te"] is None:
+        return
+    if results_avg.get_single_target(target, fdr=False)["te"] is None:
+        return
+
+    lte = results.get_single_target(target, fdr=False)["te"]
+    n_sources = len(results.get_nonlinear_target_sources(target, fdr=False))
+    assert (
+        type(lte) is np.ndarray
+    ), "LTE estimation did not return an array of values: {0}".format(lte)
+    assert (
+        lte.shape[0] == n_sources
+    ), "Wrong dim (no. sources) in LTE estimate: {0}".format(lte.shape)
+    assert lte.shape[1] == data.n_realisations_samples(
+        (0, max_lag)
+    ), "Wrong dim (no. samples) in LTE estimate: {0}".format(lte.shape)
+    assert (
+        lte.shape[2] == data.n_replications
+    ), "Wrong dim (no. replications) in LTE estimate: {0}".format(lte.shape)
+
+    # Check if average and mean local values are the same. Test each source
+    # separately. Inferred sources and variables may differ between the two
+    # calls to analyse_single_target() due to low number of surrogates used in
+    # unit testing.
+    te_single_link = results_avg.get_single_target(target, fdr=False)["te"]
+    sources_local = results.get_target_sources(target, fdr=False)
+    sources_avg = results_avg.get_target_sources(target, fdr=False)
+    for s in list(set(sources_avg).intersection(sources_local)):
+        i1 = sources_avg[0]
+        i2 = np.where(sources_local == s)[0][0]
+
+        vars_local = [
+            v
+            for v in results_avg.get_single_target(
+                target, fdr=False
+            ).selected_vars_sources
+            if v[0] == sources_avg
+        ]
+        vars_avg = [
+            v
+            for v in results.get_single_target(target, fdr=False).selected_vars_sources
+            if v[0] == sources_local
+        ]
+        if vars_local != vars_avg:
+            continue
+
+        print(
+            "Compare average ({0:.4f}) and local values ({1:.4f}).".format(
+                    te_single_link[i1], np.mean(lte[i2, :, :])
+            )
+        )
+        assert np.isclose(te_single_link[i1], np.mean(lte[i2, :, :]), rtol=0.00005), (
+            "Single link average MI ({0:.6f}) and mean LMI ({1:.6f}) "
+            " deviate.".format(te_single_link[i1], np.mean(lte[i2, :, :]))
+        )
 
 
 # def test_add_conditional_manually():
     # """Enforce the conditioning on additional variables."""
     # settings = {
-    #     "cmi_estimator": "JidtKraskovCMI",
+    #     "cmi_estimator": "JidtGaussianCMI",
     #     "max_lag_sources": 5,
     #     "min_lag_sources": 3,
     #     "max_lag_target": 7,
@@ -425,111 +522,14 @@ def test_nonlinear_network_analysis():
     # ), "Second enforced conditional is missing from results."
 
 
-# def test_return_local_values():
-#     """Test estimation of local values."""
-    # max_lag = 5
-    # data = Data(seed=SEED, normalise=False)
-    # data.generate_mute_data(500, 5)
-    #
-    # target = 3
-    # sources = [0, 4]
-    #
-    # settings = {
-    #     "cmi_estimator": "JidtGaussianCMI",
-    #     "noise_level": 0,
-    #     "local_values": True,  # request calculation of local values
-    #     "n_perm_max_stat": 21,
-    #     "n_perm_min_stat": 21,
-    #     "n_perm_max_seq": 21,
-    #     "n_perm_omnibus": 21,
-    #     "max_lag_sources": max_lag,
-    #     "min_lag_sources": 4,
-    #     "max_lag_target": max_lag,
-    #     "target": target,
-    #     "sources": sources
-    # }
-    #
-    # # prepare data object for nonlinear analysis
-    # settings, data = data.prepare_nonlinear(settings, data)
-    #
-    # te = MultivariateTE()
-    # results = te.analyse_single_target(settings, data,
-    #                                              target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
-    #                                              sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
-    # settings["local_values"] = False
-    # results_avg = te.analyse_single_target(settings, data,
-    #                                        target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
-    #                                        sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
-    #
-    #
-    # # Test if any sources were inferred. If not, return (this may happen
-    # # sometimes due to too few samples, however, a higher no. samples is not
-    # # feasible for a unit test).
-    # if results.get_single_target(target, fdr=False)["te"] is None:
-    #     return
-    # if results_avg.get_single_target(target, fdr=False)["te"] is None:
-    #     return
-    #
-    # lte = results.get_single_target(target, fdr=False)["te"]
-    # n_sources = len(results.get_nonlinear_target_sources(target, fdr=False))
-    # assert (
-    #     type(lte) is np.ndarray
-    # ), "LTE estimation did not return an array of values: {0}".format(lte)
-    # assert (
-    #     lte.shape[0] == n_sources
-    # ), "Wrong dim (no. sources) in LTE estimate: {0}".format(lte.shape)
-    # assert lte.shape[1] == data.n_realisations_samples(
-    #     (0, max_lag)
-    # ), "Wrong dim (no. samples) in LTE estimate: {0}".format(lte.shape)
-    # assert (
-    #     lte.shape[2] == data.n_replications
-    # ), "Wrong dim (no. replications) in LTE estimate: {0}".format(lte.shape)
-    #
-    # # Check if average and mean local values are the same. Test each source
-    # # separately. Inferred sources and variables may differ between the two
-    # # calls to analyse_single_target() due to low number of surrogates used in
-    # # unit testing.
-    # te_single_link = results_avg.get_single_target(target, fdr=False)["te"]
-    # sources_local = results.get_nonlinear_target_sources(target, fdr=False)
-    # sources_avg = results_avg.get_target_sources(target, fdr=False)
-    # #for s in list(set(sources_avg).intersection(sources_local)):
-    # #i1 = sources_avg[0][0]
-    # #i2 = np.where(sources_local == s)[0][0]
-    #
-    # #vars_local = [
-    # #    v
-    # #    for v in results_avg.get_single_target(
-    # #        target, fdr=False
-    # #    ).selected_vars_sources
-    # #    if v[0] == sources_avg
-    # #]
-    # #vars_avg = [
-    # #    v
-    # #    for v in results.get_single_target(target, fdr=False).selected_vars_sources_orig
-    # #    if v[0] == sources_local
-    # #]
-    # #if vars_local != vars_avg:
-    # #    continue
-    #
-    # print(
-    #     "Compare average ({0:.4f}) and local values ({1:.4f}).".format(
-    #             te_single_link[i1], np.mean(lte[i2, :, :])
-    #     )
-    # )
-    # assert np.isclose(te_single_link[i1], np.mean(lte[i2, :, :]), rtol=0.00005), (
-    #     "Single link average MI ({0:.6f}) and mean LMI ({1:.6f}) "
-    #     " deviate.".format(te_single_link[i1], np.mean(lte[i2, :, :]))
-    # )
-
-
 if __name__ == '__main__':
     test_gauss_data()
     test_flags_and_result_output()
     test_check_target_and_source_set()
-    test_nonlinear_result_defs()
+    test_nonlinear_result_functions()
     test_nonlinear_network_analysis()
+    test_return_local_values()
 
     # TODO
-    # test_return_local_values()
     # test_add_conditional_manually()
 
