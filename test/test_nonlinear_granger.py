@@ -282,7 +282,7 @@ def test_nonlinear_result_functions():
         target_delays = results.get_nonlinear_target_delays(target, criterion=c, fdr=False)
         assert target_delays == expected_u
 
-    weights = ["max_te_lag", "max_p_lag"]
+    weights = ["max_te_lag", "max_p_lag", "binary", "vars_count"]
     for w in weights:
         adj_mat = results.get_nonlinear_adjacency_matrix(w, fdr=False)
         assert adj_mat.type_matrix[0][1] > 0
@@ -532,11 +532,11 @@ def test_add_conditional():
 
 
 if __name__ == '__main__':
-    test_gauss_data()
-    test_flags_and_result_output()
-    test_check_target_and_source_set()
+    #test_gauss_data()
+    #test_flags_and_result_output()
+    #test_check_target_and_source_set()
     test_nonlinear_result_functions()
-    test_nonlinear_network_analysis()
-    test_return_local_values()
-    test_add_conditional()
+    #test_nonlinear_network_analysis()
+    #test_return_local_values()
+    #test_add_conditional()
 
