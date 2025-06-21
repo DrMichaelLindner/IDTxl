@@ -3,6 +3,7 @@
 
 import numpy as np
 import pytest
+import copy
 from test_estimators_jidt import _get_gauss_data
 from idtxl.data import Data
 from idtxl.multivariate_te import MultivariateTE
@@ -491,35 +492,43 @@ def test_return_local_values():
         )
 
 
-# def test_add_conditional_manually():
-    # """Enforce the conditioning on additional variables."""
-    # settings = {
-    #     "cmi_estimator": "JidtGaussianCMI",
-    #     "max_lag_sources": 5,
-    #     "min_lag_sources": 3,
-    #     "max_lag_target": 7,
-    # }
-    # nw = MultivariateTE()
-    # data = Data(seed=SEED)
-    # data.generate_mute_data()
-    #
-    # # Add a conditional with a lag bigger than the max_lag requested above
-    # settings["add_conditionals"] = (8, 0)
-    # # with pytest.raises(IndexError):
-    # #    nw._initialise(settings, data, sources=[1, 2], target=0)
-    #
-    # # Add valid conditionals and test if they were added
-    # settings["add_conditionals"] = [(0, 1), (1, 3)]
-    # nw._initialise(settings=settings, data=data, target=0, sources=[1, 2])
-    # # Get list of conditionals after intialisation and convert absolute samples
-    # # back to lags for comparison.
-    # cond_list = nw._idx_to_lag(nw.selected_vars_full)
-    # assert (
-    #         settings["add_conditionals"][0] in cond_list
-    # ), "First enforced conditional is missing from results."
-    # assert (
-    #         settings["add_conditionals"][1] in cond_list
-    # ), "Second enforced conditional is missing from results."
+def test_add_conditional():
+    """Enforce the conditioning on additional variables.
+    Adding valid conditionals and test if they were added correctly (incl. nonlinear conds) in the network analysis
+    """
+    # generate data
+    data = Data(seed=SEED, normalise=False)
+    data.generate_mute_data()
+
+    settings = {"target": 0,
+                "sources": [1, 2],
+                "cmi_estimator": "JidtGaussianCMI",
+                "max_lag_sources": 5,
+                "min_lag_sources": 3,
+                "max_lag_target": 7,
+                "add_conditionals": [(0, 1), (1, 3)]
+                }
+
+    # prepare data object for nonlinear analysis
+    settings, data = data.prepare_nonlinear(settings, data)
+
+    # initialise network_analysis
+    nw = MultivariateTE()
+    nw._initialise(settings=settings, data=data,
+                   target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
+                   sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
+
+    # Get list of conditionals after initialisation and convert absolute samples
+    # back to lags for comparison.
+    cond_list = nw._idx_to_lag(nw.selected_vars_full)
+    assert (settings["add_conditionals"][0] in cond_list), \
+        "First enforced conditional is missing from results."
+    assert (settings["add_conditionals"][1] in cond_list), \
+        "Second enforced conditional is missing from results."
+    assert (settings["add_conditionals"][2] in cond_list), \
+        "First nonlinear enforced conditional is missing from results."
+    assert (settings["add_conditionals"][3] in cond_list), \
+        "Second nonlinear enforced conditional is missing from results."
 
 
 if __name__ == '__main__':
@@ -529,7 +538,5 @@ if __name__ == '__main__':
     test_nonlinear_result_functions()
     test_nonlinear_network_analysis()
     test_return_local_values()
-
-    # TODO
-    # test_add_conditional_manually()
+    test_add_conditional()
 
