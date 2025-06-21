@@ -216,6 +216,20 @@ class Data():
         self.n_samples = data.shape[1]
         self.n_replications = data.shape[2]
 
+    def get_lin_and_nonlin_conditionals(self, cond, n_processes):
+        """get new add_conditionals for nonlinear data"""
+        if isinstance(cond, tuple):
+            nonlin_conditionals = [None] * 2
+            nonlin_conditionals[0] = cond
+            nonlin_conditionals[1] = (int(cond[0] + n_processes / 2), cond[1])
+        elif isinstance(cond, list):
+            nonlin_conditionals = [None] * len(cond)
+            for i in range(len(cond)):
+                nonlin_conditionals[i] = (int(cond[i][0] + n_processes / 2), cond[i][1])
+            conditionals = cond + nonlin_conditionals
+
+        return conditionals
+
     def get_lin_and_nonlin_targets_and_sources(self, target, sources, n_processes):
         """get new targets and sources for nonlinear data"""
 
@@ -348,6 +362,11 @@ class Data():
                                               "nonlinear_source_predictors": ns,
                                               "nonlinear_process_desc": pd
                                               }
+
+        # get nonlinear conditionals if set
+        if "add_conditionals" in settings:
+            conditionals = self.get_lin_and_nonlin_conditionals(settings["add_conditionals"], data.n_processes)
+            settings["add_conditionals"] = conditionals
 
         return settings, data
 
