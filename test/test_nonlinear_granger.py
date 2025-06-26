@@ -3,7 +3,6 @@
 
 import numpy as np
 import pytest
-import copy
 from test_estimators_jidt import _get_gauss_data
 from idtxl.data import Data
 from idtxl.multivariate_te import MultivariateTE
@@ -532,11 +531,11 @@ def test_add_conditional():
 
 
 if __name__ == '__main__':
-    #test_gauss_data()
-    #test_flags_and_result_output()
-    #test_check_target_and_source_set()
+    test_gauss_data()
+    test_flags_and_result_output()
+    test_check_target_and_source_set()
     test_nonlinear_result_functions()
-    #test_nonlinear_network_analysis()
-    #test_return_local_values()
-    #test_add_conditional()
+    test_nonlinear_network_analysis()
+    test_return_local_values()
+    test_add_conditional()
 
