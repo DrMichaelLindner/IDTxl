@@ -399,4 +399,111 @@ class distribution_likelihoods_results():
                     raise RuntimeError(f"input con only be a string: \"all\" or \"<your distribution>\".")
         return params, dist_names
 
-    
+    def __de_uniform(self, a, b):
+        """calculate differential entropy for uniform distribution"""
+        de = np.log2(b-a)
+        return de
+
+    def __de_norm(self, sigma):
+        """calculate differential entropy for normal distribution"""
+        de = np.log2(sigma * np.sqrt(2 * np.pi * np.e))
+        return de
+
+    def __de_expo(self, lam):
+        """calculate differential entropy for exponential distribution"""
+        de = 1 - np.log2(lam)
+        return de
+
+    def __de_raleigh(self, sigma):
+        """calculate differential entropy for raleigh distribution"""
+        de = 1 + np.log2(sigma/(np.sqrt(2))) + np.e/2
+        return de
+
+    def __de_beta(self, a, b):
+        """calculate differential entropy for beta distribution"""
+        de =  np.random.beta(a, b) - (a - 1) * (np.digamma(a) - np.digamma(a + b)) \
+              - (b - 1) * (np.digamma(b) - np.digamma(a + b))
+        return de
+
+    def __de_cauchy(self):
+        """calculate differential entropy for cauchy distribution"""
+        de = np.log2(2 * np.pi * np.e)
+        return de
+
+    def __de_chi(self, k):
+        """calculate differential entropy for chi distribution"""
+        de = np.log2(np.gamma(k/2) / np.sqrt(2)) - (k-1)/2 * np.digamma(k/2) + k/2
+        return de
+
+    def __de_chi2(self, k):
+        """calculate differential entropy for chi2 distribution"""
+        de = np.log2(2*np.gamma(k/2)) - (1 - k/2) * np.digamma(k/2) + k/2
+        return de
+
+    def __de_erlang(self, k, l):
+        """calculate differential entropy for erlang distribution"""
+        de = (1 - k) * np.digamma(k) + np.log2(np.gamma(k) / l) + k
+        return de
+
+    def __de_f(self, n1, n2):
+        """calculate differential entropy for F distribution"""
+        de = np.log2(n1/n2) * np.random.beta(n1/2, n2/2) +\
+             (1 - n1/2) * np.digamma(n1/2) -\
+             (1 + n2/2) * np.digamma(n2/2) + \
+             (n1 + n2)/2 * np.digamma((n1 + n2)/2)
+        return de
+
+    def __de_gamma(self, k):
+        """calculate differential entropy for gamma distribution"""
+        de = np.log2( o * np.gamma(k)) + (1 - k) * np.digamma(k) + k   # ???????????????????????????????????????????????????????????????
+        return de
+
+    def __de_laplace(self, b):
+        """calculate differential entropy for laplace distribution"""
+        de = 1 + np.log2(2 * b)
+        return de
+
+    def __de_logistic(self, s):
+        """calculate differential entropy for logistic distribution"""
+        de = np.log2(s) + 2
+        return de
+
+    def __de_lognorm(self, m, s):
+        """calculate differential entropy for lognormal distribution"""
+        de = m + 0.5 * np.log2(2 * np.pi * np.e * s**2)
+        return de
+
+    def __de_maxwell(self, a):
+        """calculate differential entropy for Maxwell-Boltzmann distribution"""
+        de = np.log2(a * np.sqrt(2 * np.pi)) + np.e - 0.5
+        return de
+
+    def __de_gennorm(self, a, b):
+        """calculate differential entropy for Generalized normal distribution"""
+        de = np.log2(np.gamma(a/2) / 2 * b**0.5) - (a - 1)/2 * np.digamma(a/2) + a/2
+        return de
+
+    def __de_pareto(self, a, x):
+        """calculate differential entropy for pareto distribution"""
+        de = np.log2(x/a) + 1 + 1/a
+        return de
+
+    def __de_t(self, v):
+        """calculate differential entropy for Student's t distribution"""
+        de = (v + 1)/2 * (np.digamma((v + 1)/2 - np.digamma(v/2)) + np.log2(np.sqrt(v) * np.random-beta(0.5, v/2)))
+        return de
+
+    def __de_triang(self, a, b):
+        """calculate differential entropy for triangular distribution"""
+        de = 0.5 + np.log2((b - a)/2)
+        return de
+
+    def __de_weibull(self, k, l):
+        """calculate differential entropy for weibull distribution"""
+        de = (k - 1)/k * np.e + np.log2(l/k) + 1
+        return de
+
+    def __de_multivariate_normal(self, k, l):
+        """calculate differential entropy for multivariate normal distribution"""
+        # de = 0.5 * np.log2(  )  ?????????????????????????????????????????????????????????????????????????????????????????????????????
+        return de
