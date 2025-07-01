@@ -9,14 +9,14 @@ from fitter import Fitter, get_common_distributions
 #from . import idtxl_utils as utils
 
 
-class distribution_likelihood():
+class get_distribution_likelihood():
     """
 
 
 
 
     For getting all distributions you can test here use e.g.:
-        >>> dl = distribution_likelihood
+        >>> dl = get_distribution_likelihood
         >>> dl.show_distributions
 
     """
@@ -106,8 +106,7 @@ class distribution_likelihood():
         print(f"You can specify a list of these distributions or a single one you to test.")
 
 
-    def fit_distributions(self, mode="over_all_replications", dists="common", 
-    						processes="all"):
+    def fit(self, mode="over_all_replications", dists="common", processes="all"):
         """ get the likelihoods of distribution of the data
 
         The distribuitions are fittet using the Fitter toolbox (https://github.com/cokelaer/fitter) ????????????????????????????????????????????????????????????????? REF MISSING
@@ -178,9 +177,10 @@ class distribution_likelihood():
         # check processes
         procs = self._check_processes(processes)
 
-        
         # initialise distribution likelihood output
-        dl = distribution_likelihoods_results(n_processes=self.n_processes, n_replications=self.n_replications, mode=mode)
+        dl = distribution_likelihoods_results(n_processes=self.n_processes,
+                                              n_replications=self.n_replications,
+                                              mode=mode)
 
         # get distribution fits
         for p in procs:
@@ -292,15 +292,15 @@ class distribution_likelihoods_results():
                         print(f"- Replication {r}")
                         print(self.results[p][r]["summary"])
 
-    def get_parameters(self, process):
-        """get fitted parameters of given process."""
-        if self.mode == "over_all_replications":
-            params = self.results[process]["params"]
-        else:
-            params = [None] * self.n_data_replications
-            for r in range(self.n_data_replications):
-                params = self.results[process][r]["params"]
-        return params
+    # def get_parameters(self, process):
+    #     """get fitted parameters of given process."""
+    #     if self.mode == "over_all_replications":
+    #         params = self.results[process]["params"]
+    #     else:
+    #         params = [None] * self.n_data_replications
+    #         for r in range(self.n_data_replications):
+    #             params = self.results[process][r]["params"]
+    #     return params
 
     def get_best_pval(self, process):
         """get the best fitted p-val of the given process (for all replications depending on the
@@ -324,17 +324,79 @@ class distribution_likelihoods_results():
                 dist[r] = self.results[process][r]["summary"].T.columns[0]
         return dist
 
-    def get_all_dists(self, process):
-        """get the (max 5) best fitted distribution of the given process (for all replications depending on the
+    def get_all_dist(self, process):
+        """get all fitted distribution of the given process (for all replications depending on the
         used mode)"""
         if self.mode == "over_all_replications":
-            rep_list = list(self.results[process]["summary"].T.columns)
-            pval_list = list(self.results[process]["summary"].T.values[5])
+            dist_names = self.results[process]["params"].keys()
         else:
-            rep_list = [None] * self.n_data_replications
-            pval_list = [None] * self.n_data_replications
+            dist_names = [None] * self.n_data_replications
             for r in range(self.n_data_replications):
-                rep_list[r] = list(self.results[process][r]["summary"].T.columns)
-                pval_list[r] = list(self.results[process][r]["summary"].T.values[5])
+                dist_name[r] = self.results[process][r]["params"].keys()
+        return dist_names
 
-        return rep_list, pval_list
+    def get_all_pval(self, process):
+        """get all fitted distribution of the given process (for all replications depending on the
+        used mode)"""
+        if self.mode == "over_all_replications":
+            pval = self.results[process]["pval"]
+        else:
+            pval = [None] * self.n_data_replications
+            for r in range(self.n_data_replications):
+                pval[r] = self.results[process][r]["pval"]
+        return pval
+
+    def get_all_aic(self, process):
+        """get all fitted distribution of the given process (for all replications depending on the
+        used mode)"""
+        if self.mode == "over_all_replications":
+            aic = self.results[process]["aic"]
+        else:
+            aic = [None] * self.n_data_replications
+            for r in range(self.n_data_replications):
+                aic[r] = self.results[process][r]["aic"]
+        return aic
+
+    def get_parameters(self, process, dists="all"):
+        """get fitted parameters (of all fitted distributions) for a given process"""
+
+        if self.mode == "over_all_replications":
+            if dists == "all":
+                dist_names = self.results[process]["params"].keys()
+                params = []
+                for d in dist_names:
+                    params.append(self.results[process]["params"][d])
+
+            elif isinstance(dists, str):
+                if dists not in self.results[process]["params"].keys():
+                    keys = self.results[process]["params"].keys()
+                    raise RuntimeError(f"Distribution {dists} is not in the results {keys}")
+                else:
+                    params = self.results[process]["params"][dists]
+                    dist_names = [dists]
+            else:
+                raise RuntimeError(f"input con only be  a string: \"all\" or \"<your distribution>\".")
+        else:
+            params = [None] * self.n_data_replications
+            dist_names = [None] * self.n_data_replications
+            for r in range(self.n_data_replications):
+                if dists == "all":
+                    dist_n = self.results[process]["params"].keys()
+                    par = []
+                    for d in dist_n:
+                        par.append(self.results[process]["params"][d])
+                    params[r] = par
+                    dist_name[r] = dist_n
+
+                elif isinstance(dists, str):
+                    if dists not in self.results[process]["params"].keys():
+                        keys = self.results[process]["params"].keys()
+                        raise RuntimeError(f"Distribution {dists} is not in the results {keys}")
+                    else:
+                        params[r] = self.results[process]["params"][dists]
+                        dist_name[r] = dists
+                else:
+                    raise RuntimeError(f"input con only be a string: \"all\" or \"<your distribution>\".")
+        return params, dist_names
+
+    

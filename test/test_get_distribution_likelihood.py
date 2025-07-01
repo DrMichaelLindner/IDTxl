@@ -3,7 +3,7 @@
 from idtxl.data import Data
 import numpy as np
 import pytest
-from idtxl.distribution_likelihood import distribution_likelihood
+from idtxl.get_distribution_likelihood import get_distribution_likelihood
 
 # settings
 single = "norm"
@@ -33,14 +33,14 @@ def test_input_mode():
     # create data
     data = create_data(2, 3)
 
-    dist_like = distribution_likelihood(data)
+    dist_like = get_distribution_likelihood(data)
     # test wrong inputs
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode="abc", dists=single_err)
+        dist_like.fit(mode="abc", dists=single_err)
 
     # test mode per_replication
     mode = "per_replication"
-    dl = dist_like.fit_distributions(mode=mode, dists=single)
+    dl = dist_like.fit(mode=mode, dists=single)
     assert (dl.n_data_replications == data.n_replications), \
         "Number of replications are not correctly set in distribution_likelihood object."
     assert (dl.n_data_processes == data.n_processes), \
@@ -58,7 +58,7 @@ def test_input_mode():
     # test mode over_all_replications
     mode = "over_all_replications"
 
-    dl = dist_like.fit_distributions(mode=mode, dists=single)
+    dl = dist_like.fit(mode=mode, dists=single)
     assert (dl.n_data_replications == data.n_replications), \
         "Number of replications are not correctly set in distribution_likelihood object."
     assert (dl.n_data_processes == data.n_processes), \
@@ -78,28 +78,28 @@ def test_input_dist():
 
     mode = "over_all_replications"
 
-    dist_like = distribution_likelihood(data)
+    dist_like = get_distribution_likelihood(data)
 
     # test wrong inputs
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode=mode, dists=single_err)
+        dist_like.fit(mode=mode, dists=single_err)
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode=mode, dists=list_err)
+        dist_like.fit(mode=mode, dists=list_err)
 
     # test dist input types
-    dl = dist_like.fit_distributions(mode=mode, dists=single)
+    dl = dist_like.fit(mode=mode, dists=single)
     a=1
     assert (len(dl.results[0]["summary"].index) == 1), \
         f"Numbers of tested distributions differ between input: 1 and distribution likelihood" \
         f"object {len(dl.results[0]['summary'].index)}"
 
-    dl = dist_like.fit_distributions(mode=mode, dists=shortlist)
+    dl = dist_like.fit(mode=mode, dists=shortlist)
     assert (len(dl.results[0]["summary"].index) == len(shortlist)), \
         f"Numbers of tested distributions differ between input: {len(shortlist)} and " \
         f"distribution_likelihood object {len(dl.results[0]['summary'].index)}."
 
-    dl = dist_like.fit_distributions(mode=mode, dists="common")
-    dl = dist_like.fit_distributions(mode=mode, dists="all")
+    dl = dist_like.fit(mode=mode, dists="common")
+    dl = dist_like.fit(mode=mode, dists="all")
 
 
 def test_input_processes():
@@ -110,25 +110,25 @@ def test_input_processes():
 
     mode = "over_all_replications"
 
-    dist_like = distribution_likelihood(data)
+    dist_like = get_distribution_likelihood(data)
 
     # test wrong inputs
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode=mode, dists=single, processes=5)
+        dist_like.fit(mode=mode, dists=single, processes=5)
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode=mode, dists=single, processes=[1, 5])
+        dist_like.fit(mode=mode, dists=single, processes=[1, 5])
     with pytest.raises(RuntimeError):
-        dist_like.fit_distributions(mode=mode, dists=single, processes="abc")
+        dist_like.fit(mode=mode, dists=single, processes="abc")
 
     # test single process
-    dl = dist_like.fit_distributions(mode=mode, dists=single, processes=1)
+    dl = dist_like.fit(mode=mode, dists=single, processes=1)
     assert (dl.results[0] == "Not tested" and dl.results[2] == "Not tested"), \
         "tested process differs from the process in summary."
     assert (isinstance(dl.results[1], dict)), \
         f"Incorrect type of summary {type(dl.results[1])}."
 
     # test process list
-    dl = dist_like.fit_distributions(mode=mode, dists=single, processes=[0, 2])
+    dl = dist_like.fit(mode=mode, dists=single, processes=[0, 2])
 
     assert (dl.results[1] == "Not tested"), \
         "tested process differs from the process in summary."
@@ -144,10 +144,10 @@ def test_output():
 
     mode = "over_all_replications"
 
-    dist_like = distribution_likelihood(data)
+    dist_like = get_distribution_likelihood(data)
     
     # test correct output of the test data
-    dl = dist_like.fit_distributions(mode=mode, dists=longlist)
+    dl = dist_like.fit(mode=mode, dists=longlist)
     d0, p0 = dl.get_all_dists(0)
     d1, p1 = dl.get_all_dists(1)
     assert (dl.get_best_dist(0) == "norm" or "norm" in d0[0:2]), \
