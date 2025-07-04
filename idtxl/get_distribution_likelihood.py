@@ -4,6 +4,7 @@ likelihood of the given data
 """
 
 import numpy as np
+from scipy.special import gamma, digamma
 from fitter import Fitter, get_common_distributions
 
 #from . import idtxl_utils as utils
@@ -33,25 +34,24 @@ class get_distribution_likelihood():
         self.data = data
         self.n_processes = self.data.n_processes
         self.n_replications = self.data.n_replications
-
-
-        self.all_distributions = ["_fit", "alpha", "anglit", "arcsine", "argus", "beta", "betaprime", "bradford", "burr",
-                             	"burr12", "cauchy", "chi", "chi2", "cosine", "crystalball", "dgamma", "dweibull", "erlang",
-                             	"expon", "exponnorm", "exponpow", "exponweib", "f", "fatiguelife", "fisk", "foldcauchy",
-                             	"foldnorm", "gamma", "gausshyper", "genexpon", "genextreme", "gengamma", "genhalflogistic",
-                             	"genhyperbolic", "geninvgauss", "genlogistic", "gennorm", "genpareto", "gibrat",
-                             	"gompertz", "gumbel_l", "gumbel_r", "halfcauchy", "halfgennorm", "halflogistic",
-                             	"halfnorm", "hypsecant", "invgamma", "invgauss", "invweibull", "jf_skew_t", "johnsonsb",
-                             	"johnsonsu", "kappa3", "kappa4", "ksone", "kstwo", "kstwobign", "laplace",
-                             	"laplace_asymmetric", "levy", "levy_l", "levy_stable", "loggamma", "logistic",
-                             	"loglaplace", "lognorm", "loguniform", "lomax", "maxwell", "mielke", "moyal",
-                             	"multivariate_normal", "nakagami", "ncf", "nct", "ncx2", "norm", "norminvgauss",
-                             	"pareto", "pearson3", "powerlaw", "powerlognorm", "powernorm", "rayleigh", "rdist",
-                             	"recipinvgauss", "reciprocal", "rel_breitwigner", "rice", "rv_continuous", "rv_histogram",
-                             	"semicircular", "skewcauchy", "skewnorm", "studentized_range", "t", "trapezoid", "trapz",
-                             	"triang", "truncexpon", "truncnorm", "truncpareto", "truncweibull_min", "tukeylambda",
-                             	"uniform", "vonmises", "vonmises_fisher", "vonmises_line", "wald", "weibull_max",
-                             	"weibull_min", "wrapcauchy"]
+        self.all_distributions = ["_fit", "alpha", "anglit", "arcsine", "argus", "beta", "betaprime", "bradford",
+                                  "burr", "burr12", "cauchy", "chi", "chi2", "cosine", "crystalball", "dgamma",
+                                  "dweibull", "erlang", "expon", "exponnorm", "exponpow", "exponweib", "f",
+                                  "fatiguelife", "fisk", "foldcauchy", "foldnorm", "gamma", "gausshyper", "genexpon",
+                                  "genextreme", "gengamma", "genhalflogistic", "genhyperbolic", "geninvgauss",
+                                  "genlogistic", "gennorm", "genpareto", "gibrat", "gompertz", "gumbel_l", "gumbel_r",
+                                  "halfcauchy", "halfgennorm", "halflogistic", "halfnorm", "hypsecant", "invgamma",
+                                  "invgauss", "invweibull", "jf_skew_t", "johnsonsb", "johnsonsu", "kappa3", "kappa4",
+                                  "ksone", "kstwo", "kstwobign", "laplace", "laplace_asymmetric", "levy", "levy_l",
+                                  "levy_stable", "loggamma", "logistic", "loglaplace", "lognorm", "loguniform",
+                                  "lomax", "maxwell", "mielke", "moyal", "multivariate_normal", "nakagami", "ncf",
+                                  "nct", "ncx2", "norm", "norminvgauss", "pareto", "pearson3", "powerlaw",
+                                  "powerlognorm", "powernorm", "rayleigh", "rdist", "recipinvgauss", "reciprocal",
+                                  "rel_breitwigner", "rice", "rv_continuous", "rv_histogram", "semicircular",
+                                  "skewcauchy", "skewnorm", "studentized_range", "t", "trapezoid", "trapz", "triang",
+                                  "truncexpon", "truncnorm", "truncpareto", "truncweibull_min", "tukeylambda",
+                                  "uniform", "vonmises", "vonmises_fisher", "vonmises_line", "wald", "weibull_max",
+                                  "weibull_min", "wrapcauchy"]
 
     @staticmethod
     def _check_fitter():
@@ -104,6 +104,15 @@ class get_distribution_likelihood():
     def show_distributions(self):
         print(self.all_distributions)
         print(f"You can specify a list of these distributions or a single one you to test.")
+
+    def fet_new(self, mode="over_all_replications", dists="common", processes="all"):
+
+
+
+
+    def fit_single_distribution(self, distribution, data):
+
+        dist = eval("scipy.stats." + distribution)
 
 
     def fit(self, mode="over_all_replications", dists="common", processes="all"):
@@ -272,6 +281,11 @@ class distribution_likelihoods_results():
             raise RuntimeError(f"Wrong input for mode: {mode}\n"
                                f"use \"over_all_replications\" or \"per_replication\"")
 
+        self.de_dists = {"norm": 1, "uniform": 2, "rayleigh": 1, "expon": 1, "beta": 2, "cauchy": 0, "chi": 1,
+                         "chi2": 1, "erlang": 2, "f": 2, "gamma": 1, "laplace": 1, "logistic": 1, "lognorm": 2,
+                         "maxwell": 1, "gennorm": 2, "pareto": 2, "t": 1, "triang": 2, "weibull_max": 2,
+                         "multivariate_normal": 2}
+
     def print_summary(self):
         """prints results of distribution fit for all tested processes and replications"""
         # print results
@@ -386,7 +400,7 @@ class distribution_likelihoods_results():
                     for d in dist_n:
                         par.append(self.results[process]["params"][d])
                     params[r] = par
-                    dist_name[r] = dist_n
+                    dist_names[r] = dist_n
 
                 elif isinstance(dists, str):
                     if dists not in self.results[process]["params"].keys():
@@ -394,116 +408,209 @@ class distribution_likelihoods_results():
                         raise RuntimeError(f"Distribution {dists} is not in the results {keys}")
                     else:
                         params[r] = self.results[process]["params"][dists]
-                        dist_name[r] = dists
+                        dist_names[r] = dists
                 else:
                     raise RuntimeError(f"input con only be a string: \"all\" or \"<your distribution>\".")
         return params, dist_names
 
-    def __de_uniform(self, a, b):
+    def de_uniform(self, a, b):
         """calculate differential entropy for uniform distribution"""
         de = np.log2(b-a)
         return de
 
-    def __de_norm(self, sigma):
+    def de_norm(self, sigma):
         """calculate differential entropy for normal distribution"""
         de = np.log2(sigma * np.sqrt(2 * np.pi * np.e))
         return de
 
-    def __de_expo(self, lam):
+    def de_expon(self, lam):
         """calculate differential entropy for exponential distribution"""
         de = 1 - np.log2(lam)
         return de
 
-    def __de_raleigh(self, sigma):
+    def de_rayleigh(self, sigma):
         """calculate differential entropy for raleigh distribution"""
         de = 1 + np.log2(sigma/(np.sqrt(2))) + np.e/2
         return de
 
-    def __de_beta(self, a, b):
+    def de_beta(self, a, b):
         """calculate differential entropy for beta distribution"""
-        de =  np.random.beta(a, b) - (a - 1) * (np.digamma(a) - np.digamma(a + b)) \
-              - (b - 1) * (np.digamma(b) - np.digamma(a + b))
+        de =  np.random.beta(a, b) - (a - 1) * (digamma(a) - digamma(a + b)) \
+              - (b - 1) * (digamma(b) - digamma(a + b))
         return de
 
-    def __de_cauchy(self):
+    def de_cauchy(self):                                          # ???????????????????????????????????????????????????????????????
         """calculate differential entropy for cauchy distribution"""
         de = np.log2(2 * np.pi * np.e)
         return de
 
-    def __de_chi(self, k):
+    def de_chi(self, k):
         """calculate differential entropy for chi distribution"""
-        de = np.log2(np.gamma(k/2) / np.sqrt(2)) - (k-1)/2 * np.digamma(k/2) + k/2
+        de = np.log2(gamma(k/2) / np.sqrt(2)) - (k-1)/2 * digamma(k/2) + k/2
         return de
 
-    def __de_chi2(self, k):
+    def de_chi2(self, k):
         """calculate differential entropy for chi2 distribution"""
-        de = np.log2(2*np.gamma(k/2)) - (1 - k/2) * np.digamma(k/2) + k/2
+        de = np.log2(2 * gamma(k/2)) - (1 - k/2) * digamma(k/2) + k/2
         return de
 
-    def __de_erlang(self, k, l):
+    def de_erlang(self, k, l):
         """calculate differential entropy for erlang distribution"""
-        de = (1 - k) * np.digamma(k) + np.log2(np.gamma(k) / l) + k
+        de = (1 - k) * digamma(k) + np.log2(gamma(k) / l) + k
         return de
 
-    def __de_f(self, n1, n2):
+    def de_f(self, n1, n2):
         """calculate differential entropy for F distribution"""
         de = np.log2(n1/n2) * np.random.beta(n1/2, n2/2) +\
-             (1 - n1/2) * np.digamma(n1/2) -\
-             (1 + n2/2) * np.digamma(n2/2) + \
-             (n1 + n2)/2 * np.digamma((n1 + n2)/2)
+             (1 - n1/2) * digamma(n1/2) -\
+             (1 + n2/2) * digamma(n2/2) + \
+             (n1 + n2)/2 * digamma((n1 + n2)/2)
         return de
 
-    def __de_gamma(self, k):
+    def de_gamma(self, k):
         """calculate differential entropy for gamma distribution"""
-        de = np.log2( o * np.gamma(k)) + (1 - k) * np.digamma(k) + k   # ???????????????????????????????????????????????????????????????
-        return de
+        #de = np.log2( o * gamma(k)) + (1 - k) * digamma(k) + k   # ???????????????????????????????????????????????????????????????
+        #return de
+        return "TODO"
 
-    def __de_laplace(self, b):
+    def de_laplace(self, b):
         """calculate differential entropy for laplace distribution"""
         de = 1 + np.log2(2 * b)
         return de
 
-    def __de_logistic(self, s):
+    def de_logistic(self, s):
         """calculate differential entropy for logistic distribution"""
         de = np.log2(s) + 2
         return de
 
-    def __de_lognorm(self, m, s):
+    def de_lognorm(self, m, s):
         """calculate differential entropy for lognormal distribution"""
         de = m + 0.5 * np.log2(2 * np.pi * np.e * s**2)
         return de
 
-    def __de_maxwell(self, a):
+    def de_maxwell(self, a):
         """calculate differential entropy for Maxwell-Boltzmann distribution"""
         de = np.log2(a * np.sqrt(2 * np.pi)) + np.e - 0.5
         return de
 
-    def __de_gennorm(self, a, b):
+    def de_gennorm(self, a, b):
         """calculate differential entropy for Generalized normal distribution"""
-        de = np.log2(np.gamma(a/2) / 2 * b**0.5) - (a - 1)/2 * np.digamma(a/2) + a/2
+        de = np.log2(gamma(a/2) / 2 * b**0.5) - (a - 1)/2 * digamma(a/2) + a/2
         return de
 
-    def __de_pareto(self, a, x):
+    def de_pareto(self, a, x):
         """calculate differential entropy for pareto distribution"""
         de = np.log2(x/a) + 1 + 1/a
         return de
 
-    def __de_t(self, v):
+    def de_t(self, v):
         """calculate differential entropy for Student's t distribution"""
-        de = (v + 1)/2 * (np.digamma((v + 1)/2 - np.digamma(v/2)) + np.log2(np.sqrt(v) * np.random-beta(0.5, v/2)))
+        de = (v + 1)/2 * (digamma((v + 1)/2 - digamma(v/2)) + np.log2(np.sqrt(v) * np.random.beta(0.5, v/2)))
         return de
 
-    def __de_triang(self, a, b):
+    def de_triang(self, a, b):
         """calculate differential entropy for triangular distribution"""
         de = 0.5 + np.log2((b - a)/2)
         return de
 
-    def __de_weibull(self, k, l):
+    def de_weibull(self, k, l):
         """calculate differential entropy for weibull distribution"""
         de = (k - 1)/k * np.e + np.log2(l/k) + 1
         return de
 
-    def __de_multivariate_normal(self, k, l):
+    def de_multivariate_normal(self, k, l):
         """calculate differential entropy for multivariate normal distribution"""
         # de = 0.5 * np.log2(  )  ?????????????????????????????????????????????????????????????????????????????????????????????????????
+        #return de
+        return "TODO"
+
+
+    def differential_entropy(self, process):
+        """ calculates differential entropy (DE) (in nats)
+
+        DE can be calculated for the following continuous distributions:
+        "norm", "uniform", "rayleigh", "expon", "beta", "cauchy", "chi", "chi2", "erlang","f",
+        "gamma", "laplace". "logistic", "lognorm", "maxwell", "gennorm", "pareto", "t",
+        "triang", "weibull_max", "multivariate_normal"
+
+        For each of these distribtions that are in the list of fitted distribution
+        in the results of a given process the DE is calcualated. If the results contain additional
+        distributions the output will be None.
+
+        Returns a Structure (or list of stricture for mode="per_replication") containing the
+        distribution names as keys and the DE.
+
+        """
+
+        if self.mode == "over_all_replications":
+            # get fitted distribution names
+            dist_names = self.results[process]["params"].keys()
+            # set output structure
+            de = {"process": process,
+                  "mode": self.mode}
+
+            for d in dist_names:
+
+                if d in self.de_dists.keys():
+
+                    # get number of parameters for differential entropy
+                    num_params = self.de_dists[d]
+
+                    if num_params == 1:
+                        # get parameters from results
+                        p1 = self.results[process]["params"][d][0]
+
+                        diff_ent = eval(f"self.de_{d}(p1)")
+
+                    elif num_params == 2:
+                        # get parameters from results
+                        p1 = self.results[process]["params"][d][0]
+                        p2 = self.results[process]["params"][d][1]
+
+                        diff_ent = eval(f"self.de_{d}(p1, p2)")
+                    elif num_params == 0:
+                        diff_ent = eval(f"self.de_{d}()")
+
+                    de[d] = diff_ent
+                else:
+                    de[d] = None
+
+        else:
+            de = [None] * self.n_data_replications
+            for r in range(self.n_data_replications):
+                # get fitted distribution names
+                dist_names = self.results[process][r]["params"].keys()
+                # set output structure
+                der = {"process": process,
+                       "replication": r,
+                       "mode": self.mode}
+
+                for d in dist_names:
+
+                    # get number of parameters for differentiql entropy
+                    num_params = self.de_dists[d]
+
+                    if d in self.de_dists.keys():
+
+                        if num_params == 1:
+                            # get parameters from results
+                            p1 = self.results[process]["params"][d][0]
+
+                            diff_ent = eval(f"self.__{d}de_(p1)")
+
+                        elif num_params == 2:
+                            # get parameters from results
+                            p1 = self.results[process]["params"][d][0]
+                            p2 = self.results[process]["params"][d][1]
+
+                            diff_ent = eval(f"self.__{d}de_(p1, p2)")
+                        elif num_params == 0:
+                            diff_ent = eval(f"self.__{d}de_()")
+
+                        der[d] = diff_ent
+                    else:
+                        der[d] = None
+
+                de[r] = der
+
         return de

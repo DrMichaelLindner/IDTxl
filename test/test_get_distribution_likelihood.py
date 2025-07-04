@@ -88,7 +88,6 @@ def test_input_dist():
 
     # test dist input types
     dl = dist_like.fit(mode=mode, dists=single)
-    a=1
     assert (len(dl.results[0]["summary"].index) == 1), \
         f"Numbers of tested distributions differ between input: 1 and distribution likelihood" \
         f"object {len(dl.results[0]['summary'].index)}"
@@ -156,8 +155,22 @@ def test_output():
         f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"chi2\"."
 
 
+def test_differential_entropy():
+    """ Tests calculation of differential entropy """
+
+    # create data
+    data = create_data(2, 3)
+
+    dist_like = get_distribution_likelihood(data)
+    mode = "over_all_replications"
+    dl = dist_like.fit(mode=mode, dists="common")
+    de = dl.differential_entropy(0)
+    a=1
+
 if __name__ == '__main__':
-    test_input_mode()
-    test_input_dist()
-    test_input_processes()
-    test_output()
+    #test_input_mode()
+    #test_input_dist()
+    #test_input_processes()
+    #test_output()
+
+    test_differential_entropy()
