@@ -176,4 +176,4 @@ if __name__ == '__main__':
     test_calculate_single_link()
     test_idx_to_lag()
     test_lag_to_idx()
-    test_separate_realisations()
+    # test_separate_realisations()
