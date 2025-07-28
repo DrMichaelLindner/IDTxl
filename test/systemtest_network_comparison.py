@@ -117,7 +117,7 @@ def _verify_test(c_within, c_between, res):
 
     for comp, comp_type in zip([c_between, c_within], ["between", "within"]):
         adj_mat_union = comp.get_adjacency_matrix("union")
-        adj_mat_pval = comp.get_adjacency_matrix("pvlaue")
+        adj_mat_pval = comp.get_adjacency_matrix("pvalue")
         adj_mat_diff = comp.get_adjacency_matrix("diff_abs")
         print(adj_mat_union.weight_matrix)
         assert (
