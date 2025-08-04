@@ -14,10 +14,8 @@ from tqdm import tqdm
 import multiprocessing
 import threading
 import contextlib
+import warnings
 
-from fitter import Fitter, get_common_distributions
-
-#from . import idtxl_utils as utils
 
 # A solution to wrap joblib parallel call in tqdm from
 # https://stackoverflow.com/questions/24983493/tracking-progress-of-joblib-parallel-execution/58936697#58936697
@@ -70,9 +68,9 @@ class get_distribution_likelihood():
     """
 
     def __init__(self,
-        data=None,
-        bins=100,
-        distributions=None):
+                 data=None,
+                 bins=100,
+                 distributions=None):
 
         # get data
         if not data:
@@ -82,29 +80,6 @@ class get_distribution_likelihood():
         self.n_replications = data.n_replications
 
         self.all_distributions = self.get_fit_distributions()
-        self.de_distributions = self.get_de_distributions()
-        self.de_dists = {"norm": [1],
-                         "uniform": [0, 1],
-                         "rayleigh": 1,             # ?????????????????????????????????????????????????
-                         "expon": 1,                # ?????????????????????????????????????????????????
-                         "beta": [0, 1],
-                         "cauchy": 0,               # ?????????????????????????????????????????????????
-                         "chi": [0],
-                         "chi2": [0],
-                         "erlang": 2,               # ?????????????????????????????????????????????????
-                         "f": [0, 1],
-                         "gamma": 1,                # ?????????????????????????????????????????????????
-                         "laplace": 1,              # ?????????????????????????????????????????????????
-                         "logistic": 1,             # ?????????????????????????????????????????????????
-                         "lognorm": 2,              # ?????????????????????????????????????????????????
-                         "maxwell": 1,              # ?????????????????????????????????????????????????
-                         "gennorm": 2,              # ?????????????????????????????????????????????????
-                         "pareto": 2,               # ?????????????????????????????????????????????????
-                         "t": [0],
-                         "triang": 2,               # ?????????????????????????????????????????????????
-                         "weibull_max": 2,          # ?????????????????????????????????????????????????
-                         "multivariate_normal": 2   # ?????????????????????????????????????????????????
-                         }
 
         # Check and set dist inputs
         self._check_dist_input(distributions)
@@ -167,26 +142,27 @@ class get_distribution_likelihood():
     def _update_data_pdf(self, process, replication=None):
         # histogram retuns X with N+1 values. So, we rearrange the X output into only N
         if replication is None:
-            self.y, self.x = np.histogram(self.data[process,:,:], bins=self.bins, density=True)
+            self.y, self.x = np.histogram(self.data[process, :, :], bins=self.bins, density=True)
         else:
-            self.y, self.x = np.histogram(self.data[process,:,replication], bins=self.bins, density=True)
+            self.y, self.x = np.histogram(self.data[process, :, replication], bins=self.bins, density=True)
         self.x = [(this + self.x[i + 1]) / 2.0 for i, this in enumerate(self.x[0:-1])]
 
     def _trim_data(self, process, replication=None):
         if replication is None:
             dat = self.data[process, :, :]
-            #for r in range(self.n_replications):
-            self._data = dat[np.logical_and(dat >= self._xmin[process, :].min(), dat <= self._xmax[process, :].min())]
-            #self._data = dat[np.logical_and(dat >= self._xmin[process,:].min(), dat <= self._xmax[process,:].min())]
+            self._data = dat[np.logical_and(dat >= self._xmin[process, :].min(),
+                                            dat <= self._xmax[process, :].min())]
         else:
-            dat = self.data[process,:,replication]
-            self._data = dat[np.logical_and(dat >= self._xmin[process,replication], dat <= self._xmax[process,replication])]
+            dat = self.data[process, :, replication]
+            self._data = dat[np.logical_and(dat >= self._xmin[process, replication],
+                                            dat <= self._xmax[process, replication])]
 
     def get_fit_distributions(self):
         distributions = []
         for i in dir(scipy.stats):
             if "fit" in eval("dir(scipy.stats." + i + ")"):
                 distributions.append(i)
+        distributions = distributions[1:]
         return distributions
 
     def get_common_distributions(self):
@@ -206,82 +182,50 @@ class get_distribution_likelihood():
         common = [x for x in common if x in distributions]
         return common
 
-    def get_de_distributions(self):
-        distributions = self.get_fit_distributions()
-        de_dists = [
-            "uniform",
-            "normal",
-            "expon",
-            "rayleigh",
-            "beta",
-            "cauchy",
-            "chi",
-            "chi2",
-            "erlang",
-            "f",
-            "gamma",
-            "laplace",
-            "logistic",
-            "lognorm",
-            "maxwell",
-            "gennorm",
-            "pareto",
-            "t",
-            "triang",
-            "weibull",
-            "multivariate_normal"
-        ]
-        de_dists = [x for x in de_dists if x in distributions]
-        return de_dists
-
     def show_distributions(self):
         print(self.all_distributions)
         print(f"You can specify a list of these distributions or a single one you to test.")
 
     def fit_single_distribution(self, distribution, data, x, y):
 
-        # get scipy distribution
-        dist = eval("scipy.stats." + distribution)
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        try:
+            # get scipy distribution
+            dist = eval("scipy.stats." + distribution)
 
-        # fit
-        param = self._with_timeout(dist.fit, args=(self._data,)) #, timeout=timeout)
+            # fit
+            param = self._with_timeout(dist.fit, args=(self._data,)) #, timeout=timeout)
 
-        # get pdf
-        pdf_fitted = dist.pdf(x, *param)
+            # get pdf
+            pdf_fitted = dist.pdf(x, *param)
 
-        # calculate error
-        sq_error = np.sum((pdf_fitted - y) ** 2)
+            # calculate error
+            sq_error = np.sum((pdf_fitted - y) ** 2)
 
-        # calculate information criteria
-        logLik = np.sum(dist.logpdf(x, *param))
-        k = len(param[:])
-        n = len(data)
-        aic = 2 * k - 2 * logLik
+            # calculate information criteria
+            logLik = np.sum(dist.logpdf(x, *param))
+            k = len(param[:])
+            n = len(data)
+            aic = 2 * k - 2 * logLik
 
-        #if distribution == "gaussian":
-        #    bic = n * np.log(sq_error / n) + k * np.log(n)
-        #else:
-        bic = k * np.log(n) - 2 * logLik
+            #if distribution == "gaussian":
+            #    bic = n * np.log(sq_error / n) + k * np.log(n)
+            #else:
+            bic = k * np.log(n) - 2 * logLik
 
-        # calculate kullback leibler divergence
-        kl_div = entropy(pdf_fitted, y)
+            # calculate kullback leibler divergence
+            kl_div = entropy(pdf_fitted, y)
 
-        # calculate goodness-of-fit statistic
-        dist_fitted = dist(*param)
-        ks_stat, ks_pval = kstest(data, dist_fitted.cdf)
+            # calculate goodness-of-fit statistic
+            dist_fitted = dist(*param)
+            ks_stat, ks_pval = kstest(data, dist_fitted.cdf)
 
-        # shannon entropy of fit
-        sha_ent_fit = entropy(pdf_fitted)
+            return distribution, (param, pdf_fitted, sq_error, aic, bic, kl_div, ks_stat, ks_pval)
+        except Exception:
+            return distribution, None
 
-        # calculate differential entropy
-        diff_ent_fit = differential_entropy(pdf_fitted)
-
-        return distribution, (param, pdf_fitted, sq_error, aic, bic, kl_div, ks_stat, ks_pval, #exp_ent,
-                              sha_ent_fit, diff_ent_fit)
-
-    def fit(self, mode="over_all_replications", processes="all", progress=False, max_workers=-1, prefer="processes"):
-        """ get the likelihoods of distribution of the data
-
+    def fit(self, mode="over_all_replications", processes="all", max_workers=-1, prefer="processes"):
+        """ get the likelihoods of distributions of the given data
 
             Args:
             mode : string [optional]
@@ -300,8 +244,7 @@ class get_distribution_likelihood():
                         nr data processes (mode="over_all_replications")
                         nr [data processes][nr data replications] (mode="per_replications")
 
-                    Each element of the list contains a structure containn the results of the fitter toolbox
-                    with the following information:
+                    Each element of the list contains a structure contains the following information:
                         "params" - fitted parameters
                         "pdf_fitted" - fitted pdf
                         "sse": sum squared error
@@ -351,15 +294,12 @@ class get_distribution_likelihood():
                 _kldiv = {}
                 _ks_stat = {}
                 _ks_pval = {}
-                _sha_ent_fit = {}
-                _diff_ent_fit = {}
-                _diff_ent_param = {}
 
                 self._trim_data(p)
                 self._update_data_pdf(p)
 
                 N = len(self.distributions)
-                with tqdm_joblib(desc=f"Fitting {N} distributions", total=N, disable=not progress) as progress_bar:
+                with tqdm_joblib(desc=f"Fitting {N} distributions", total=N, disable=True) as progress_bar:
                     results = Parallel(n_jobs=max_workers, prefer=prefer)(
                         delayed(self.fit_single_distribution)(dist, self._data, self.x, self.y) for
                         dist in self.distributions
@@ -367,8 +307,7 @@ class get_distribution_likelihood():
 
                 for distribution, values in results:
                     if values is not None:
-                        param, pdf_fitted, sq_error, aic, bic, kullback_leibler, ks_stat, ks_pval, \
-                        sha_ent_fit, diff_ent_fit = values
+                        param, pdf_fitted, sq_error, aic, bic, kullback_leibler, ks_stat, ks_pval = values
 
                         _fitted_param[distribution] = param
                         _fitted_pdf[distribution] = pdf_fitted
@@ -378,14 +317,6 @@ class get_distribution_likelihood():
                         _kldiv[distribution] = kullback_leibler
                         _ks_stat[distribution] = ks_stat
                         _ks_pval[distribution] = ks_pval
-                        _sha_ent_fit[distribution] = sha_ent_fit
-                        _diff_ent_fit[distribution] = diff_ent_fit
-
-                        if distribution in self.de_dists.keys():
-                            diff_ent_param = self.calc_de(distribution, param)
-                        else:
-                            diff_ent_param = None
-                        _diff_ent_param[distribution] = diff_ent_param
 
                     else:
                         _fitted_param[distribution] = None
@@ -396,9 +327,6 @@ class get_distribution_likelihood():
                         _kldiv[distribution] = np.inf
                         _ks_stat[distribution] = None
                         _ks_pval[distribution] = None
-                        _sha_ent_fit[distribution] = None
-                        _diff_ent_fit[distribution] = None
-                        _diff_ent_param = None
 
                 self.df_errors = pd.DataFrame(
                         {
@@ -414,8 +342,6 @@ class get_distribution_likelihood():
 
                 # shannon entropy
                 sha_ent_dat = entropy(self._data)
-                # differential entropy
-                diff_ent_dat = differential_entropy(self._data)
 
                 dl.results[p] = {
                     "params": _fitted_param,
@@ -426,11 +352,7 @@ class get_distribution_likelihood():
                     "kldiv": _kldiv,
                     "ks_stat": _ks_stat,
                     "pval": _ks_pval,
-                    "sha_ent_dat": sha_ent_dat,
-                    "sha_ent_fit": _sha_ent_fit,
-                    "diff_ent_dat": diff_ent_dat,
-                    "diff_ent_fit": _diff_ent_fit,
-                    "diff_ent_param": _diff_ent_param,
+                    "sha_ent_data": sha_ent_dat,
                     "summary": summary}
 
             elif mode == "per_replication":
@@ -445,17 +367,12 @@ class get_distribution_likelihood():
                     _kldiv = {}
                     _ks_stat = {}
                     _ks_pval = {}
-                    _exp_ent = {}
-                    _sha_ent_fit = {}
-                    _diff_ent_fit = {}
-                    _diff_ent_param = {}
 
                     self._trim_data(p, r)
                     self._update_data_pdf(p, r)
 
                     N = len(self.distributions)
-                    with tqdm_joblib(desc=f"Fitting {N} distributions", total=N, disable=not progress) as progress_bar:
-                    #with tqdm_joblib(desc=f"Fitting {N} distributions", total=N, disable=not progress):
+                    with tqdm_joblib(desc=f"Fitting {N} distributions", total=N, disable=True) as progress_bar:
                         results = Parallel(n_jobs=max_workers, prefer=prefer)(
                             delayed(self.fit_single_distribution)(dist, self._data, self.x, self.y) for dist
                             in self.distributions
@@ -463,8 +380,7 @@ class get_distribution_likelihood():
 
                     for distribution, values in results:
                         if values is not None:
-                            param, pdf_fitted, sq_error, aic, bic, kullback_leibler, ks_stat, ks_pval, exp_ent, \
-                            sha_ent_fit, diff_ent_fit = values
+                            param, pdf_fitted, sq_error, aic, bic, kullback_leibler, ks_stat, ks_pval = values
 
                             _fitted_param[distribution] = param
                             _fitted_pdf[distribution] = pdf_fitted
@@ -474,14 +390,6 @@ class get_distribution_likelihood():
                             _kldiv[distribution] = kullback_leibler
                             _ks_stat[distribution] = ks_stat
                             _ks_pval[distribution] = ks_pval
-                            _sha_ent_fit[distribution] = sha_ent_fit
-                            _diff_ent_fit[distribution] = diff_ent_fit
-
-                            if distribution in self.de_dists.keys():
-                                diff_ent_param = self.calc_de(distribution, param)
-                            else:
-                                diff_ent_param = None
-                            _diff_ent_param[distribution] = diff_ent_param
 
                         else:
                             _fitted_param[distribution] = None
@@ -492,9 +400,6 @@ class get_distribution_likelihood():
                             _kldiv[distribution] = np.inf
                             _ks_stat[distribution] = None
                             _ks_pval[distribution] = None
-                            _sha_ent_fit[distribution] = None
-                            _diff_ent_fit[distribution] = None
-                            _diff_ent_param[distribution] = None
 
                     self.df_errors = pd.DataFrame(
                         {
@@ -511,8 +416,6 @@ class get_distribution_likelihood():
 
                     # shannon entropy
                     sha_ent_dat = entropy(self._data)
-                    # differential entropy
-                    diff_ent_dat = differential_entropy(self._data)
 
                     dl.results[p][r] = {
                         "params": _fitted_param,
@@ -523,11 +426,7 @@ class get_distribution_likelihood():
                         "kldiv": _kldiv,
                         "ks_stat": _ks_stat,
                         "pval": _ks_pval,
-                        "sha_ent_dat": sha_ent_dat,
-                        "sha_ent_fit": _sha_ent_fit,
-                        "diff_ent_dat": diff_ent_dat,
-                        "diff_ent_fit": _diff_ent_fit,
-                        "diff_ent_param": _diff_ent_param,
+                        "sha_ent_data": sha_ent_dat,
                         "summary": summary}
 
         # print results
@@ -539,151 +438,17 @@ class get_distribution_likelihood():
         n = min(n_best, len(self.distributions))
         try:
             names = self.df_errors.sort_values(by=method).index[0:n]
-        except:  # pragma: no cover
+        except:
             names = self.df_errors.sort(method).index[0:n]
         summary = self.df_errors.loc[names]
         print(summary)
         return summary
 
     @staticmethod
-    def _with_timeout(func, args=(), kwargs={}, timeout=60):
+    def _with_timeout(func, args=(), kwargs={}, timeout=30):
         with multiprocessing.pool.ThreadPool(1) as pool:
             async_result = pool.apply_async(func, args, kwargs)
             return async_result.get(timeout=timeout)
-
-    def calc_de(self, distribution, params):
-        """ calculates differential entropy (DE) (in nats)
-            only for distributions in list from get_de_distributions()
-        """
-        # get number of parameters for differential entropy
-        num_params = len(self.de_dists[distribution])
-
-        if num_params == 1:
-            # get parameters from results
-            p1 = params[self.de_dists[distribution][0]]
-            diff_ent = eval(f"self.de_{distribution}(p1)")
-
-        elif num_params == 2:
-            # get parameters from results
-            p1 = params[self.de_dists[distribution][0]]
-            p1 = params[self.de_dists[distribution][1]]
-            diff_ent = eval(f"self.de_{distribution}(p1, p2)")
-
-        elif num_params == 0:
-            diff_ent = eval(f"self.de_{distribution}()")
-
-        return diff_ent
-
-    def de_uniform(self, a, b):
-        """calculate differential entropy for uniform distribution"""
-        de = np.log(b-a)
-        return de
-
-    def de_norm(self, sigma):
-        """calculate differential entropy for normal distribution"""
-        de = np.log(sigma * np.sqrt(2 * np.pi * np.e))
-        return de
-
-    def de_expon(self, lam):
-        """calculate differential entropy for exponential distribution"""
-        de = 1 - np.log(lam)
-        return de
-
-    def de_rayleigh(self, sigma):
-        """calculate differential entropy for raleigh distribution"""
-        de = 1 + np.log(sigma/(np.sqrt(2))) + np.e/2
-        return de
-
-    def de_beta(self, a, b):
-        """calculate differential entropy for beta distribution"""
-        de = np.random.beta(a, b) - (a - 1) * (digamma(a) - digamma(a + b)) \
-              - (b - 1) * (digamma(b) - digamma(a + b))
-        return de
-
-    def de_cauchy(self):                                          # ???????????????????????????????????????????????????????????????
-        """calculate differential entropy for cauchy distribution"""
-        de = np.log(2 * np.pi * np.e)
-        return de
-
-    def de_chi(self, k):
-        """calculate differential entropy for chi distribution"""
-        de = np.log(gamma(k/2) / np.sqrt(2)) - (k-1)/2 * digamma(k/2) + k/2
-        return de
-
-    def de_chi2(self, k):
-        """calculate differential entropy for chi2 distribution"""
-        de = np.log(2 * gamma(k/2)) - (1 - k/2) * digamma(k/2) + k/2
-        return de
-
-    def de_erlang(self, k, l):
-        """calculate differential entropy for erlang distribution"""
-        de = (1 - k) * digamma(k) + np.log(gamma(k) / l) + k
-        return de
-
-    def de_f(self, n1, n2):
-        """calculate differential entropy for F distribution"""
-        de = np.log(n1/n2) * np.random.beta(n1/2, n2/2) +\
-             (1 - n1/2) * digamma(n1/2) -\
-             (1 + n2/2) * digamma(n2/2) + \
-             (n1 + n2)/2 * digamma((n1 + n2)/2)
-        return de
-
-    def de_gamma(self, theta, k):
-        """calculate differential entropy for gamma distribution"""
-        #de = np.log( theta * gamma(k)) + (1 - k) * digamma(k) + k   # ???????????????????????????????????????????????????????????????
-        #return de
-        return "TODO"
-
-    def de_laplace(self, b):
-        """calculate differential entropy for laplace distribution"""
-        de = 1 + np.log(2 * b)
-        return de
-
-    def de_logistic(self, s):
-        """calculate differential entropy for logistic distribution"""
-        de = np.log(s) + 2
-        return de
-
-    def de_lognorm(self, m, s):
-        """calculate differential entropy for lognormal distribution"""
-        de = m + 0.5 * np.log(2 * np.pi * np.e * s**2)
-        return de
-
-    def de_maxwell(self, a):
-        """calculate differential entropy for Maxwell-Boltzmann distribution"""
-        de = np.log(a * np.sqrt(2 * np.pi)) + np.e - 0.5
-        return de
-
-    def de_gennorm(self, a, b):
-        """calculate differential entropy for Generalized normal distribution"""
-        de = np.log(gamma(a/2) / 2 * b**0.5) - (a - 1)/2 * digamma(a/2) + a/2
-        return de
-
-    def de_pareto(self, a, x):
-        """calculate differential entropy for pareto distribution"""
-        de = np.log(x/a) + 1 + 1/a
-        return de
-
-    def de_t(self, v):
-        """calculate differential entropy for Student's t distribution"""
-        de = (v + 1)/2 * (digamma((v + 1)/2 - digamma(v/2)) + np.log(np.sqrt(v) * np.random.beta(0.5, v/2)))
-        return de
-
-    def de_triang(self, a, b):
-        """calculate differential entropy for triangular distribution"""
-        de = 0.5 + np.log((b - a)/2)
-        return de
-
-    def de_weibull(self, k, l):
-        """calculate differential entropy for weibull distribution"""
-        de = (k - 1)/k * np.e + np.log(l/k) + 1
-        return de
-
-    def de_multivariate_normal(self, k, l):
-        """calculate differential entropy for multivariate normal distribution"""
-        # de = 0.5 * np.log( (2 * np.pi * np.e)  )  ???????????????????????????n DIMENSION?????????????determinante KOVARIANZMATRIX?????????????????????????????????????????????????????????????
-        #return de
-        return "TODO"
 
 
 class distribution_likelihoods_results():

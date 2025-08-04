@@ -16,7 +16,7 @@ list_err = ["chi2", "abcd", "norm"]
 def create_data(processes, replications, samples=200):
     # create data with Process 0: normal distribution and Process 1: chi2 distribution
     mu = 0
-    sigma = 0.1
+    sigma = 0.15
     dat = np.random.normal(mu, sigma, size=(processes, samples, replications))
     if processes > 1:
         chi = np.random.chisquare(df=2, size=(1, samples, replications))
@@ -76,7 +76,7 @@ def test_input_dist():
     """ Tests different and wrong input for dist """
 
     # create data
-    data = create_data(1, 3)
+    data = create_data(1, 3, samples=500)
 
     mode = "over_all_replications"
 
@@ -160,23 +160,11 @@ def test_output():
     assert (dl.get_best_dist(1) == "chi2" or "chi2" in d1[0:2]), \
         f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"chi2\"."
 
-
-def test_differential_entropy():
-    """ Tests calculation of differential entropy """
-
-    # create data
-    data = create_data(2, 3)
-
-    dist_like = get_distribution_likelihood(data, distributions="common")
-    mode = "over_all_replications"
-    dl = dist_like.fit(mode=mode)
-    de = dl.differential_entropy(0)
     a=1
 
-if __name__ == '__main__':
-    #test_input_mode()
-    #test_input_dist()
-    #test_input_processes()
-    #test_output()
 
-    test_differential_entropy()
+if __name__ == '__main__':
+    test_input_mode()
+    test_input_dist()
+    test_input_processes()
+    test_output()
