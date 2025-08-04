@@ -159,9 +159,7 @@ def test_output():
         f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"norm\"."
     assert (dl.get_best_dist(1) == "chi2" or "chi2" in d1[0:2]), \
         f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"chi2\"."
-
-    a=1
-
+    
 
 if __name__ == '__main__':
     test_input_mode()
