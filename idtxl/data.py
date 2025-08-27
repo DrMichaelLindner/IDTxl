@@ -216,6 +216,170 @@ class Data():
         self.n_samples = data.shape[1]
         self.n_replications = data.shape[2]
 
+    def get_lin_and_nonlin_conditionals(self, cond, n_processes):
+        """get new add_conditionals for nonlinear data"""
+        if isinstance(cond, tuple):
+            nonlin_conditionals = [None] * 2
+            nonlin_conditionals[0] = cond
+            nonlin_conditionals[1] = (int(cond[0] + n_processes / 2), cond[1])
+        elif isinstance(cond, list):
+            nonlin_conditionals = [None] * len(cond)
+            for i in range(len(cond)):
+                nonlin_conditionals[i] = (int(cond[i][0] + n_processes / 2), cond[i][1])
+            conditionals = cond + nonlin_conditionals
+
+        return conditionals
+
+    def get_lin_and_nonlin_targets_and_sources(self, target, sources, n_processes):
+        """get new targets and sources for nonlinear data"""
+
+        # define targets
+        # ATTENTION: n_processes contain already the squared processes!
+        # Hence, n_processes / 2
+        targets = [int(target), int(target + n_processes / 2)]
+
+        # create source list depending on input
+        if sources == "all":
+            s = list(range(0, int(n_processes)))
+            orig_sources = 'all'
+            # cut targets from source list
+            sources = [j for i, j in enumerate(s) if i not in targets]
+        else:
+            if type(sources) == int:
+                sources = [sources, int(sources + n_processes / 2)]
+            elif type(sources) == list:
+                sources = sources + [x + int(n_processes / 2) for x in sources]
+            else:
+                raise RuntimeError("Sources need to be give as int or list of int!")
+
+        # Book keeping of which processes are the original and squared ones and which of them are used for targets and
+        # sources
+        nonlinear_process_desc = [[0 for i in range(n_processes)] for j in range(2)]
+        for i in sources:
+            nonlinear_process_desc[0][i] = "source"
+        for i in range(len(targets)):
+            nonlinear_process_desc[0][targets[i]] = "target"
+        for i in range(int(n_processes / 2)):
+            nonlinear_process_desc[1][i] = "orig"
+            nonlinear_process_desc[1][i + int(n_processes / 2)] = "squared"
+
+        return targets, sources, nonlinear_process_desc
+
+    def prepare_nonlinear(self, settings, data):
+        """ prepare data for nonlinear data analysis (nonlinear granger)
+
+        adding squared processes to data and overwriting data
+        e.g.
+            original data
+                2 processes, n samples, m replications
+                    target, n, m
+                    source, n, m
+
+            new data:
+                4 processes, n samples, m replications
+                    target, n, m
+                    source, n, m
+                    target^2, n, m
+                    source^2, n, m
+
+        OUTPUT: settings, data
+            add to settings
+                settings["nonlinear_prepared"] = True
+
+                ONLY IF target was specified in settings for analyse_single_target
+                settings["nonlinear_target_predictors"] - all targets (list)
+                settings["nonlinear_source_predictors"] - all sources (list)
+                settings["nonlinear_process_desc"] - (list) n*2 x 2 infos sources vs targets and orig vs squared
+                    e.g. [["target", "source", "target", "source"]
+                          ["orig", "orig", "squared", "squared"]]
+
+            add to data
+                overwrite data
+                new attr. nonlinear_prepared = True
+
+
+        Args:
+            data : idtxl Data Object (NOT NORMALIZED!)
+
+            settings : DICT
+
+                target (ONLY NEEDED FOR analyse_single_target - FOR network_analysis DO NOT SPECIFY A TARGET!) : int
+                    specify the target process in the data
+
+                sources(optional) : int, list of int, or "all". (default: "all")
+                    specifies sources in the data
+
+        """
+
+        if data.normalise:
+            raise RuntimeError("Input data to prepare_nonlinear needs to be NOT normalized! - "
+                               "will ne normalised internally")
+
+        # prepare normalising data
+        data.normalise = True
+
+        # add nonlinear processes
+        data.set_data(np.concatenate((data.data, np.square(data.data)), axis=0), "psr")
+
+        # Flag data
+        data.nonlinear_prepared = True
+
+        # update settings
+        settings["nonlinear_prepared"] = True
+
+        # define targets and sources if set
+        if "target" in settings:
+            if isinstance(settings["target"], list):
+                raise RuntimeError(
+                    "For analise_sinlge_target the target needs to be give as INT. For analyse_network do not specify "
+                    "target in settings . Specify the targets when callling the analyse_network(targets = "
+                    "<your_target_list> "
+                )
+            else:
+                targets = settings["target"]
+
+            if "sources" not in settings:
+                sources = 'all'
+            else:
+                sources = settings["sources"]
+
+            if isinstance(sources, list):
+                if targets in sources:
+                    raise RuntimeError(
+                        f"The target ({targets}) should not be in the list of sources ({sources})."
+                    )
+            else:
+                if targets == sources:
+                    raise RuntimeError(
+                        f"The target ({targets}) should not be in the list of sources ({sources})."
+                    )
+
+            # get nonlinear targets and sources
+            nt, ns, pd = self.get_lin_and_nonlin_targets_and_sources(targets, sources, data.n_processes)
+
+            # add settings for nonlinear granger
+            settings["nonlinear_settings"] = {"nonlinear_target_predictors": nt,
+                                              "nonlinear_source_predictors": ns,
+                                              "nonlinear_process_desc": pd
+                                              }
+
+        # get nonlinear conditionals if set
+        if "add_conditionals" in settings:
+            conditionals = self.get_lin_and_nonlin_conditionals(settings["add_conditionals"], data.n_processes)
+            settings["add_conditionals"] = conditionals
+
+        return settings, data
+
+    def get_nonlinear_status(self):
+        """return bool if data is prepared for nonlinear_gauss"""
+        if hasattr(self, "nonlinear_prepared"):
+            if self.nonlinear_prepared != True:
+                return False
+            else:
+                return True
+        else:
+            return False
+
     def get_seed(self):
         """return the initial seed of the data"""
         return self.initial_state
@@ -692,7 +856,7 @@ class Data():
 
         Generate example data and overwrite the instance's current data. The
         network is used as an example the paper on the MuTE toolbox (Montalto,
-        PLOS ONE, 2014, eq. 14) and was orginally proposed by Baccala &
+        PLOS ONE, 2014, eq. 14) and was originally proposed by Baccala &
         Sameshima (2001). The network consists of five auto-regressive (AR)
         processes with model orders 2 and the following (non-linear) couplings:
 
@@ -745,6 +909,31 @@ class Data():
                     + term_2 * x[4, n - 1, r]
                     + np.random.normal()
                 )
+        self.set_data(x[:, 3:, :], "psr")
+
+    def generate_nonlinear_data(self, n_samples=1000, n_replications=10, weight=0.95):
+        """Generate example data for nonlinear granger testing.
+
+        Generate example data and overwrite the instance's current data.
+
+        The data consists of two auto-regressive (AR) processes with the following coupling:
+
+        0 -> 1, u = 2 (non-linear)
+        """
+        n_processes = 2
+
+        x = np.zeros((n_processes, n_samples + 3, n_replications))
+        x[:, 0:3, :] = np.random.normal(size=(n_processes, 3, n_replications))
+        term_1 = 0.95 * np.sqrt(2)
+        for r in range(n_replications):
+            for n in range(3, n_samples + 3):
+                x[0, n, r] = (
+                    term_1 * x[0, n - 1, r]
+                    - 0.9025 * x[0, n - 2, r]
+                    + np.random.normal()
+                )
+                x[1, n, r] = weight * x[0, n - 2, r] ** 2 + np.random.normal()
+
         self.set_data(x[:, 3:, :], "psr")
 
     def generate_var_data(

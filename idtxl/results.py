@@ -101,6 +101,25 @@ class AdjacencyMatrix:
         for i, j, weight in zip(i_list, j_list, weights):
             self.add_edge(i, j, weight)
 
+    def add_nonlinear_edge_list(self, i_list, j_list, weights, types):
+        """Add multiple weighted edges (i, j) to adjacency matrix and add selected source type in
+        nonlinear granger analysis in type_matrix
+        This function works only for results of nonlinear granger analysis!
+        """
+
+        if not hasattr(self, 'type_matrix'):
+            self.type_matrix = np.zeros(self.shape, dtype=int)
+
+        if len(i_list) != len(j_list):
+            raise RuntimeError("Lists with edge indices must be of same length.")
+        if len(i_list) != len(weights):
+            raise RuntimeError("Edge weights must have same length as edge indices.")
+        if len(i_list) != len(types):
+            raise RuntimeError("Edge types must have same length as edge indices.")
+        for i, j, weight, type in zip(i_list, j_list, weights, types):
+            self.add_edge(i, j, weight)
+            self.type_matrix[i, j] = type
+
     def print_matrix(self):
         """Print weight and edge matrix."""
         print(self.edge_matrix)
@@ -121,6 +140,26 @@ class AdjacencyMatrix:
                     edge_list[ind] = (i, j, self.weight_matrix[i, j])
                     ind += 1
         return edge_list
+
+    def get_type_list(self):
+        """Return list of types of weighted edges.
+
+        Returns
+            list of tuples
+                each entry represents one edge in the graph: (i, j, weight)
+        """
+        if hasattr(self, "nonlinear_prepared"):
+            if self.nonlinear_prepared != True:
+                raise RuntimeError("The def get_type_list can only be used for results of nonlinear analysis!")
+
+        type_list = np.zeros(self.n_edges(), dtype=object)  # list of tuples
+        ind = 0
+        for i in range(self.n_nodes()):
+            for j in range(self.n_nodes()):
+                if self.type_matrix[i, j]:
+                    type_list[ind] = (i, j, self.type_matrix[i, j])
+                    ind += 1
+        return type_list
 
 
 class Results:
@@ -164,6 +203,23 @@ class Results:
                     print("\t{0} -> {1}".format(e[0], e[1]))
                 else:
                     print("\t{0} -> {1}, {2}: {3}".format(e[0], e[1], weights, e[2]))
+        else:
+            print("No significant links found in the network.")
+
+    def _print_nonlinear_edge_list(self, adjacency_matrix, weights):
+        """Print edge list to console.
+        This function works only for results of nonlinear granger analysis!
+        """
+        edge_list = adjacency_matrix.get_edge_list()
+        type_list = adjacency_matrix.get_type_list()
+        if edge_list.size > 0:
+            count = 0
+            for e in edge_list:
+                if weights == "binary":
+                    print("\t{0} -> {1}. ".format(e[0], e[1]))
+                else:
+                    print("\t{0} -> {1}, {2}: {3}, selected source type: {4}".format(e[0], e[1], weights, e[2], int(type_list[count][2])))
+                    count += 1
         else:
             print("No significant links found in the network.")
 
@@ -506,6 +562,50 @@ class ResultsNetworkAnalysis(Results):
         v = self.get_single_target(target, fdr)["selected_vars_sources"]
         return np.unique(np.array([s[0] for s in v]))
 
+    def get_nonlinear_target_sources(self, target, fdr=True):
+        """Return list of sources (parents) for given target.
+
+        This function works only for results of nonlinear granger analysis!
+
+        Args:
+            target : int
+                target index
+            fdr : bool [optional]
+                if True, sources are returned for FDR-corrected results
+                (default=True)
+        """
+        if self.get_single_target(target, fdr=False)["performed_nonlinear_analysis"]:
+            v = self.get_single_target(target, fdr)["selected_vars_sources_orig"]
+            return np.unique(np.array([s[0] for s in v]))
+        else:
+            raise RuntimeError("The function get_nonlinear_target_sources can only be used for results "
+                               "of nonlinear granger analysis. Use get_target_sources instead!")
+
+    def get_target_source_types(self, target, fdr=True):
+        """Return list of type of sources for given target (for nonlinear_granger analysis).
+
+        OUTPUT:
+            list of ints
+                1 = orig
+                2 = squared
+
+        Args:
+            target : int
+                target index
+            fdr : bool [optional]
+                if True, sources are returned for FDR-corrected results
+                (default=True)
+        """
+        v = self.get_single_target(target, fdr)["selected_vars_sources_type"]
+
+        t = []
+        for s in v:
+            if s == "orig":
+                t.append(1)
+            else:
+                t.append(2)
+
+        return np.array(t)
 
 class ResultsNetworkInference(ResultsNetworkAnalysis):
     """Store results of network inference.
@@ -597,6 +697,37 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
             )
         return source_variables
 
+    def get_nonlinear_source_variables(self, fdr=True):
+        """Return list of inferred past source variables for all targets.
+
+        This function works only for results of nonlinear granger analysis!
+
+        Return a list of dictionaries, where each dictionary holds the selected
+        past source variables for one analysed target. The list may be used as
+        and input to significant subgraph mining in the postprocessing module.
+
+        Args:
+            fdr : bool [optional]
+                return FDR-corrected results (default=True)
+
+        Returns:
+            list of dicts
+                selected past source variables for each target
+        """
+        source_variables = []
+        for target in self.targets_analysed:
+            if not self.get_single_target(target, fdr=False)["performed_nonlinear_analysis"]:
+                raise RuntimeError("The function get_nonlinear_source_variables can only be used for results "
+                                   "of nonlinear granger analysis. Use get_source_variables instead")
+            source_variables.append(
+                {
+                    "target": target,
+                    "selected_vars_sources": self.get_single_target(
+                        target=target, fdr=fdr)["selected_vars_sources_orig"],
+                }
+            )
+        return source_variables
+
     def get_target_delays(self, target, criterion="max_te", fdr=True):
         """Return list of information-transfer delays for a given target.
 
@@ -642,6 +773,78 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
                 x[1]
                 for x in self.get_single_target(target=target, fdr=fdr)[
                     "selected_vars_sources"
+                ]
+            ]
+        )
+        # Get p-values and TE-values for past source variable
+        pval = self.get_single_target(target=target, fdr=fdr)["selected_sources_pval"]
+        measure = self._get_inference_measure(target)
+
+        # Find delay for each source
+        for ind, s in enumerate(sources):
+            if criterion == "max_p":
+                # Find the minimum p-value amongst the variables in source s
+                delays_ind = np.argmin(pval[all_vars_sources == s])
+            elif criterion == "max_te":
+                # Find the maximum TE-value amongst the variables in source s
+                delays_ind = np.argmax(measure[all_vars_sources == s])
+
+            delays[ind] = all_vars_lags[all_vars_sources == s][delays_ind]
+
+        return delays
+
+    def get_nonlinear_target_delays(self, target, criterion="max_te", fdr=True):
+        """Return list of information-transfer delays for a given target.
+
+        This function works only for results of nonlinear granger analysis!
+
+        Return a list of information-transfer delays for a given target.
+        Information-transfer delays are determined by the lag of the variable
+        in a source past that has the highest information transfer into the
+        target process. There are two ways of identifying the variable with
+        maximum information transfer:
+
+            a) use the variable with the highest absolute TE value (highest
+               information transfer),
+            b) use the variable with the smallest p-value (highest statistical
+               significance).
+
+        Args:
+            target : int
+                target index
+            criterion : str [optional]
+                use maximum TE value ('max_te') or p-value ('max_p') to
+                determine the source-target delay (default='max_te')
+            fdr : bool [optional]
+                return FDR-corrected results (default=True)
+
+        Returns:
+            numpy array
+                information-transfer delays for each source
+        """
+
+        if not self.get_single_target(target, fdr=False)["performed_nonlinear_analysis"]:
+            raise RuntimeError("The function get_nonlinear_target_delays can only be used for results "
+                               "of nonlinear granger analysis. Use get_target_delays instead")
+
+        sources = self.get_nonlinear_target_sources(target=target, fdr=fdr)
+        delays = np.zeros(sources.shape[0]).astype(int)
+
+        # Get the source index for each past source variable of the target
+        all_vars_sources = np.array(
+            [
+                x[0]
+                for x in self.get_single_target(target=target, fdr=fdr)[
+                    "selected_vars_sources_orig"
+                ]
+            ]
+        )
+        # Get the lag for each past source variable of the target
+        all_vars_lags = np.array(
+            [
+                x[1]
+                for x in self.get_single_target(target=target, fdr=fdr)[
+                    "selected_vars_sources_orig"
                 ]
             ]
         )
@@ -712,8 +915,8 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
         elif weights == "vars_count":
             for t in self.targets_analysed:
                 single_result = self.get_single_target(target=t, fdr=fdr)
-                sources = np.zeros(len(single_result.selected_vars_sources))
-                weights = np.zeros(len(single_result.selected_vars_sources))
+                sources = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+                weights = np.zeros(len(single_result.selected_vars_sources), dtype=int)
                 for i, s in enumerate(single_result.selected_vars_sources):
                     sources[i] = s[0]
                     weights[i] += 1
@@ -730,6 +933,90 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
                     weights[i] = 1
                 adjacency_matrix.add_edge_list(
                     sources, np.ones(len(sources), dtype=int) * t, weights
+                )
+        else:
+            raise RuntimeError("Invalid weights value")
+        return adjacency_matrix
+
+    def get_nonlinear_adjacency_matrix(self, weights, fdr=True):
+        """Return adjacency matrix.
+
+        This function works only for results of nonlinear granger analysis!
+
+        Return adjacency matrix resulting from network inference. The adjacency
+        matrix can either be generated from FDR-corrected results or
+        uncorrected results. Multiple options for the weight are available.
+
+        Args:
+            weights : str
+                can either be
+
+                - 'max_te_lag': the weights represent the source -> target
+                   lag corresponding to the maximum tranfer entropy value
+                   (see documentation for method get_target_delays for details)
+                - 'max_p_lag': the weights represent the source -> target
+                   lag corresponding to the maximum p-value
+                   (see documentation for method get_target_delays for details)
+                - 'vars_count': the weights represent the number of
+                   statistically-significant source -> target lags
+                - 'binary': return unweighted adjacency matrix with binary
+                   entries
+
+                   - 1 = significant information transfer;
+                   - 0 = no significant information transfer.
+
+            fdr : bool [optional]
+                return FDR-corrected results (default=True)
+
+        Returns:
+            AdjacencyMatrix instance
+        """
+        if hasattr(self, "nonlinear_prepared"):
+            if self.nonlinear_prepared != True:
+                raise RuntimeError("The def get_nonlinear_adjacency_matrix can only be used for results of "
+                                   "nonlinear analysis. Use get_adjacency_matrix instead.")
+
+        adjacency_matrix = AdjacencyMatrix(self.data_properties.n_nodes, int)
+
+        if weights == "max_te_lag":
+            for t in self.targets_analysed:
+                sources = self.get_target_sources(target=t, fdr=fdr)
+                delays = self.get_target_delays(target=t, criterion="max_te", fdr=fdr)
+                sources_type = self.get_target_source_types(target=t, fdr=fdr)
+                adjacency_matrix.add_nonlinear_edge_list(
+                    sources, np.ones(len(sources), dtype=int) * t, delays, sources_type
+                )
+        elif weights == "max_p_lag":
+            for t in self.targets_analysed:
+                sources = self.get_target_sources(target=t, fdr=fdr)
+                delays = self.get_target_delays(target=t, criterion="max_p", fdr=fdr)
+                sources_type = self.get_target_source_types(target=t, fdr=fdr)
+                adjacency_matrix.add_nonlinear_edge_list(
+                    sources, np.ones(len(sources), dtype=int) * t, delays, sources_type
+                )
+        elif weights == "vars_count":
+            for t in self.targets_analysed:
+                single_result = self.get_single_target(target=t, fdr=fdr)
+                sources = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+                weights = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+                sources_type = self.get_target_source_types(target=t, fdr=fdr)
+                for i, s in enumerate(single_result.selected_vars_sources):
+                    sources[i] = s[0]
+                    weights[i] += 1
+                adjacency_matrix.add_nonlinear_edge_list(
+                    sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
+                )
+        elif weights == "binary":
+            for t in self.targets_analysed:
+                single_result = self.get_single_target(target=t, fdr=fdr)
+                sources = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+                weights = np.zeros(len(single_result.selected_vars_sources), dtype=int)
+                sources_type = self.get_target_source_types(target=t, fdr=fdr)
+                for i, s in enumerate(single_result.selected_vars_sources):
+                    sources[i] = s[0]
+                    weights[i] = 1
+                adjacency_matrix.add_nonlinear_edge_list(
+                    sources, np.ones(len(sources), dtype=int) * t, weights, sources_type
                 )
         else:
             raise RuntimeError("Invalid weights value")
@@ -761,6 +1048,38 @@ class ResultsNetworkInference(ResultsNetworkAnalysis):
         """
         adjacency_matrix = self.get_adjacency_matrix(weights=weights, fdr=fdr)
         self._print_edge_list(adjacency_matrix, weights=weights)
+
+    def print_nonlinear_edge_list(self, weights, fdr=True):
+        """Print results of network inference of nonlinear granger analysis to console.
+
+        Print edge list resulting from network inference to console.
+        Output may look like this:
+
+            >>> 0 -> 1, max_te_lag = 2, "orig"
+            >>> 0 -> 2, max_te_lag = 3, "squared"
+            >>> 0 -> 3, max_te_lag = 2, "squared"
+            >>> 3 -> 4, max_te_lag = 1, "orig"
+            >>> 4 -> 3, max_te_lag = 1, "orig"
+
+        The edge list can either be generated from FDR-corrected results
+        or uncorrected results. Multiple options for the weight
+        are available (see documentation of method get_adjacency_matrix for
+        details).
+
+        Args:
+            weights : str
+                link weights (see documentation of method get_adjacency_matrix
+                for details)
+            fdr : bool [optional]
+                return FDR-corrected results (default=True)
+        """
+        if hasattr(self, "nonlinear_prepared"):
+            if self.nonlinear_prepared != True:
+                raise RuntimeError("The def print_nonlinear_edge_list can only be used for results of "
+                                   "nonlinear analysis. Use print_edge_list instead.")
+
+        adjacency_matrix = self.get_nonlinear_adjacency_matrix(weights=weights, fdr=fdr)
+        self._print_nonlinear_edge_list(adjacency_matrix, weights=weights)
 
 
 class ResultsPID(ResultsNetworkAnalysis):
