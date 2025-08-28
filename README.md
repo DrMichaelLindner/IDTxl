@@ -38,7 +38,7 @@ P. Wollstadt, J. T. Lizier, R. Vicente, C. Finn, M. Martinez-Zarzuela, P. Median
 - [Pedro Mediano](https://www.doc.ic.ac.uk/~pam213/), Computational Neurodynamics Group, Imperial College London, London, United Kingdom
 - Dr. Michael Lindner, Campus Institute for Dynamics of Biological Networks, Georg August University, Göttingen, Germany
 - Dr. Aaron J. Gutknecht, Campus Institute for Dynamics of Biological Networks, Georg August University, Göttingen, Germany
-- [Prof. Viola Priesemann](https://www.uni-goettingen.de/de/priesemann%2C+viola%2C+dr.+-+theorie+neuronaler+systeme+(mpi-ds)/622913.html), Faculty of Physics, Georg August University and Max Planck Institute for Dynamics and Self-Organization, Göttingen
+- [Prof. Viola Priesemann](https://www.uni-goettingen.de/de/priesemann%2C+viola%2C+dr.+-+theorie+neuronaler+systeme+(mpi-ds)/622913.html), Theory of Neural Systems, Faculty of Physics, Georg August University and Max Planck Institute for Dynamics and Self-Organization, Göttingen
 - Dr. Lucas Rudelt, Max Planck Institute for Dynamics and Self-Organization, Göttingen
 
 **How to contribute?** We are happy about any feedback on IDTxl. If you would like to contribute, please open an issue or send a pull request with your feature or improvement. Also have a look at the [developer's section](https://github.com/pwollstadt/IDTxl/wiki#developers-section) in the Wiki for details.
