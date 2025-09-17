@@ -1,5 +1,5 @@
 """
-provide structure and functions for getting distribution
+Provides structure and functions for getting distribution
 likelihoods of the given data
 """
 
@@ -21,9 +21,11 @@ class get_distribution_likelihood():
     bins : int [optional] - number of bins for fitting (default=100)
     distributions : string or list [optional]
                     "all"
-                        tests all available distributions of the fitter toolbox
+                        tests all available distributions included in scipy
                     "common" (default)
-                        tests common distributions of the fitter toolbox
+                        tests common distributions:
+                        "cauchy", "chi2", "expon", "exponpow", "gamma", "lognorm", "norm",
+                        "powerlaw", "rayleigh", "uniform"
                     "<your distribution>"
                         tests only this distribution
                         e.g. "norm" for normal distribution
