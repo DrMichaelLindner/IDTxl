@@ -156,9 +156,9 @@ def test_output():
     d0 = dl.get_dists(0)
     d1 = dl.get_dists(1)
     assert (dl.get_best_dist(0) == "norm" or "norm" in d0[0:2]), \
-        f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"norm\"."
+        f"For process 0 the wrong distribution was found {dl.get_best_dist(0)}. Should be \"norm\"."
     assert (dl.get_best_dist(1) == "chi2" or "chi2" in d1[0:2]), \
-        f"For process 0 the wrong distribution was fount {dl.get_best_dist(0)}. Should be \"chi2\"."
+        f"For process 1 the wrong distribution was found {dl.get_best_dist(0)}. Should be \"chi2\"."
 
 
 if __name__ == '__main__':
