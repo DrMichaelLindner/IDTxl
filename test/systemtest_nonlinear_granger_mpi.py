@@ -27,7 +27,7 @@ def main(args):
 
     assert MPI.COMM_WORLD.Get_rank() == 0
     max_workers = int(args[1])
-    print(f"Running nonlinear granger network analysis with {max_workers} MPI workers.")
+    print(f"Running nonlinear granger analysis with {max_workers} MPI workers.")
 
     start_time = time.time()
 
