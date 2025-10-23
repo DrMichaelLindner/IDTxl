@@ -210,8 +210,6 @@ def test_flags_and_result_output_bivariate():
         "Selected var target were not transformed back to number processes"
 
     # check if expected squared source was found
-    #assert single_target.selected_vars_sources_orig[0][0] == 2, \ # ------------------------------------------------ TODO check
-    #    "Nonlinear source was not detected in nonlinear data"
     assert single_target.selected_vars_sources_type[0] == "squared",\
         "Nonlinear source was not detected in nonlinear data"
 
