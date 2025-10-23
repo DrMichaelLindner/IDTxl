@@ -1,4 +1,4 @@
-"""Run test on nonlinear data preparation and nonlinear JidtGaussianCMI estimation using MPI
+"""Run test on nonlinear data preparation and nonlinear JidtGaussianCMI (bivariate) estimation using MPI
 
     ATTENTION:  For nonlinear granger analysis the data need to be NOT normalised (for data.prepare_nonlinear)
                 and has to be in order: processes x samples x replications.
@@ -10,15 +10,15 @@
     start script using (depending on your installed MPI implementation and your number of
     threads (-n <your num_threads>)):
     e.g. with num_threads 16:
-        mpirun -n 16 python systemtest_nonlinear_granger_mpi.py 16
-        srun -n 16 python systemtest_nonlinear_granger_mpi.py 16
-        mpiexec -n 16 python systemtest_nonlinear_granger_mpi.py 16
+        mpirun -n 16 python systemtest_nonlinear_granger_bivariate_te_mpi.py 16
+        srun -n 16 python systemtest_nonlinear_granger_bivariate_te_mpi.py 16
+        mpiexec -n 16 python systemtest_nonlinear_granger_bivariate_te_mpi.py 16
 """
 
 import sys
 import time
 import pickle
-from idtxl.multivariate_te import MultivariateTE
+from idtxl.bivariate_te import BivariateTE
 from idtxl.data import Data
 from mpi4py import MPI
 
@@ -52,7 +52,7 @@ def main(args):
     settings, data = data.prepare_nonlinear(settings, data)
 
     # perform JidtGaussianCMI WITH nonlinear data
-    nonlin_analysis = MultivariateTE()
+    nonlin_analysis = BivariateTE()
     results = nonlin_analysis.analyse_single_target(settings, data,
                                                     target=settings["nonlinear_settings"]["nonlinear_target_predictors"],
                                                     sources=settings["nonlinear_settings"]["nonlinear_source_predictors"])
