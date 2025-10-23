@@ -136,7 +136,7 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
 
         # Check which targets and sources are requested for analysis.
         if targets == "all":
-            targets = list(range(data.n_processes))
+            targets = list(range(n_processes))
         if sources == "all":
             sources = ["all" for t in targets]
         elif isinstance(sources, list) and isinstance(sources[0], int):
