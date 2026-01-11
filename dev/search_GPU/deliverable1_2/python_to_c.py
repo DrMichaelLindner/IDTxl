@@ -52,7 +52,7 @@ def get_cudaFindRSAllSetGPU():
     return func
 
 # create __cudaFindRSAllSetGPU function with get_cudaFindRSAllSetGPU()
-#__cudaFindRSAllSetGPU = get_cudaFindRSAllSetGPU()
+__cudaFindRSAllSetGPU = get_cudaFindRSAllSetGPU()
 
 # convenient python wrapper for __cudaFindRSAll
 # it does all job with types convertation
@@ -63,7 +63,7 @@ def cudaFindRSAllSetGPU(npointsrange, pointset, queryset, vecradius, thelier, nc
     queryset_p = queryset.ctypes.data_as(POINTER(c_float))
     vecradius_p = vecradius.ctypes.data_as(POINTER(c_float))
 
-    bool = get_cudaFindRSAllSetGPU(npointsrange_p, pointset_p, queryset_p, vecradius_p, thelier, nchunkspergpu, pointsdim, datalengthpergpu, gpuid)
+    bool = __cudaFindRSAllSetGPU(npointsrange_p, pointset_p, queryset_p, vecradius_p, thelier, nchunkspergpu, pointsdim, datalengthpergpu, gpuid)
 
     return bool
 
