@@ -9,8 +9,11 @@ decomposition as proposed in
 """
 import numpy as np
 
-from . import lattices as lt
-from . import pid_goettingen
+try:
+    from sxpid.SxPID import PDF, pid
+except ImportError:
+    PDF, pid = None, None
+
 from .estimator import Estimator
 from .estimators_pid import _join_variables
 from .lazy_array import LazyArray
@@ -51,6 +54,13 @@ class SxPID(Estimator):
         self.settings = settings.copy()
         self.settings.setdefault("verbose", False)
 
+        # Check if sxpid package is available
+        if PDF is None or pid is None:
+            raise ImportError(
+                "The SxPID estimator requires the 'sxpid' package. "
+                "Please install it via 'pip install git+https://github.com/Abzinger/SxPID.git'"
+            )
+
     def is_parallel():
         return False
 
@@ -75,28 +85,14 @@ class SxPID(Estimator):
                 the list of floats is ordered [informative, misinformative, informative - misinformative]
         """
         s, t, self.settings = _check_input(s, t, self.settings)
-        pdf = _get_pdf_dict(s, t)
 
-        # Read lattices from a file
-        # Stored as {
-        #             n -> [{alpha -> children}, (alpha_1,...) ]
-        #           }
-        # children is a list of tuples
-        lattices = lt.lattices
-        num_source_vars = len(s)
-        retval_ptw, retval_avg = pid_goettingen.pid(
-            num_source_vars,
-            pdf_orig=pdf,
-            chld=lattices[num_source_vars][0],
-            achain=lattices[num_source_vars][1],
-            printing=self.settings["verbose"],
-        )
+        pdf = PDF.from_dict(_get_pdf_dict(s, t))
 
-        # TODO AskM: Trivariate: does it make sense to name the alphas
-        #    for example shared_syn_s1_s2__syn_s1_s3 ?
+        pid_ptw, pid_avg = pid(pdf)
+
         results = {
-            "ptw": retval_ptw,
-            "avg": retval_avg,
+            "ptw": pid_ptw,
+            "avg": pid_avg,
         }
         return results
 
@@ -107,20 +103,10 @@ def _get_pdf_dict(s, t):
     counts = dict()
     n_samples = s[0].shape[0]
 
-    # Count occurences.
-    for i in range(n_samples):
-        key = tuple([s[j][i] for j in range(len(s))]) + (t[i],)
-        if key in counts.keys():
-            counts[key] += 1
-        else:
-            counts[key] = 1
+    rlz = np.stack(s + [t], axis=1)
+    unq, counts = np.unique(rlz, axis=0, return_counts=True)
 
-    # Create PMF from counts.
-    pmf = dict()
-    for xyz, c in counts.items():
-        pmf[xyz] = c / float(n_samples)
-    return pmf
-
+    return dict(zip(map(tuple, unq), counts / n_samples))
 
 def _check_input(s, t, settings):
     """Check input to PID estimators."""
