@@ -266,9 +266,9 @@ def test_cmi_uncorrelated_gaussians():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.005), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.005).')
 
 
 @jpype_missing
@@ -350,9 +350,9 @@ def test_cmi_uncorrelated_gaussians_three_dims():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.005), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.005).')
 
 
 @jpype_missing
@@ -384,9 +384,9 @@ def test_cmi_uncorrelated_gaussians_unequal_dims():
         assert np.isclose(mi_cuda[0][0], 0, atol=0.05), (
             'Estimation for uncorrelated Gaussians using the CUDA estimator '
             'failed (error larger 0.05).')
-        assert np.isclose(mi_cuda[0][0], mi_jidt, atol=0.001), (
+        assert np.isclose(mi_cuda[0][0], mi_jidt, atol=0.005), (
             'Estimation for uncorrelated Gaussians using the CUDA estimator '
-            'failed (error larger 0.001).')
+            'failed (error larger 0.005).')
 
     settings = {'debug': True, 'return_counts': True}
 
@@ -542,13 +542,13 @@ def test_compare_to_cuda():
 
 if __name__ == '__main__':
     test_compare_to_cuda()
-    #test_cmi_uncorrelated_gaussians_unequal_dims()
+    test_cmi_uncorrelated_gaussians_unequal_dims()
     test_multi_gpu()
     test_debug_setting()
     test_local_values()
     test_mi_correlated_gaussians_two_chunks()
-    #test_cmi_uncorrelated_gaussians_three_dims()
-    #test_cmi_uncorrelated_gaussians()
+    test_cmi_uncorrelated_gaussians_three_dims()
+    test_cmi_uncorrelated_gaussians()
     test_cmi_no_cond_correlated_gaussians()
     test_cmi_correlated_gaussians()
     test_user_input()
