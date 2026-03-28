@@ -103,9 +103,9 @@ def test_mi_correlated_gaussians():
     assert np.isclose(mi_cuda, expected_mi, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -132,9 +132,9 @@ def test_cmi_no_cond_correlated_gaussians():
     assert np.isclose(mi_cuda, expected_mi, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -163,9 +163,9 @@ def test_cmi_correlated_gaussians():
     assert np.isclose(mi_cuda, expected_mi, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.01), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.01).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -233,9 +233,9 @@ def test_mi_uncorrelated_gaussians():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -266,9 +266,9 @@ def test_cmi_uncorrelated_gaussians():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.005), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.005).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -298,9 +298,9 @@ def test_mi_uncorrelated_gaussians_three_dims():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -331,9 +331,9 @@ def test_cmi_uncorrelated_gaussians_three_dims():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
     # Run with conditional
     (mi_cuda, dist, n_range_var1,
@@ -350,9 +350,9 @@ def test_cmi_uncorrelated_gaussians_three_dims():
     assert np.isclose(mi_cuda, 0, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'CUDA estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_jidt, atol=0.005), (
+    assert np.isclose(mi_cuda, mi_jidt, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.005).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 @jpype_missing
@@ -384,9 +384,9 @@ def test_cmi_uncorrelated_gaussians_unequal_dims():
         assert np.isclose(mi_cuda[0][0], 0, atol=0.05), (
             'Estimation for uncorrelated Gaussians using the CUDA estimator '
             'failed (error larger 0.05).')
-        assert np.isclose(mi_cuda[0][0], mi_jidt, atol=0.005), (
+        assert np.isclose(mi_cuda[0][0], mi_jidt, atol=0.0001), (
             'Estimation for uncorrelated Gaussians using the CUDA estimator '
-            'failed (error larger 0.005).')
+            'failed (error larger 0.0001).')
 
     settings = {'debug': True, 'return_counts': True}
 
@@ -535,9 +535,9 @@ def test_compare_to_cuda():
     assert np.isclose(mi_ocl, expected_mi, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'OpenCL estimator failed (error larger 0.05).')
-    assert np.isclose(mi_cuda, mi_ocl, atol=0.001), (
+    assert np.isclose(mi_cuda, mi_ocl, atol=0.0001), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'CUDA estimator failed (error larger 0.001).')
+                        'CUDA estimator failed (error larger 0.0001).')
 
 
 if __name__ == '__main__':

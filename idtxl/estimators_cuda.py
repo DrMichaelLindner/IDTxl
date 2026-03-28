@@ -572,21 +572,19 @@ class CudaKraskovCMI(CudaKraskov):
         assert var1.shape[0] % n_chunks == 0, (
             'No. samples not divisible by no. chunks')
 
+        if self.settings['noise_level'] > 0:
+            var1 += np.random.normal(
+                scale=self.settings['noise_level'], size=var1.shape)
+            var2 += np.random.normal(
+                scale=self.settings['noise_level'], size=var2.shape)
+            conditional += np.random.normal(
+                scale=self.settings['noise_level'], size=conditional.shape)
+
         pointset = np.hstack((var1, conditional, var2)).T.copy()
         pointset_var1cond = np.hstack((var1, conditional)).T.copy()
         pointset_condvar2 = np.hstack((conditional, var2)).T.copy()
         pointset_cond = conditional.T.copy()
         logger.debug('shape pointset: {}'.format(pointset.shape))
-        if self.settings['noise_level'] > 0:
-            pointset += np.random.normal(
-                scale=self.settings['noise_level'],
-                size=pointset.shape)
-            pointset_var1cond += np.random.normal(
-                scale=self.settings['noise_level'],
-                size=pointset_var1cond.shape)
-            pointset_condvar2 += np.random.normal(
-                scale=self.settings['noise_level'],
-                size=pointset_condvar2.shape)
 
         # Perform kNN- and range-search
         indexes, distances = self.knn_search(
