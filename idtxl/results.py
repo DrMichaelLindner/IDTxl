@@ -1314,7 +1314,7 @@ class ResultsNetworkComparison(ResultsNetworkAnalysis):
             for t in self.targets_analysed:
                 sources = self.get_target_sources(t)
                 for i, s in enumerate(sources):
-                    adjacency_matrix.add_edge(s, t, int(self.ab[t][i]))
+                    adjacency_matrix.add_edge(s, t, self.ab[t][i][0].astype('int'))
         elif weights == "union":
             adjacency_matrix = AdjacencyMatrix(self.data_properties.n_nodes, int)
             for t in self.targets_analysed:
