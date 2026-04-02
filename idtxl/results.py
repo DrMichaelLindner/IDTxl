@@ -1329,9 +1329,11 @@ class ResultsNetworkComparison(ResultsNetworkAnalysis):
                     print(self.ab[t][i].size)
                     print(self.ab[t][i].shape)
                     try:
+                        # numpy 1.26
                         print(int(self.ab[t][i]))
                         adjacency_matrix.add_edge(s, t, int(self.ab[t][i]))
                     except:
+                        # numpy 2.4
                         print(self.ab[t][i][0].astype('int'))
                         adjacency_matrix.add_edge(s, t, self.ab[t][i][0].astype('int'))
                     
