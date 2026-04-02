@@ -53,11 +53,21 @@ def _find_estimator(est):
     if inspect.isclass(est):
         # Test if provided class implements the Estimator class. This
         # constraint may be relaxed in the future.
-        if not np.issubclass_(est, Estimator):
-            raise RuntimeError(
-                "Provided class should implement abstract class Estimator."
-            )
-        return est
+        try:
+            # numpy 1.26
+            if not np.issubclass_(est, Estimator):
+                raise RuntimeError(
+                    "Provided class should implement abstract class Estimator."
+                )
+            return est
+        except:
+            # numpy 2.4
+            if not issubclass(est, Estimator):
+                raise RuntimeError(
+                    "Provided class should implement abstract class Estimator."
+                )
+            return est
+
     if isinstance(est, str):
         module_list = _package_contents()
         estimator = None
