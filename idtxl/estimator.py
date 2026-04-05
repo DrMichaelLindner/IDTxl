@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from pprint import pprint
 
 import numpy as np
+import importlib.util
 
 MODULE_EXTENSIONS = ".py"  # ('.py', '.pyc', '.pyo')
 ESTIMATOR_PREFIX = "estimators_"
