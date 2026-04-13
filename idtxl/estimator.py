@@ -310,7 +310,13 @@ class Estimator(metaclass=ABCMeta):
         if self.is_parallel():
             n_chunks = len(data[list(data.keys())[0]])
             # Concatenate all chunks into a single array for each variable
-            data = {k: np.concatenate(v, axis=0) for k, v in data.items()}
+            dd={}
+            for k,v in data.items():
+                if len(np.asarray(v).shape) > 1:
+                    dd[k] = np.concatenate(v, axis=0)
+                else:
+                    dd[k] = None
+            data = dd
             return self.estimate(n_chunks=n_chunks, **data)
 
         # If estimator does not support parallel estimation, loop over chunks
