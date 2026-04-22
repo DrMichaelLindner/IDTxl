@@ -314,6 +314,10 @@ class NetworkAnalysis:
         Returns:
             a list of variable tuples
         """
+        
+        if type(samples) is not list:
+            samples = samples.tolist()
+
         var_list = []
         for idx in it.product(processes, samples):
             var_list.append(idx)
