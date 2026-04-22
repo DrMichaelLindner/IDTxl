@@ -1314,7 +1314,6 @@ class ResultsNetworkComparison(ResultsNetworkAnalysis):
             for t in self.targets_analysed:
                 sources = self.get_target_sources(t)
                 for i, s in enumerate(sources):
-                    adjacency_matrix.add_edge(s, t, int(self.ab[t][i]))
                     try:
                         # numpy 1.26
                         adjacency_matrix.add_edge(s, t, int(self.ab[t][i]))
