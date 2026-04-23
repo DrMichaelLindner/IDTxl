@@ -314,7 +314,7 @@ class NetworkAnalysis:
         Returns:
             a list of variable tuples
         """
-        
+
         if type(samples) is not list:
             samples = samples.tolist()
 
