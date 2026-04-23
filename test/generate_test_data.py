@@ -122,8 +122,7 @@ def analyse_discrete_data():
     pickle.dump(
         res,
         open(
-            "{0}discrete_results_mte_{1}.p".format(path, settings["cmi_estimator"]),
-            "wb",
+            path.joinpath(f"discrete_results_mte_{settings["cmi_estimator"]}.p"), "wb"
         ),
     )
 
@@ -132,8 +131,7 @@ def analyse_discrete_data():
     pickle.dump(
         res,
         open(
-            "{0}discrete_results_bte_{1}.p".format(path, settings["cmi_estimator"]),
-            "wb",
+            path.joinpath(f"discrete_results_bte_{settings["cmi_estimator"]}.p"), "wb"
         ),
     )
 
@@ -142,8 +140,7 @@ def analyse_discrete_data():
     pickle.dump(
         res,
         open(
-            "{0}discrete_results_mmi_{1}.p".format(path, settings["cmi_estimator"]),
-            "wb",
+            path.joinpath(f"discrete_results_mmi_{settings["cmi_estimator"]}.p"), "wb"
         ),
     )
 
@@ -152,8 +149,7 @@ def analyse_discrete_data():
     pickle.dump(
         res,
         open(
-            "{0}discrete_results_bmi_{1}.p".format(path, settings["cmi_estimator"]),
-            "wb",
+            path.joinpath(f"discrete_results_bmi_{settings["cmi_estimator"]}.p"), "wb"
         ),
     )
 
@@ -168,7 +164,7 @@ def analyse_continuous_data():
         settings["cmi_estimator"] = estimator
         res = nw.analyse_network(settings=settings, data=data)
         pickle.dump(
-            res, open("{0}continuous_results_mte_{1}.p".format(path, estimator), "wb")
+            res, open(path.joinpath(f"continuous_results_mte_{estimator}.p"), "wb")
         )
 
     nw = BivariateTE()
@@ -176,7 +172,7 @@ def analyse_continuous_data():
         settings["cmi_estimator"] = estimator
         res = nw.analyse_network(settings=settings, data=data)
         pickle.dump(
-            res, open("{0}continuous_results_bte_{1}.p".format(path, estimator), "wb")
+            res, open(path.joinpath(f"continuous_results_bte_{estimator}.p"), "wb")
         )
 
     nw = MultivariateMI()
@@ -184,7 +180,7 @@ def analyse_continuous_data():
         settings["cmi_estimator"] = estimator
         res = nw.analyse_network(settings=settings, data=data)
         pickle.dump(
-            res, open("{0}continuous_results_mmi_{1}.p".format(path, estimator), "wb")
+            res, open(path.joinpath(f"continuous_results_mmi_{estimator}.p"), "wb")
         )
 
     nw = BivariateMI()
@@ -192,7 +188,7 @@ def analyse_continuous_data():
         settings["cmi_estimator"] = estimator
         res = nw.analyse_network(settings=settings, data=data)
         pickle.dump(
-            res, open("{0}continuous_results_bmi_{1}.p".format(path, estimator), "wb")
+            res, open(path.joinpath(f"continuous_results_bmi_{estimator}.p"), "wb")
         )
 
 
@@ -216,14 +212,15 @@ def assert_results():
 
 
 def _print_result(res):
-    res.adjacency_matrix.print_matrix()
+    adjacency_matrix = res.get_adjacency_matrix(weights="max_te_lag")
+    adjacency_matrix.print_matrix()
     tp = 0
     fp = 0
-    if res.adjacency_matrix.edge_matrix[0, 1] == True:
+    if adjacency_matrix.edge_matrix[0, 1] == True:
         tp += 1
-    if res.adjacency_matrix.edge_matrix[1, 2] == True:
+    if adjacency_matrix.edge_matrix[1, 2] == True:
         tp += 1
-    if res.adjacency_matrix.edge_matrix[0, 2] == True:
+    if adjacency_matrix.edge_matrix[0, 2] == True:
         fp += 1
     fn = 2 - tp
     print("TP: {0}, FP: {1}, FN: {2}".format(tp, fp, fn))
