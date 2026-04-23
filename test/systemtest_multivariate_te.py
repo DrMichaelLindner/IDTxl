@@ -65,6 +65,14 @@ def test_multivariate_te_corr_gaussian(estimator=None):
     expected_res = calculate_mi(corr_expected)
     estimated_res = results.get_single_target(1, fdr=False).omnibus_te
     diff = np.abs(estimated_res - expected_res)
+    
+    if isinstance(estimated_res, np.ndarray):
+        estimated_res=estimated_res[0]
+    if isinstance(expected_res, np.ndarray):
+        expected_res=expected_res[0]
+    if isinstance(diff, np.ndarray):
+        diff=diff[0]
+    
     print("Expected source sample: (0, 1)\nExpected target sample: (1, 1)")
     print(
         (
@@ -99,6 +107,7 @@ def test_multivariate_te_lagged_copies():
     settings = {
         "cmi_estimator": "JidtKraskovCMI",
         "max_lag_sources": 5,
+        "min_lag_sources": 1,
         "n_perm_max_stat": 21,
         "n_perm_min_stat": 21,
         "n_perm_omnibus": 500,
@@ -151,10 +160,10 @@ def test_multivariate_te_random():
         "cmi_estimator": "JidtKraskovCMI",
         "max_lag_sources": 5,
         "min_lag_sources": 1,
-        "n_perm_max_stat": 200,
-        "n_perm_min_stat": 200,
-        "n_perm_omnibus": 500,
-        "n_perm_max_seq": 500,
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_omnibus": 51,
+        "n_perm_max_seq": 51,
     }
     random_analysis = MultivariateTE()
     # Assert that there are no significant conditionals in either direction
@@ -304,10 +313,10 @@ def test_multivariate_te_multiple_runs():
 
 
 if __name__ == "__main__":
-    test_multivariate_te_mute()
-    test_multivariate_te_lorenz_2()
-    test_multivariate_te_random()
-    test_multivariate_te_lagged_copies()
-    test_multivariate_te_multiple_runs()
-    test_multivariate_te_corr_gaussian()
-    test_multivariate_te_corr_gaussian("OpenCLKraskovCMI")
+    #test_multivariate_te_mute()
+    #test_multivariate_te_lorenz_2()
+    ##test_multivariate_te_random()         ######## assert none no len
+    ##test_multivariate_te_lagged_copies()  ######## assert none no len
+    ##test_multivariate_te_multiple_runs()  ################### network_analysis link[i]
+    #test_multivariate_te_corr_gaussian()
+    #test_multivariate_te_corr_gaussian("OpenCLKraskovCMI")

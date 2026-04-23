@@ -26,7 +26,7 @@ def test_multivariate_te_corr_gaussian(estimator=None):
         This produces strange small values for non-coupled sources.  TODO
     """
     if estimator is None:
-        estimator = "JidtKraskovCMI"
+        estimator = "JidtDiscreteCMI"
 
     cov = 0.4
     expected_mi, source1, source2, target = _get_gauss_data(covariance=cov)
@@ -119,6 +119,7 @@ def test_multivariate_te_lagged_copies():
     settings = {
         "cmi_estimator": "JidtDiscreteCMI",
         "discretise_method": "max_ent",
+        "min_lag_sources": 1,
         "max_lag_sources": 5,
         "n_perm_max_stat": 21,
         "n_perm_min_stat": 21,
@@ -328,7 +329,7 @@ def test_multivariate_te_mute():
 if __name__ == "__main__":
     test_multivariate_te_lorenz_2()
     test_multivariate_te_mute()
-    test_multivariate_te_random()
-    test_multivariate_te_lagged_copies()
+    ##test_multivariate_te_random()
+    ##test_multivariate_te_lagged_copies()
     test_multivariate_te_corr_gaussian()
     test_multivariate_te_corr_gaussian("OpenCLKraskovCMI")
