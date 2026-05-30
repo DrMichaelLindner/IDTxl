@@ -13,6 +13,10 @@ def get_knn_finder(name: str) -> type[KnnFinder]:
         from .knn_finder_scipy import ScipyKDTreeKnnFinder
 
         return ScipyKDTreeKnnFinder
+    elif name == 'scipy_ckdtree':
+        from .knn_finder_scipy import ScipycKDTreeKnnFinder
+
+        return ScipycKDTreeKnnFinder
     elif name == "sklearn_kdtree":
         from .knn_finder_sklearn import SklearnKDTreeKnnFinder
 

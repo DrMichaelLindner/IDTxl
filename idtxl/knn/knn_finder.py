@@ -94,7 +94,24 @@ class KnnFinder:
             np.ndarray: The number of neighbors within the given radius for each point in the data.
         """
         return self.count_neighbors(self._data, r) - 1
+    
+    
+    #def count_all_neighbors_theiler(self, r: float, theiler: int) -> np.ndarray:
+    #    """Count the number of neighbors strictly within (<) a given radius for each point in the data.
+    #    Does not include the point itself.
 
+    #    Args:
+    #        r (float): The radius to count neighbors within.
+    #        theiler (int): no. next temporal neighbours ignored in range searches 
+            
+    #    Returns:
+    #        np.ndarray: The number of neighbors within the given radius for each point in the data.
+    #    """
+    #    # Use tree.query_ball_point to get neighbors within eps, then count excluding Theiler window and self.
+        
+    #    return self.count_neighbors_theiler(self._data, r, theiler) - 1
+    
+    
     def count_neighbors_within(self, x: np.ndarray, r: float) -> np.ndarray:
         """Count the number of neighbors strictly within (<) a given radius for each point in x.
 
