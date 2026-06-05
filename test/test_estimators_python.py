@@ -124,6 +124,23 @@ def _get_ar_data(n=10000, expand=False, seed=None):
         return source1, source2
 
 
+def _get_mem_binary_data(n=10000, expand=False):
+    """Simulate simple binary process with memory.
+
+    Return data with memory and random data without memory.
+    """
+    source1 = np.zeros(n + 2)
+    source1[0:2] = np.random.randint(2, size=(2))
+    for n in range(2, n + 2):
+        source1[n] = np.logical_xor(source1[n - 1], np.random.rand() > 0.15)
+    source1 = source1.astype(int)
+    source2 = np.random.randint(2, size=(n + 2))
+    if expand:
+        return np.expand_dims(source1, axis=1), np.expand_dims(source2, axis=1)
+    else:
+        return source1, source2
+
+
 @pytest.mark.parametrize("Sigma", _Sigmas_3var)
 def test_kraskov_cmi_gaussian(Sigma):
     rng = np.random.default_rng(SEED)
@@ -326,8 +343,7 @@ def test_gaussian_mi_gaussian(Sigma):
 
     print(f"PythonGaussianMI: {mi_python} (took {itoc - itic} seconds)")
     assert np.isclose(mi_jidt, mi_python, rtol=1e-4, atol=1e-4)
-
-    
+ 
 
 @pytest.mark.parametrize("Sigma", _Sigmas_3var)
 def test_gaussian_cmi_gaussian(Sigma):
@@ -362,7 +378,6 @@ def test_gaussian_cmi_gaussian(Sigma):
 
     print(f"PythonGaussianCMI: {cmi_python} (took {itoc - itic} seconds)")
     assert np.isclose(cmi_jidt, cmi_python, rtol=1e-4)
-
 
 
 def test_gaussian_ais():
@@ -437,8 +452,6 @@ def test_kraskov_ais():
     assert np.isclose(jidt_mi_cor, python_mi_cor, rtol=1e-4)
     #assert np.isclose(jidt_mi_uncor, python_mi_uncor, rtol=1e-3)
 
-
-
     
 ############################################################################################### TODO
 def test_kraskov_te_gaussian():
@@ -448,11 +461,15 @@ def test_kraskov_te_gaussian():
     source1 = source1[1:]
     source2 = source2[1:]
     target = target[:-1]
-    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1}
+    
+    ht=1
+    hs=1
+    hst = 1
 
     print(f"\nAnalytical MI: {expected_mi}")
 
     # Run JIDT estimator as a reference
+    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1}
     jidt_estimator = JidtKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -461,8 +478,19 @@ def test_kraskov_te_gaussian():
 
     print(f"\nJidtKraskovTE: {te_jidt} (took {itoc - itic} seconds)")
 
-    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "scipy_kdtree"}
-    print(settings)
+    """
+    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "algorithm_num": 2}
+    jidt_estimator = JidtKraskovTE(settings)
+
+    itic = time.perf_counter()
+    te_jidt2 = jidt_estimator.estimate(source=source1, target=target)
+    itoc = time.perf_counter()
+
+    print(f"\nJidtKraskovTE (alg2): {te_jidt2} (took {itoc - itic} seconds)")
+    """
+
+    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1, "knn_finder": "scipy_kdtree"}
+    #print(settings)
     python_estimator = PythonKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -471,8 +499,19 @@ def test_kraskov_te_gaussian():
 
     print(f"PythonKraskovTE (scipy_kdtree): {te_python} (took {itoc - itic} seconds)")
     assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    """
+    settings = {"kraskov_k": 4, "history_target": ht, "noise_level": 0, "num_threads": 1, "knn_finder": "scipy_ckdtree"}
+    #print(settings)
+    python_estimator = PythonKraskovTE(settings)
 
-    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_kdtree"}
+    itic = time.perf_counter()
+    te_python = python_estimator.estimate(source=source1, target=target)
+    itoc = time.perf_counter()
+
+    print(f"PythonKraskovTE (scipy_ckdtree): {te_python} (took {itoc - itic} seconds)")
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+
+    settings = {"kraskov_k": 4, "history_target": ht, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_kdtree"}
     python_estimator = PythonKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -482,7 +521,7 @@ def test_kraskov_te_gaussian():
     print(f"PythonKraskovTE (sklearn_kdtree): {te_python} (took {itoc - itic} seconds)")
     assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
     
-    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_balltree"}
+    settings = {"kraskov_k": 4, "history_target": ht, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_balltree"}
     python_estimator = PythonKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -492,7 +531,7 @@ def test_kraskov_te_gaussian():
     print(f"PythonKraskovTE (sklearn_balltree): {te_python} (took {itoc - itic} seconds)")
     assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
 
-    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "numba_brute"}
+    settings = {"kraskov_k": 4, "history_target": ht, "noise_level": 0, "num_threads": 1, "knn_finder": "numba_brute"}
     python_estimator = PythonKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -501,9 +540,7 @@ def test_kraskov_te_gaussian():
 
     print(f"PythonKraskovTE (numba_brute): {te_python} (took {itoc - itic} seconds)")
     assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
-
-
-
+    """
 
 ############################################################################################### TODO
 def test_gaussian_te_gaussian():
@@ -527,18 +564,25 @@ def test_gaussian_te_gaussian():
     print(f"\nJidtGaussianTE: {te_jidt} (took {itoc - itic} seconds)")
 
     settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "scipy_kdtree"}
-    print(settings)
     python_estimator = PythonGaussianTE(settings)
 
     itic = time.perf_counter()
     te_python = python_estimator.estimate(source=source1, target=target)
-    te_python2 = python_estimator.estimate(source=target, target=source1)
     itoc = time.perf_counter()
 
     print(f"PythonGaussianTE (scipy_kdtree): {te_python} (took {itoc - itic} seconds)")
-    print(f"PythonGaussianTE (scipy_kdtree): {te_python2} (took {itoc - itic} seconds)")
-    #assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
-    """
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    
+    settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "scipy_ckdtree"}
+    python_estimator = PythonGaussianTE(settings)
+
+    itic = time.perf_counter()
+    te_python = python_estimator.estimate(source=source1, target=target)
+    itoc = time.perf_counter()
+
+    print(f"PythonGaussianTE (scipy_ckdtree): {te_python} (took {itoc - itic} seconds)")
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    
     settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_kdtree"}
     python_estimator = PythonGaussianTE(settings)
 
@@ -547,7 +591,7 @@ def test_gaussian_te_gaussian():
     itoc = time.perf_counter()
 
     print(f"PythonGaussianTE (sklearn_kdtree): {te_python} (took {itoc - itic} seconds)")
-    #assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
     
     settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "sklearn_balltree"}
     python_estimator = PythonGaussianTE(settings)
@@ -557,7 +601,7 @@ def test_gaussian_te_gaussian():
     itoc = time.perf_counter()
 
     print(f"PythonGaussianTE (sklearn_balltree): {te_python} (took {itoc - itic} seconds)")
-    #assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
 
     settings = {"kraskov_k": 4, "history_target": 1, "noise_level": 0, "num_threads": 1, "knn_finder": "numba_brute"}
     python_estimator = PythonGaussianTE(settings)
@@ -567,8 +611,8 @@ def test_gaussian_te_gaussian():
     itoc = time.perf_counter()
 
     print(f"PythonGaussianTE (numba_brute): {te_python} (took {itoc - itic} seconds)")
-    #assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
-    """
+    assert np.isclose(te_jidt, te_python, rtol=1e-4, atol=1e-4)
+    
 
 
 
@@ -702,14 +746,23 @@ def test_kraskov_theiler_t():
 if __name__ == '__main__':
     
     
-    #print("\n\nTest Kraskov CMI:\n")
-    #for sigma in _Sigmas_3var:
-    #    test_kraskov_cmi_gaussian(sigma)
-    
     #print("\n\nTest Kraskov MI:\n")
     #for sigma in _Sigmas_2var:
     #    test_kraskov_mi_gaussian(sigma)
+
+    #print("\n\nTest Kraskov CMI:\n")
+    #for sigma in _Sigmas_3var:
+    #    test_kraskov_cmi_gaussian(sigma)
         
+    #print("\n\nTest Kraskov TE:\n")
+    test_kraskov_te_gaussian()
+
+    #print("\n\nTest Kraskov Theiler_T correction:\n") ################################################## TODO
+    #test_kraskov_theiler_t()
+
+    #print("\n\nTest Kraskov AIS:\n")
+    #test_kraskov_ais()
+    
     #print("\n\nTest Gaussian MI:\n")
     #for sigma in _Sigmas_2var:
     #    test_gaussian_mi_gaussian(sigma)
@@ -717,36 +770,20 @@ if __name__ == '__main__':
     #print("\n\nTest Gaussian CMI:\n")
     #for sigma in _Sigmas_3var:
     #    test_gaussian_cmi_gaussian(sigma)
+
+    #print("\n\nTest Gaussian TE:\n")
+    #test_gaussian_te_gaussian()
     
     #print("\n\nTest Gaussian AIS:\n")
     #test_gaussian_ais()
     
-    #print("\n\nTest Kraskov AIS:\n")
-    #test_kraskov_ais()
-    
-    
 
 
     
     
-
-    # TODO
-    #print("\n\nTest Kraskov AIS:\n")
-    #test_kraskov_ais()
-
-    #print("\n\nTest Kraskov TE:\n")
-    #test_kraskov_te_gaussian()
-    
-    #print("\n\nTest Gaussian TE:\n")
-    #test_gaussian_te_gaussian()
-
-    #print("\n\nTest Discrete MI:\n")
+    #print("\n\nTest Discrete MI:\n") ################################################## TODO
     #test_discrete_mi_gaussian()
 
 
-    # TEST theiler_t for Kraskov estimators
-
-    #print("\n\nTest Kraskov Theiler_T correction:\n")
-    #test_kraskov_theiler_t()
-
+    
     print("All tests passed.")

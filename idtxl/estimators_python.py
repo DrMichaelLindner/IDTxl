@@ -17,9 +17,8 @@ class PythonEstimator(Estimator):
 
     Abstract class for implementation of Python estimators, child classes
     implement estimators for mutual information (MI), conditional mutual
-    information (CMI), 
-
-    active information storage (AIS), transfer entropy (TE) #################### ???????????????????????????????????????? TODO
+    information (CMI), active information storage (AIS) and
+    transfer entropy (TE)
     
     using the Kraskov-Grassberger-Stoegbauer estimator for continuous data,
     plug-in estimators for discrete data, and Gaussian estimators for
@@ -29,56 +28,67 @@ class PythonEstimator(Estimator):
     def __init__(self, settings=None):
         """Set default estimator settings.""" ######################################################### TODO
 
-        # Check for currently unsupported settings
-        if settings.get('local_values', False):
-            raise ValueError('This estimator currently does not support local_values.')
-        settings.setdefault('local_values', False)
+        
         self.settings = settings.copy()
 
     def _normalise_data(self, data: np.ndarray):
         """Standardise data to zero mean and unit variance."""
         return (data - np.mean(data, axis=0)) / np.std(data, axis=0)
+    
 
-    def _prepare_lagged_data(self, source, target, source_lag, target_lag, source_target_delay):
-        #X = np.asarray(X, dtype=float)
-        #Y = np.asarray(Y, dtype=float)
-        #
-        if source.ndim == 1:
-            source = source[:, None]
-        if target.ndim == 1:
-            target = target[:, None]
-        
-        start = max(source_lag, target_lag)
-        end = len(source) - source_target_delay
-        if end <= start:
-            raise ValueError("Not enough samples for the requested lags/horizon.")
+    #################################################################################################### TODO
 
-        target_t = target[start + source_target_delay:end + source_target_delay]
-        target_past = target[start:end]
-        source_past = source[start - source_lag:end - source_lag]
-
-        n = min(len(target_past), len(target_t), len(source_past))
-
-        return source_past[:n], target_past[:n], target_t[:n]
-
-    def embed_past_current(self, process, n, num_valid, history, tau):
-
-        #n = len(process)
-        #num_valid = n - history * tau - 1
-
+    def embed_past_current(self, process, num_valid, history, tau):
         # Build the embedded past vectors and current values
+
         past = np.zeros((num_valid, history), dtype=np.float64)
         current = np.zeros(num_valid, dtype=np.float64)
-
+        
         for i in range(num_valid):
+        #past = np.zeros((len(num_valid), history), dtype=np.float64)
+        #current = np.zeros(len(num_valid), dtype=np.float64)
+
+        #for i in range(len(num_valid)):
             t = i + history * tau + 1
+            #current[i] = process[t+start]
             current[i] = process[t]
             for j in range(history):
+                #past[i, j] = process[t+start - (j + 1) * tau]
                 past[i, j] = process[t - (j + 1) * tau]
 
         return past, current
 
-    
+    #################################################################################################### TODO
+
+    def takens_embedding(x, dim, delay):
+        x = np.asarray(x, dtype=float)
+        if x.ndim != 1:
+            raise ValueError("x must be a 1D array")  
+        n = len(x)
+        start = (dim - 1) * delay
+        if start >= n:
+            raise ValueError("Embedding dimension and delay too large for data length")
+        Y = np.zeros((n - start, dim), dtype=float)
+        for i in range(dim):
+            t = start - i * delay
+            Y[:, i] = x[t:t + n - start]
+        return Y
+
+    def delay_embedding(ts, dim, delay, step):
+        ts = np.asarray(ts)
+        n = len(ts)
+        m = n - (dim - 1) * delay
+        if m <= 0:
+            return np.empty((0, dim), dtype=ts.dtype)
+
+        idx = np.arange(m)[:, None] + delay * np.arange(dim)[None, :]
+        idx = idx[::step]
+        return ts[idx]
+
+
+    #################################################################################################### TODO
+
+
     def is_analytic_null_estimator(self):
         return False
 
@@ -91,11 +101,7 @@ class PythonKraskov(PythonEstimator):
 
     Abstract class for implementation of Python Kraskov estimators, child classes
     implement estimators for mutual information (MI), conditional mutual
-    information (CMI),
-
-
-    actice information storage (AIS), ############################################# ??????????????????????? TODO?
-
+    information (CMI), actice information storage (AIS)
     and transfer entropy (TE) 
 
     Args:
@@ -117,11 +123,8 @@ class PythonKraskov(PythonEstimator):
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
               available threads on the current machine)
-
-            ################################################ ???????????????????????????????????????????????????? local values ??????
-
-            - local_values : bool [optional] - return local TE instead of
-              average TE (default=False)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
             
     """
 
@@ -135,6 +138,7 @@ class PythonKraskov(PythonEstimator):
         settings.setdefault('num_threads', 'USE_ALL')
         settings.setdefault("knn_finder", "scipy_ckdtree")
         settings.setdefault("lag_mi", 0)
+        settings.setdefault('local_values', False)
         super().__init__(settings)
 
         ################################################################################# TODO
@@ -167,12 +171,8 @@ class PythonGaussian(PythonEstimator):
 
     Abstract class for implementation of Python Gaussian-estimators, child
     classes implement estimators for mutual information (MI), conditional
-    mutual information (CMI), 
-
-    actice information storage (AIS), ############################################# ??????????????????????? TODO?
-
-    transfer
-    entropy (TE) using python Gaussian estimator for continuous data. 
+    mutual information (CMI), actice information storage (AIS) and
+    transfer entropy (TE) using python Gaussian estimator for continuous data. 
 
     Args:
         settings : dict [optional]
@@ -184,6 +184,11 @@ class PythonGaussian(PythonEstimator):
     """
 
     def __init__(self, settings):
+        # Check for currently unsupported settings
+        if settings.get('local_values', False):
+            raise ValueError('This estimator currently does not support local_values.')
+        settings.setdefault('local_values', False)
+
         settings.setdefault('normalise', False)
         settings.setdefault('noise_level', 0)
         super().__init__(settings)
@@ -335,7 +340,9 @@ class PythonDiscrete(PythonEstimator):
 class PythonKraskovMI(PythonKraskov):
     """Estimate mutual information using Kraskov's estimator.
 
-    Calculate the mutual information between two variables.
+    Calculate the mutual information between two variables. 
+
+    Results are returned in nats.
     
     Args:
         settings : dict [optional]
@@ -354,12 +361,13 @@ class PythonKraskovMI(PythonKraskov):
               available threads on the current machine)
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
-            
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+
             #   ################################################################################################################## TODO
             - theiler_t : int [optional] - no. next temporal neighbours ignored
               in KNN and range searches (default=0)
             
-            ################################################ ???????????????????????????????????????????????????? local values ??????
 
     """
     def __init__(self, settings):
@@ -369,8 +377,8 @@ class PythonKraskovMI(PythonKraskov):
 
         ################################################################################################## TODO
         # Check for currently unsupported settings
-        if settings.get('local_values', False) or settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support local_values or algorithm_num arguments.')
+        if settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
         """
         
 
@@ -466,31 +474,42 @@ class PythonKraskovMI(PythonKraskov):
         #    n_c_var1 = self._compute_n_theiler(var1, epsilon, self.settings['theiler_t'])
         #else:
         n_c_var1 = self._compute_n(var1, epsilon)
-        mean_digamma_nc_var1 = np.mean(digamma(n_c_var1))
+        digamma_nc_var1 = digamma(n_c_var1)
         del n_c_var1
 
         #if self.settings['theiler_t'] > 0: ############################################################################################ TODO Theiler correction
         #    n_c_var2 = self._compute_n_theiler(var2, epsilon, self.settings['theiler_t'])
         #else:
         n_c_var2 = self._compute_n(var2, epsilon)
-        mean_digamma_nc_var2 = np.mean(digamma(n_c_var2))
+        digamma_nc_var2 = digamma(n_c_var2)
         del n_c_var2
 
         # Compute MI
-        mi = (digamma(self.settings['kraskov_k']) 
+        if self.settings["local_values"]:
+            mi = (digamma(self.settings['kraskov_k']) 
                 + digamma(len(var1))
-                - mean_digamma_nc_var1
-                - mean_digamma_nc_var2
+                - digamma_nc_var1
+                - digamma_nc_var2
+            ) / np.log(self.settings['base'])
+
+        else:
+            mi = (digamma(self.settings['kraskov_k']) 
+                + digamma(len(var1))
+                - np.mean(digamma_nc_var1)
+                - np.mean(digamma_nc_var2)
             ) / np.log(self.settings['base'])
 
         return mi
 
 
-
 class PythonKraskovCMI(PythonKraskov):
     """Estimate conditional mutual information using Kraskov's first estimator.
 
-        ##################################################################################################### TODO
+    Calculate the conditional mutual information (CMI) between three variables.
+    If no conditional is given (is None), the function returns the mutual information 
+    between var1 and var2.
+
+    Results are returned in nats.
 
     Args:
         settings : dict [optional]
@@ -510,9 +529,9 @@ class PythonKraskovCMI(PythonKraskov):
               available threads on the current machine)
             - knn_finder : str [optional] - knn algorithm to use, can be
               'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn_balltree'
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
 
-
-            ################################################ ???????????????????????????????????????????????????? local values ??????
     """
 
     def __init__(self, settings):
@@ -521,8 +540,8 @@ class PythonKraskovCMI(PythonKraskov):
         super().__init__(settings)
         
         # Check for currently unsupported settings
-        if settings.get('local_values', False) or settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support local_values or algorithm_num arguments.')
+        if settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
         if self.settings['noise_level'] > 0:
             rng_seed = settings.get("rng_seed", None)
@@ -615,40 +634,42 @@ class PythonKraskovCMI(PythonKraskov):
             #    n_c = self._compute_n_theiler(conditional, epsilon, self.settings['theiler_t'])
             #else:
             n_c = self._compute_n(conditional, epsilon)
-            mean_digamma_nc = np.mean(digamma(n_c))
+            #mean_digamma_nc = np.mean(digamma(n_c))
+            digamma_nc = digamma(n_c)
             del n_c
 
         #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
         #    n_c_var1 = self._compute_n_theiler(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
         #else: 
         n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon)
-        mean_digamma_nc_var1 = np.mean(digamma(n_c_var1))
+        #mean_digamma_nc_var1 = np.mean(digamma(n_c_var1))
+        digamma_nc_var1 = digamma(n_c_var1)
         del n_c_var1
 
         #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
         #    n_c_var2 = self._compute_n_theiler(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
         #else: 
         n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon)
-        mean_digamma_nc_var2 = np.mean(digamma(n_c_var2))
+        #mean_digamma_nc_var2 = np.mean(digamma(n_c_var2))
+        digamma_nc_var2 = digamma(n_c_var2)
         del n_c_var2
 
-        if conditional.shape[1] > 0:
-            # Compute CMI
+        # Compute CMI
+        if self.settings["local_values"]:
             return (
                 digamma(self.settings['kraskov_k'])
-                + mean_digamma_nc
-                - mean_digamma_nc_var1
-                - mean_digamma_nc_var2
-            ) / np.log(self.settings['base'])
+                + digamma_nc
+                - digamma_nc_var1
+                - digamma_nc_var2
+            ) / np.log(self.settings['base'])     
         else:
-            # Compute MI
             return (
                 digamma(self.settings['kraskov_k'])
-                + digamma(len(var1))
-                - mean_digamma_nc_var1
-                - mean_digamma_nc_var2
+                + np.mean(digamma_nc)
+                - np.mean(digamma_nc_var1)
+                - np.mean(digamma_nc_var2)
             ) / np.log(self.settings['base'])
-
+            
 
 class PythonKraskovAIS(PythonKraskov):
     """Calculate active information storage with Python Kraskov implementation.
@@ -682,10 +703,10 @@ class PythonKraskovAIS(PythonKraskov):
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
               available threads on the current machine)
-            
-            ########################################################################################################### local values
-              - local_values : bool [optional] - return local TE instead of
+            - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
+            
+            ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
             
@@ -738,24 +759,33 @@ class PythonKraskovAIS(PythonKraskov):
         if num_valid <= 0:
             raise ValueError(f"Not enough valid embedding vectors")
         
-        past, current = self.embed_past_current(process, n, num_valid, self.settings['history'], self.settings['tau'])
+        past, current = self.embed_past_current(process, num_valid, self.settings['history'], self.settings['tau'])
 
         est_mi=PythonKraskovMI(self.settings)
         mi = est_mi.estimate(var1=current, var2=past)
 
-        return mi
-
-    
+        return mi    
 
 
 ################################################################################ TODO
 class PythonKraskovTE(PythonKraskov):
     """Estimate transfer using Kraskov's estimator.
+     
+    Calculate transfer entropy between a source and a target variable using
+    Python implementation of the Kraskov estimator. Transfer entropy is
+    defined as the conditional mutual information between the source's past
+    state and the target's current value, conditional on the target's past.
     
-        ##################################################################################################### TODO
+    The past state needs to be defined in the settings dictionary, where a past
+    state is defined as a uniform embedding with parameters history and tau.
+    The history describes the number of samples taken from a processes' past,
+    tau describes the embedding delay, i.e., the spacing between every two
+    samples from the processes' past.
+    
+    Results are returned in nats.
 
     Args:
-        settings : dict [optional]
+        settings : dict 
             set estimator parameters:
             - kraskov_k : int [optional] - no. nearest neighbours for KNN
               search (default=4)
@@ -897,353 +927,123 @@ class PythonKraskovTE(PythonKraskov):
             target = target + self._rng.normal(0, self.settings['noise_level'], target.shape)
         
 
-        #y->x
-        #x_next, x_past, y_past = align_te_series(x, y, m_x=m_x, m_y=m_y, tau_x=tau_x, tau_y=tau_y, delay=delay)
 
-        target_next1, target_past1, source_past1 = self.align_te_series(target, source, 
-                                m_x=self.settings['history_target'], 
-                                m_y=self.settings['history_source'], 
-                                tau_x=self.settings['tau_target'], 
-                                tau_y=self.settings['tau_source'], 
-                                delay=self.settings['source_target_delay'])
+        min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
+                        self.settings['history_target'] * self.settings['tau_target'] + 2)
         
-
-        print(target_next1.shape)
-        print(target_past1.shape)
-        print(source_past1.shape)
-        nN=source_past1.shape[0]
-        print(nN)
-
-        #maxlag = max((self.settings['history_source'] - 1) * self.settings['tau_source'], + self.settings['source_target_delay'], 
-        #            (self.settings['history_target'] - 1) * self.settings['tau_target'])
-        maxlag = max((self.settings['history_source'] - 1) * self.settings['tau_source'], 
-                    (self.settings['history_target'] - 1) * self.settings['tau_target'])#,
-                    #self.settings['source_target_delay'])
+        if N < min_length:
+            raise ValueError(f"Data too short: need at least {min_length} samples, got {N}")
         
-        print(maxlag)
-
-        ########################################################################################### ???????????????????????????????????????
-        #N = min(len(source), len(target)) - 1 - maxlag
-
-        NN = N-self.settings['source_target_delay']
-
-        #target = target[maxlag:N]
-        target = target[maxlag:NN]
-        #target_future = target[maxlag+1:N+1]
-        target_future = target[maxlag+self.settings['source_target_delay']:NN+self.settings['source_target_delay']]
-        #source = source[maxlag - self.settings['source_target_delay']: N-self.settings['source_target_delay']]
-        source = source[maxlag:NN]
-
-        #print(target.shape)
-        #print(target_future.shape)
-        #print(source.shape)
-
-        mn=min(len(target), len(target_future), len(source))
-
-        t_emb = self.takens_embedding(target[:mn], self.settings['history_target'], self.settings['tau_target'])
-        tf_emb = self.takens_embedding(target_future[:mn], self.settings['history_target'], self.settings['tau_target'])
-        s_emb = self.takens_embedding(source[:mn], self.settings['history_source'], self.settings['tau_source'])
-        #x=target_future[:len(t_emb)]
-        #tf_emb=x[:,None]
-
-
+        valids= np.array([N - self.settings['history_source'] * self.settings['tau_source'] - 1, N - self.settings['history_target'] * self.settings['tau_target'] - 1])
         
+        min_valid = min(valids) 
         
-
+        num_valid = min_valid - self.settings['source_target_delay']
         """
-        # test conditionaL
-        self.est_mi = PythonKraskovCMI(self.settings)
-        te0 = self.est_mi.estimate(source[:mn], target[:mn], target_future[:mn])
-        print("cond1 te:")
-        print(te0)
-        self.est_mi = PythonKraskovCMI(self.settings)
-        te01 = self.est_mi.estimate(s_emb, t_emb, tf_emb)
-        print("cond2 te:")
-        print(te01)
+        starts = valids - num_valid
+        #starts[0] = starts[0] -self.settings['source_target_delay']
+
+        valid_vec_source = np.arange(num_valid)
+        valid_vec_target = valid_vec_source + self.settings['source_target_delay']
+
+        print(valids)
+        print(min_valid)
+        print(num_valid)
+        print(starts)
+        print("source: ", valid_vec_source[0]," : ",valid_vec_source[-1])
+        print(len(valid_vec_source))
+        print("tartget: ", valid_vec_target[0]," : ",valid_vec_target[-1])
+        print(len(valid_vec_target))
+        print("source: ",N - self.settings['history_source'] * self.settings['tau_source'] - 1)
+        print("target: ", N - self.settings['history_target'] * self.settings['tau_target'] - 1)
         """
-        self.est_mi = PythonKraskovCMI(self.settings)
-        te01 = self.est_mi.estimate(source_past1, target_past1, target_next1)
-        print("cond2 te:")
-        print(te01)
+
+        if num_valid <= 0:
+            raise ValueError(f"Not enough valid embedding vectors")
         
 
-        """
-        source = source[:n + 1 + max_lag]
-        target = target[:n + 1 + max_lag]
-
-        target_future = target[max_lag + 1:max_lag + 1 + n]
-        target_past = takens_embedding(target[:max_lag + n], self.settings['history_target'], self.settings['tau_target'])[:n]
-        source_past = takens_embedding(source[:max_lag + n], self.settings['history_source'], self.settings['tau_source'])[:n]
-        """
-        #source_past, target_past, target_future = self._prepare_lagged_data(source, target, 
-        #    self.settings['history_source'], 
-        #    self.settings['history_target'], 
-        #    self.settings['source_target_delay'])
-
-
-        #source_past2 = self.delay_embed(source, self.settings['history_source'], self.settings['tau_source'])
-        #target_past2 = self.delay_embed(target, self.settings['history_target'], self.settings['tau_target'])
         
-        #print(source_past.shape)
-        #print(source_past2.shape)
-        #print(target_past.shape)
-        #print(target_past2.shape)
-        #print(target_future.shape)
-        #print(target.shape)
-        #if target.ndim == 1:
-        #    target = target[:, None]
-        #print(target.shape)
-        #print(s_emb.shape)
-        #print(t_emb.shape)
-        #print(tf_emb.shape)
+        #source_past, source_current = self.embed_past_current(source, valid_vec_source, self.settings['history_source'], self.settings['tau_source'])
+        source_past, source_current = self.embed_past_current(source, num_valid, 0, self.settings['history_source'], self.settings['tau_source'])
+        
+        #target_past, target_current = self.embed_past_current(target, valid_vec_target, self.settings['history_target'], self.settings['tau_target'])
+        target_past, target_current = self.embed_past_current(target, num_valid, self.settings['source_target_delay'], self.settings['history_target'], self.settings['tau_target'])
 
-        #mn=min(len(source_past), len(source_past2), len(target_past), len(target_past2), len(target_future))
-        #mn=min(len(source_past2), len(target_past2), len(target_future), len(target))
-        #print(mn)
-        #target_future=target_future[:mn]
-        #print(target_future.shape)
-
+        
+        if target_current.ndim == 1:
+            target_current = target_current[:, None]
+     
         # Compute distances to kth nearest neighbors in the joint space
         epsilon = self._compute_epsilon(
-            #np.concatenate((target, target_past2, source_past2), axis=1), self.settings['kraskov_k']
-            #np.hstack([target_future2, target_past2, source_past2]), self.settings['kraskov_k']
-            #np.hstack([target_future[:mn], target[:mn], source[:mn]]), self.settings['kraskov_k']
-
-            #np.hstack([tf_emb, t_emb, s_emb]), self.settings['kraskov_k']
-
-            np.hstack([target_next1, target_past1, source_past1]), self.settings['kraskov_k']
-
+            np.hstack([target_current, target_past, source_past]), self.settings['kraskov_k']
         )
+        
+        k = self.settings['kraskov_k']
 
-
-        eps_cor = 1e-10
+        
+        # algorithm 1
+        
         #eps_cor=0
-        #n_xy = self._compute_n(np.concatenate((target_past2, source_past2), axis=1), epsilon)
-        #n_xy = self._compute_n(np.concatenate((target[:mn], source[:mn]), axis=1), epsilon-eps_cor)
+        epsi = epsilon#np.nextafter(epsilon, 0)
+        n_xy = self._compute_n(np.concatenate((target_past, source_past), axis=1), epsi)
         
-        #n_xy = self._compute_n(np.concatenate((t_emb, s_emb), axis=1), epsilon-eps_cor)
-
-        n_xy = self._compute_n(np.concatenate((target_past1, source_past1), axis=1), epsilon-eps_cor)
-
-
-
-        #n_yf = self._compute_n(np.concatenate((target_future2, target_past2), axis=1), epsilon)
-        #n_yf = self._compute_n(np.concatenate((target_future[:mn], target[:mn]), axis=1), epsilon-eps_cor)
+        n_yf = self._compute_n(np.concatenate((target_current, target_past), axis=1), epsi)
         
-        #n_yf = self._compute_n(np.concatenate((tf_emb, t_emb), axis=1), epsilon-eps_cor)
-        n_yf = self._compute_n(np.concatenate((target_next1, target_past1), axis=1), epsilon-eps_cor)
+        n_y = self._compute_n(target_past, epsi)
 
 
-        #n_y = self._compute_n(target_past2, epsilon)
-        #n_y = self._compute_n(target[:mn], epsilon-eps_cor)
-        
-        #n_y = self._compute_n(t_emb, epsilon-eps_cor)
-
-        n_y = self._compute_n(target_past1, epsilon-eps_cor)
-
-
-        k = self.settings['kraskov_k']
         # compute estimate
-        #avg = np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
-        I = digamma(k) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
-        #print(I)
-
-        # I = digamma(k) + <digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1)>  (some variants)
-        # We'll follow the commonly used expression:
-        # I = digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(N)
-        #print(digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(mn))
-        print(digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(nN))
-        # However typical KSG form for conditional MI (see Frenzel & Pompe 2007) is:
-        # I = digamma(k) + <digamma(n_y) - digamma(n_xy) - digamma(n_yf)>    (with counts strictly within eps)
-        print(digamma(k) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf)))
-        # To avoid off-by-one differences, we'll implement the widely used form:
-        # I = digamma(k) + (1/L) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) 
-        #print(digamma(k) + (1/mn) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) )
-        print(digamma(k) + (1/nN) * sum( digamma(n_y) - digamma(n_xy) - digamma(n_yf) ) )
-    
-
-
-
-        return I
-
-        """
-        x=source
-        y=target
-        k = self.settings['kraskov_k']
-        tau_x = self.settings['tau_source']
-        tau_y = self.settings['tau_target']
-        lx = self.settings['history_source']
-        ly = self.settings['history_target']
-
-        max_lag = max(lx * tau_x, ly * tau_y)
-        x_t = x[max_lag:-1]
-        y_t1 = y[max_lag + 1:]
-
-        def history(series, dim, tau):
-            cols = []
-            for i in range(dim):
-                cols.append(series[max_lag - i * tau: -1 - i * tau])
-            return np.column_stack(cols)
-
-        y_hist = history(y, ly, tau_y)
-        x_hist = history(x, lx, tau_x)
-
-        n = len(y_t1)
-        if len(x_hist) != n or len(y_hist) != n:
-            m = min(n, len(x_hist), len(y_hist))
-            y_t1 = y_t1[:m]
-            y_hist = y_hist[:m]
-            x_hist = x_hist[:m]
-            n = m
-
-        joint = np.column_stack([y_t1, y_hist, x_hist])
-        yz = np.column_stack([y_t1, y_hist])
-        yx = np.column_stack([y_hist, x_hist])
-        y_only = y_hist
-
-        tree_joint = cKDTree(joint)
-        dists, _ = tree_joint.query(joint, k=k + 1, p=np.inf)
-        eps = np.nextafter(dists[:, k], 0)
-
-        tree_yz = cKDTree(yz)
-        tree_yx = cKDTree(yx)
-        tree_y = cKDTree(y_only)
-
-        nxz = np.array([len(tree_yz.query_ball_point(yz[i], eps[i], p=np.inf)) - 1 for i in range(n)])
-        nzy = np.array([len(tree_yx.query_ball_point(yx[i], eps[i], p=np.inf)) - 1 for i in range(n)])
-        ny = np.array([len(tree_y.query_ball_point(y_only[i], eps[i], p=np.inf)) - 1 for i in range(n)])
-
-        te = digamma(k) + digamma(n) - np.mean(digamma(nxz + 1) + digamma(nzy + 1) - digamma(ny + 1))
         
-        print("te:")
-        print(te)
+        te = digamma(k) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
+
+        ##################################################################################### TODO local value
+        #print(digamma(k) + digamma(n_y) - digamma(n_xy) - digamma(n_yf))
+
+
+
+        ######################################################################################################## TODO algorithm 2
+        # algorithm 2
+        """
+        #eps_cor = 1e-14
+        epsi=epsilon+1e-15
+        #n_xy2 = self._compute_n(np.concatenate((target_pastX, source_pastX), axis=1), epsilon-eps_cor)
+        n_xy2 = self._compute_n(np.concatenate((target_pastX, source_pastX), axis=1), epsi)
+        
+        #n_yf2 = self._compute_n(np.concatenate((target_currentX, target_pastX), axis=1), epsilon-eps_cor)
+        n_yf2 = self._compute_n(np.concatenate((target_currentX, target_pastX), axis=1), epsi)
+
+        #n_y2 = self._compute_n(target_pastX, epsilon-eps_cor)
+        n_y2 = self._compute_n(target_pastX, epsi)
+
+        #I2 = digamma(k) + digamma(len(target_pastX)) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) )
+        #I2 = digamma(k) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) )
+        I2 = digamma(k) - digamma(len(target_pastX)) - np.mean( digamma(n_yf2) + digamma(n_y2) - digamma(n_xy2) )
+        
+        print("alg 2: ", I2)
+
+        ## I = digamma(k) + <digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1)>  (some variants)
+        ## We'll follow the commonly used expression:
+        ## I = digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(N)
+        ##print(digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(mn))
+        print(digamma(k) - (1/k) * sum( digamma(n_xy2 + 1) + digamma(n_yf2 + 1) - digamma(n_y2 + 1) ) + digamma(N))
+        ## However typical KSG form for conditional MI (see Frenzel & Pompe 2007) is:
+        ## I = digamma(k) + <digamma(n_y) - digamma(n_xy) - digamma(n_yf)>    (with counts strictly within eps)
+        print(digamma(k) + np.mean(digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2)))
+        ## To avoid off-by-one differences, we'll implement the widely used form:
+        ## I = digamma(k) + (1/L) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) 
+        ##print(digamma(k) + (1/mn) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) )
+        print(digamma(k) + (1/N) * sum( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
+
+        print(digamma(k) + digamma(len(target_pastX)) - sum( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
+        print(digamma(k) + digamma(len(target_pastX)) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
+
         """
         
 
-        
-
-
-        # test lag
-        #source_past, target_past, target_future = self._prepare_lagged_data(source, target, 
-        #    self.settings['history_source'], 
-        #    self.settings['history_target'], 
-        #    self.settings['source_target_delay'])
-        #self.est_mi = PythonKraskovCMI(self.settings)
-        #te2 = self.est_mi.estimate(source_past, target_future, target_past)
-        #print("te2:")
-        #print(te2)
-        
-        # test 3
-        #source_past2 = self.delay_embedding(source, self.settings['history_source'], self.settings['tau_source'], 1)
-        #target_past2 = self.delay_embedding(target, self.settings['history_target'], self.settings['tau_target'], 1)
-        #te3 = self.est_mi.estimate(source_past2, target, target_past2)
-        #print("te3:")
-        #print(te3)
-
-
-
-        
-
-
-        #source_past = delay_embed(source, self.settings['history_source'], self.settings['tau_source'])
-        #target_past = delay_embed(target, self.settings['history_target'], self.settings['tau_target'])
-
-
-        """
-        # Compute distances to kth nearest neighbors in the joint space
-        nyz = np.concatenate((source_past, target_past, target_future), axis=1)
-        epsilon = self._compute_epsilon(nyz , self.settings['kraskov_k']
-        )
-
-        nc_st = self._compute_n(np.concatenate((source_past, target_past), axis=1), epsilon)
-        #mean_digamma_nc_st = np.mean(digamma(nc_st)) # ??????????????????????????????????????????????????????????????
-        
-        nc_tt = self._compute_n(np.concatenate((target_past, target_future), axis=1), epsilon)
-        #mean_digamma_nc_tt = np.mean(digamma(nc_tt)) # ??????????????????????????????????????????????????????????????
-        
-        nc_t = self._compute_n((target_future), epsilon)
-        #mean_digamma_nc_t = np.mean(digamma(nc_t)) # ??????????????????????????????????????????????????????????????
-        
-        n = len(nyz)
-        te = (np.log(self.settings['kraskov_k']) + np.mean(np.log((nc_t + 1) / ((nc_st + 1) * (nc_tt + 1)))))
-
-        #print(te)
-        #print(te/ np.log(self.settings['base']))
-        """
 
         return te
 
-    #def delay_embedding(self, series, dimension, delay, step):
-    #    series = list(series)
-    #    n = len(series) - (dimension - 1) * delay
-    #    if n <= 0:
-    #        return []
-    #    embedded = []
-    #    for i in range(0, n, step):
-    #        point = [series[i + j * delay] for j in range(dimension)]
-    #        embedded.append(point)
-    #    return np.array(embedded, dtype=np.float64)
-
-    #def valid_indices(n, k, l, tau_x, tau_y, u):
-    #    start = max((k - 1) * tau_x, (l - 1) * tau_y)
-    #    end = n - u - 1
-    #    return np.arange(start, end + 1)
-
-    def align_te_series(self, x, y, m_x=1, m_y=1, tau_x=1, tau_y=1, delay=1):
-        x = np.asarray(x, dtype=float).ravel()
-        y = np.asarray(y, dtype=float).ravel()
-        max_lag = max((m_x - 1) * tau_x, (m_y - 1) * tau_y + delay)
-        n = min(len(x), len(y)) - max_lag - 1
-        if n <= 0:
-            raise ValueError("Time series too short for the requested delay/embedding.")
-        xt = np.column_stack([x[max_lag - i*tau_x : max_lag - i*tau_x + n] for i in range(m_x)])
-        yt_past = np.column_stack([y[max_lag - delay - i*tau_y : max_lag - delay - i*tau_y + n] for i in range(m_y)])
-        x_next = x[max_lag + 1 : max_lag + 1 + n][:, None]
-        return x_next, xt, yt_past
-
-
-    def delay_embed(self, data, history, tau):
-        """
-        Taken delay embedding.
-        data: 1D array (length T)
-        history: embedding history (positive int)
-        tau: delay (positive int)
-        Returns: 2D array shape (T_embedded, m)
-        """
-        N = len(data)
-        last_index = (history - 1) * tau
-        L = N - last_index
-        inds = np.arange(L)[:, None] + np.arange(history) * tau
-        return data[inds]
-
-    def takens_delay_embed(self, data, history, tau):
-        """
-        Taken delay embedding.
-        data: 1D array (length T)
-        history: embedding history (positive int)
-        tau: delay (positive int)
-        Returns: 2D array shape (T_embedded, m)
-        """
-        N = len(data)
-        last_index = (history - 1) * tau
-        L = N - last_index
-        inds = np.arange(L)[:, None] + np.arange(history) * tau
-        return data[inds]
-
-    def takens_embedding(self, x, dim, delay):
-        """
-        Build a Takens delay embedding.
-        Returns array of shape (N - (dim-1)*delay, dim).
-        """
-        x = np.asarray(x, dtype=float)
-        n = len(x)
-        m = n - (dim - 1) * delay
-        if m <= 0:
-            raise ValueError("Time series too short for given dim and delay.")
-        return np.column_stack([x[i:i + m] for i in range(0, dim * delay, delay)])
-
-
-
+        
 
 ################################################################################ TODO
 class PythonDiscreteMI(PythonDiscrete):
@@ -1390,6 +1190,8 @@ class PythonGaussianMI(PythonGaussian):
 
     Calculate the mutual information between two variables.
 
+    Results are returned in nats.
+
     Args:
         settings : dict [optional]
             set estimator parameters:
@@ -1400,7 +1202,6 @@ class PythonGaussianMI(PythonGaussian):
             ################################################ ???????????????????????????????????????????????????? local values ??????
             - local_values : False, 
             
-        ##################################################################################################### TODO
 
     """
     def __init__(self, settings):
@@ -1474,7 +1275,6 @@ class PythonGaussianMI(PythonGaussian):
         return mi
 
 
-
 class PythonGaussianCMI(PythonGaussian):
     """Calculate conditional mutual information with python Gaussian implementation.
 
@@ -1484,6 +1284,8 @@ class PythonGaussianCMI(PythonGaussian):
     multivariate Gaussian distribution.
     If no conditional is given (is None), the function returns the mutual
     information between var1 and var2.
+
+    Results are returned in nats.
 
     Args:
         settings : dict [optional]
@@ -1592,8 +1394,6 @@ class PythonGaussianCMI(PythonGaussian):
         return cmi
 
 
-
-################################################################################# TODO with MI
 class PythonGaussianAIS(PythonGaussian):
     """Calculate active information storage with Python Gaussian implementation.
 
@@ -1648,10 +1448,6 @@ class PythonGaussianAIS(PythonGaussian):
             float | numpy array
                 average AIS over all samples 
 
-                
-            # ################################################################################################# TODO local values
-                or local AIS for individual
-                samples if 'local_values'=True
         """
 
         process = self._ensure_one_dim_input(process)
@@ -1669,7 +1465,8 @@ class PythonGaussianAIS(PythonGaussian):
         if num_valid <= 0:
             raise ValueError(f"Not enough valid embedding vectors")
         
-        past, current = self.embed_past_current(process, n, num_valid, self.settings['history'], self.settings['tau'])
+        past, current = self.embed_past_current(process, num_valid, self.settings['history'], self.settings['tau'])
+        past = self.delay_embedding(process)
 
         est_mi=PythonGaussianMI(self.settings)
         mi = est_mi.estimate(var1=current, var2=past)
@@ -1691,7 +1488,8 @@ class PythonGaussianTE(PythonGaussian):
     The history describes the number of samples taken from a variable's past,
     tau descrices the embedding delay, i.e., the spacing between every two
     samples from the processes' past.
-        
+
+    Results are returned in nats.        
 
     Args:
         settings : dict
@@ -1803,119 +1601,56 @@ class PythonGaussianTE(PythonGaussian):
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
 
 
-        print(self.settings)
+        
+        N = source.shape[0]
+
+        min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
+                        self.settings['history_target'] * self.settings['tau_target'] + 2)
+        
+        if N < min_length:
+            raise ValueError(f"Data too short: need at least {min_length} samples, got {N}")
+    
+        num_valid = min(N - self.settings['history_source'] * self.settings['tau_source'] - 1,
+            N - self.settings['history_target'] * self.settings['tau_target'] - 1)
+    
+        if num_valid <= 0:
+            raise ValueError(f"Not enough valid embedding vectors")
+        
+        
+        source_past, source_current = self.embed_past_current(source, num_valid, self.settings['history_source'], self.settings['tau_source'])
+        
+        target_past, target_current = self.embed_past_current(target, num_valid, self.settings['history_target'], self.settings['tau_target'])
+
+        
+        if target_current.ndim == 1:
+            target_current = target_current[:, None]
+     
 
 
-        n = source.shape[0]
 
-        max_shift = max((self.settings['history_source'] - 1) * self.settings['tau_source'] + self.settings['source_target_delay'], (self.settings['history_target'] - 1) * self.settings['tau_target']) + 1
-
-        # TODO assert()
         
 
-        target_f = target[max_shift:]
-        target_past = self.delay_embed(target[:-1], self.settings['history_target'], self.settings['tau_target'])
-        target_past = target_past[max((self.settings['history_target'] - 1) * self.settings['tau_target'], self.settings['source_target_delay']):]
+        #target_f = target[max_shift:]
+        #target_past = self.delay_embed(target[:-1], self.settings['history_target'], self.settings['tau_target'])
+        #target_past = target_past[max((self.settings['history_target'] - 1) * self.settings['tau_target'], self.settings['source_target_delay']):]
 
-        source_past = self.delay_embed(source[:-1-self.settings['source_target_delay']], self.settings['history_source'], self.settings['tau_source'])
-        source_past = source_past[max((self.settings['history_source'] -1) * self.settings['tau_source'], 0):]
+        #source_past = self.delay_embed(source[:-1-self.settings['source_target_delay']], self.settings['history_source'], self.settings['tau_source'])
+        #source_past = source_past[max((self.settings['history_source'] -1) * self.settings['tau_source'], 0):]
 
-        m = min(len(target_f), len(target_past), len(source_past))
-        target_f = target_f[:m]
-        target_past = target_past[:m]
-        source_past = source_past[:m]
+        #m = min(len(target_f), len(target_past), len(source_past))
+        #target_f = target_f[:m]
+        #target_past = target_past[:m]
+        #source_past = source_past[:m]
 
-        var_y = self._ols_resid_var(target_f, target_past)
-        var_yx = self._ols_resid_var(target_f, np.column_stack([target_past, source_past]))
+        var_y = self._ols_resid_var(target_current, target_past)
+        var_yx = self._ols_resid_var(target_current, np.column_stack([target_past, source_past]))
         te_nats = 0.5 * np.log(var_y / var_yx)
-        print(te_nats)
+        #print(te_nats)
         te_bits = te_nats / np.log(2.0)
-        print(te_bits)
+        #print(te_bits)
 
-
-        #x=target
-        #y=source
-        #m_x=self.settings['history_target']
-        #m_y=self.settings['history_source']
-        #tau_x=self.settings['tau_target']
-        #tau_y=self.settings['tau_source']
-        #delay=self.settings['source_target_delay']
-
-        #x_next, x_past, y_past = self.align_te_series(x, y, m_x=m_x, m_y=m_y, tau_x=tau_x, tau_y=tau_y, delay=delay)
-
-        #z1 = np.hstack([x_next, x_past])
-        #z2 = np.hstack([x_past, y_past])
-        #z3 = x_past
-        #z4 = np.hstack([x_next, x_past, y_past])
-
-        print(target_f.shape)
-        print(target_past.shape)
-        print(source_past.shape)
-
-        z1 = np.hstack([target_f, target_past])
-        z2 = np.hstack([target_past, source_past])
-        z3 = target_past
-        z4 = np.hstack([target_f, target_past, source_past])
-
-
-        def cov(a):
-            c = np.cov(a, rowvar=False, bias=False)
-            c = np.atleast_2d(c)
-            c = c + ridge * np.eye(c.shape[0])
-            return c
-
-        te_nats2 = self.gaussian_entropy(cov(z1)) + self.gaussian_entropy(cov(z2)) - self.gaussian_entropy(cov(z3)) - self.gaussian_entropy(cov(z4))
-        print(te_nats2)
-        te_bits2 = te_nats2 / np.log(2.0)
-        print(te_bits2)
         
-
-        """
-        source_past, target_past, target_future = self._prepare_lagged_data(source, target, 
-            self.settings['history_source'], 
-            self.settings['history_target'], 
-            self.settings['source_target_delay'])
-
-
-
-        #num = conditional_logdet(, Xp)
-        #den = conditional_logdet(Xt, _stack(Xp, Yp))
-        
-        #num = conditional_logdet(Xt, Xp)
-        #den = conditional_logdet(Xt, _stack(Xp, Yp))
-        #return 0.5 * (num - den)
-
-        # Restricted model: y_future ~ y_past
-        A_r = np.column_stack([np.ones(len(source_past)), target_past])
-        beta_r, *_ = np.linalg.lstsq(A_r, target_future, rcond=None)
-        resid_r = target_future - A_r @ beta_r
-        var_r = np.var(resid_r, ddof=1)
-
-        # Full model: y_future ~ y_past + x_past
-        A_f = np.column_stack([np.ones(len(source_past)), target_past, source_past])
-        beta_f, *_ = np.linalg.lstsq(A_f, target_future, rcond=None)
-        resid_f = target_future - A_f @ beta_f
-        var_f = np.var(resid_f, ddof=1)
-
-        te_nats = 0.5 * np.log(var_r / var_f)
-        #te_bits = te_nats / np.log(2)
-        #return te_nats
-
-        self.est_mi = PythonGaussianCMI(self.settings)
-        te2 = self.est_mi.estimate(source_past, target_future, target_past)
-
-        """
-        te=te_nats
-        #print(te)
-
-        #print(te2)
-        #source_past2 = self.delay_embedding(source, self.settings['history_source'], self.settings['tau_source'], 1)
-        #target_past2 = self.delay_embedding(target, self.settings['history_target'], self.settings['tau_target'], 1)
-
-        #te3 = self.est_mi.estimate(source_past2, target, target_past2)
-        #print(te3)
-        
-        return te
+        return te_nats
 
 
     def takens_embed(x, m=1, tau=1):
