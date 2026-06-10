@@ -12,6 +12,9 @@ import idtxl.idtxl_utils as utils
 from collections import Counter
 import math
 
+
+# Abstract classes
+
 class PythonEstimator(Estimator):
     """Abstract class for implementation of Python estimators
 
@@ -36,8 +39,9 @@ class PythonEstimator(Estimator):
         return (data - np.mean(data, axis=0)) / np.std(data, axis=0)
     
 
-    #################################################################################################### TODO
 
+    #################################################################################################### TODO
+    
     def embed_past_current(self, process, num_valid, history, tau):
         # Build the embedded past vectors and current values
 
@@ -57,10 +61,10 @@ class PythonEstimator(Estimator):
                 past[i, j] = process[t - (j + 1) * tau]
 
         return past, current
-
+    """
     #################################################################################################### TODO
 
-    def takens_embedding(x, dim, delay):
+    def takens_embedding(self, x, dim, delay):
         x = np.asarray(x, dtype=float)
         if x.ndim != 1:
             raise ValueError("x must be a 1D array")  
@@ -84,6 +88,31 @@ class PythonEstimator(Estimator):
         idx = np.arange(m)[:, None] + delay * np.arange(dim)[None, :]
         idx = idx[::step]
         return ts[idx]
+    """
+
+    def delay_embed_past(self, ts, history, tau, L, FirstP, u):
+
+        Y = np.zeros((L, history) , dtype=float)
+        for t in range(L):
+            for h in range(history):
+                Y[t,h] = ts[t + (FirstP-1) - u - (h-1) * tau]
+
+        return Y
+        
+    def delay_embed_future(self, ts, history, tau, L, FirstP):
+
+        #Y = np.zeros((L, history) , dtype=float)
+        Y = np.zeros((L) , dtype=float)
+        for t in range(L):
+            Y[t] = ts[t + (FirstP-1)]
+            #for h in range(history):
+                #if h == 0:
+                #Y[t,h] = ts[t + (FirstP)]
+                #else:
+                #    Y[t,h] = ts[t + FirstP - 1 - (h - 2) * tau]
+        return Y
+
+
 
 
     #################################################################################################### TODO
@@ -94,6 +123,7 @@ class PythonEstimator(Estimator):
 
     def is_parallel(self):
         return False
+
 
 
 class PythonKraskov(PythonEstimator):
@@ -335,7 +365,7 @@ class PythonDiscrete(PythonEstimator):
 
         
 
-
+# Kraskov estimator
 
 class PythonKraskovMI(PythonKraskov):
     """Estimate mutual information using Kraskov's estimator.
@@ -928,21 +958,90 @@ class PythonKraskovTE(PythonKraskov):
         
 
 
-        min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
-                        self.settings['history_target'] * self.settings['tau_target'] + 2)
+        #min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
+        #                self.settings['history_target'] * self.settings['tau_target'] + 2)
         
-        if N < min_length:
-            raise ValueError(f"Data too short: need at least {min_length} samples, got {N}")
         
-        valids= np.array([N - self.settings['history_source'] * self.settings['tau_source'] - 1, N - self.settings['history_target'] * self.settings['tau_target'] - 1])
-        
-        min_valid = min(valids) 
-        
-        num_valid = min_valid - self.settings['source_target_delay']
-        """
-        starts = valids - num_valid
-        #starts[0] = starts[0] -self.settings['source_target_delay']
 
+
+        min_l = max((self.settings['history_source']-1) * self.settings['tau_source'],
+                        (self.settings['history_target']-1) * self.settings['tau_target'])
+        
+        print("min_l: ",min_l)
+
+        #if N < min_l:
+        #    raise ValueError(f"Data too short: need at least {min_length} samples, got {N}")
+        
+
+        M = N - min_l
+        max_tau = max(self.settings['history_source'],self.settings['history_target'])
+        L = M - max(self.settings['source_target_delay'], max_tau) - 1 
+        
+        print("max(tau): ", max_tau)
+        print("N: ", N)
+        print("M: ", M)
+        print("L: ", L)
+
+        FirstP = N-L
+        print("FirstP: ",FirstP)
+
+        print("hist_source: ",self.settings['history_source'])
+        print("tau_source:", self.settings['tau_source'])
+        print("hist_target: ",self.settings['history_target'])
+        print("tau_target:", self.settings['tau_target'])
+        print("std:",self.settings['source_target_delay'])
+
+        #print(L + (FirstP-1) - self.settings['source_target_delay'] - (self.settings['history_source'] - 1) * self.settings['tau_source'])
+        #print(L + (FirstP-1) - 1 - (self.settings['history_target'] - 1) * self.settings['tau_target'])
+        #
+        print("stepback source: ", -self.settings['source_target_delay'] - (self.settings['history_source'] - 1) * self.settings['tau_source'])
+        print((FirstP-1) - (self.settings['source_target_delay'] + (self.settings['history_source'] - 1) * self.settings['tau_source']))
+        print("stepback target: ", -1 - (self.settings['history_target'] - 1) * self.settings['tau_target'])
+        print((FirstP-1) - 1 - (self.settings['history_target'] - 1) * self.settings['tau_target'])
+        
+
+        source_past = self.delay_embed_past(source, self.settings['history_source'], self.settings['tau_source'], L, FirstP, self.settings['source_target_delay']+1)
+
+        target_past = self.delay_embed_past(target, self.settings['history_target'], self.settings['tau_target'], L, FirstP, 1)
+
+        target_current = self.delay_embed_future(target, self.settings['history_target'], self.settings['tau_target'], L, FirstP)
+
+        source_current = self.delay_embed_future(source, self.settings['history_source'], self.settings['tau_source'], L, FirstP)
+
+        if target_current.ndim == 1:
+            target_current = target_current[:, None]
+        
+        print("source: ",source[0:14])
+        print("target: ",target[0:14])
+
+        print(source_past.shape)
+        print("s_p: ",source_past[0:3,:])
+        print(target_past.shape)
+        print("t_p: ",target_past[0:3,:])
+        print(target_current.shape)
+        print("t_c: ",target_current[0:3])
+        print(source_current.shape)
+        print("s_c: ",source_current[0:3])
+
+        #valids= np.array([N - self.settings['history_source'] * self.settings['tau_source'] - 1, N - self.settings['history_target'] * self.settings['tau_target'] - 1])
+        
+        #min_valid = min(valids) 
+        
+        #num_valid = min_valid - self.settings['source_target_delay']
+        
+        #starts = valids - num_valid
+
+
+        #print("L: ",L)
+        #print("num_valid: ",num_valid)
+
+        #print("First_p: ",FirstP)
+        #print("starts: ",starts)
+
+
+        
+        #starts[0] = starts[0] -self.settings['source_target_delay']
+        """
         valid_vec_source = np.arange(num_valid)
         valid_vec_target = valid_vec_source + self.settings['source_target_delay']
 
@@ -958,46 +1057,75 @@ class PythonKraskovTE(PythonKraskov):
         print("target: ", N - self.settings['history_target'] * self.settings['tau_target'] - 1)
         """
 
-        if num_valid <= 0:
-            raise ValueError(f"Not enough valid embedding vectors")
+        #if num_valid <= 0:
+        #    raise ValueError(f"Not enough valid embedding vectors")
         
 
-        
+        """
         #source_past, source_current = self.embed_past_current(source, valid_vec_source, self.settings['history_source'], self.settings['tau_source'])
-        source_past, source_current = self.embed_past_current(source, num_valid, 0, self.settings['history_source'], self.settings['tau_source'])
+        source_past2, source_current2 = self.embed_past_current(source[:-self.settings['source_target_delay']], num_valid, self.settings['history_source'], self.settings['tau_source'])
+        #source_past = self.takens_embedding(source[:-self.settings['source_target_delay']], self.settings['history_source'], self.settings['tau_source'])
         
         #target_past, target_current = self.embed_past_current(target, valid_vec_target, self.settings['history_target'], self.settings['tau_target'])
-        target_past, target_current = self.embed_past_current(target, num_valid, self.settings['source_target_delay'], self.settings['history_target'], self.settings['tau_target'])
-
+        target_past2, tttt = self.embed_past_current(target[:-self.settings['source_target_delay']], num_valid, self.settings['history_target'], self.settings['tau_target'])
         
-        if target_current.ndim == 1:
-            target_current = target_current[:, None]
-     
+        #target_past = self.takens_embedding(target[:-self.settings['source_target_delay']],self.settings['history_target'], self.settings['tau_target'])
+        #target_past = self.takens_embedding(target[:-self.settings['source_target_delay']],self.settings['history_target'], self.settings['tau_target'])
+
+        #target_current = self.takens_embedding(target[self.settings['source_target_delay']:],self.settings['history_target'], self.settings['tau_target'])
+        target_current2, ddd = self.embed_past_current(target[self.settings['source_target_delay']:], num_valid, self.settings['history_target'], self.settings['tau_target'])
+        #target_current2 = target[self.settings['source_target_delay']:]
+
+
+        #if target_current.ndim == 1:
+        #    target_current = target_current[:, None]
+        
+        
+        print(source_past.shape)
+        print(target_past.shape)
+        print(target_current.shape)
+
+        print(source_past2.shape)
+        print(target_past2.shape)
+        print(target_current2.shape)
+
+        print("source: ",source[0:10])
+        print("target: ",target[0:10])
+
+
+        print("s_p: ",source_past[0:10,0])
+        print("s_p2: ",source_past2[0:10,0])
+        print("t_p: ",target_past[0:10,0])
+        print("t_p2: ",target_past2[0:10,0])
+        print("t_c: ",target_current[0:10,0])
+        print("t_c2: ",target_current2[0:10,0])
+
+        """
+        #k = self.settings['kraskov_k']
+
         # Compute distances to kth nearest neighbors in the joint space
         epsilon = self._compute_epsilon(
             np.hstack([target_current, target_past, source_past]), self.settings['kraskov_k']
         )
         
-        k = self.settings['kraskov_k']
-
+        
         
         # algorithm 1
         
         #eps_cor=0
-        epsi = epsilon#np.nextafter(epsilon, 0)
-        n_xy = self._compute_n(np.concatenate((target_past, source_past), axis=1), epsi)
+        # epsi = epsilon#np.nextafter(epsilon, 0)
+        n_xy = self._compute_n(np.concatenate((target_past, source_past), axis=1), epsilon)
         
-        n_yf = self._compute_n(np.concatenate((target_current, target_past), axis=1), epsi)
+        n_yf = self._compute_n(np.concatenate((target_current, target_past), axis=1), epsilon)
         
-        n_y = self._compute_n(target_past, epsi)
+        n_y = self._compute_n(target_past, epsilon)
 
 
-        # compute estimate
-        
-        te = digamma(k) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
-
-        ##################################################################################### TODO local value
-        #print(digamma(k) + digamma(n_y) - digamma(n_xy) - digamma(n_yf))
+        # compute te
+        if self.settings["local_values"]:
+            te = digamma(self.settings['kraskov_k']) + digamma(n_y) - digamma(n_xy) - digamma(n_yf)
+        else:
+            te = digamma(self.settings['kraskov_k']) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
 
 
 
@@ -1045,145 +1173,11 @@ class PythonKraskovTE(PythonKraskov):
 
         
 
-################################################################################ TODO
-class PythonDiscreteMI(PythonDiscrete):
-    """Calculate MI with Python discrete-variable implementation.
-
-    Calculate the mutual information (MI) between two variables. 
-
-    Results are returned in bits.
-
-    Args:
-        settings : dict [optional]
-            sets estimation parameters:
-
-            
-            - discretise_method : str [optional] - if and how to discretise
-              incoming continuous data, can be 'max_ent' for maximum entropy
-              binning, 'equal' for equal size bins, and 'none' if no binning is
-              required (default='none')
-            - n_discrete_bins : int [optional] - number of discrete bins/
-              levels or the base of each dimension of the discrete variables
-              (default=2). If set, this parameter overwrites/sets alph1 and
-              alph2
-            - alph1 : int [optional] - number of discrete bins/levels for var1
-              (default=2, or the value set for n_discrete_bins)
-            - alph2 : int [optional] - number of discrete bins/levels for var2
-              (default=2, or the value set for n_discrete_bins)
-            - lag_mi : int [optional] - time difference in samples to calculate
-              the lagged MI between processes (default=0)
-            
-            ################################################ ???????????????????????????????????????????????????? local values ??????
-            - local_values : bool [optional] - return local TE instead of
-              average TE (default=False)
-            
-    """
-
-    def __init__(self, settings=None):
-        settings = self._check_settings(settings)
-        # Set default alphabet sizes. Try to overwrite alphabet sizes with
-        # number of bins for discretisation if provided, otherwise assume
-        # binary variables.
-        super().__init__(settings)
-        self.settings.setdefault('lag_mi', int(0))
-        try:
-            n_discrete_bins = int(self.settings['n_discrete_bins'])
-            self.settings['alph1'] = n_discrete_bins
-            self.settings['alph2'] = n_discrete_bins
-        except KeyError:
-            pass  # Do nothing and use the default for alph_* set below
-        self.settings.setdefault('alph1', int(2))
-        self.settings.setdefault('alph2', int(2))
-
-        
-
-    def estimate(self, var1, var2):
-        """Estimate mutual information.
-
-        Args:
-            var1 : numpy array
-                realisations of first variable, either a 2D numpy array where
-                array dimensions represent [realisations x variable dimension]
-                or a 1D array representing [realisations], array type can be
-                float (requires discretisation) or int
-            var2 : numpy array
-                realisations of the second variable (similar to var1)
-            return_calc : boolean
-                return the calculator used here as well as the numeric
-                calculated value(s)
-
-        Returns:
-            float | numpy array
-                average MI over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local MI for individual
-                samples if 'local_values'=True
-        """
-        # Check and remember the no. dimensions for each variable before
-        # collapsing them into univariate arrays later.
-        var1 = self._ensure_two_dim_input(var1)
-        var2 = self._ensure_two_dim_input(var2)
-        var1_dim = var1.shape[1]
-        var2_dim = var2.shape[1]
-
-        # Discretise variables if requested.
-        var1, var2 = self._discretise_vars(var1, var2)
-
-        # Then collapse any multivariates into univariate arrays:
-        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
-        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
-
-        # Initialise estimator
-        #base_for_var1 = int(np.power(self.settings['alph1'], var1_dim))
-        #base_for_var2 = int(np.power(self.settings['alph2'], var2_dim))
-
-
-        # Count joint and marginal frequencies
-        joint_counts = Counter(zip(var1, var2))
-        var1_counts = Counter(var1)
-        var2_counts = Counter(var2)
-        n = len(var1)
-        
-        # Calculate mutual information: I(X;Y) = Σ p(x,y) * log(p(x,y) / (p(x) * p(y)))
-        mi = 0.0
-        for (xi, yi), count in joint_counts.items():
-            p_xy = count / n
-            p_x = var1_counts[xi] / n
-            p_y = var1_counts[yi] / n
-            
-            if p_xy > 0 and p_x > 0 and p_y > 0:
-                mi += p_xy * math.log2(p_xy / (p_x * p_y))
-        
-        return mi
-
-
-    def compute_joint_probs(data, indices):
-        """
-        Compute joint probability distribution over the variables at given indices.
-
-        data: list of tuples (samples), each tuple is a multivariate discrete sample.
-        indices: tuple of ints, the variable indices to consider.
-
-        Returns: Counter of joint outcomes -> probability.
-        """
-        # collect joint values for the given indices
-        joint_vals = tuple(
-            tuple(sample[i] for i in indices) for sample in data
-        )
-        counts = Counter(joint_vals)
-        n = len(data)
-        probs = {vals: float(c) / n for vals, c in counts.items()}
-        return probs
 
 
 
 
-
-
-
-
-
+# Gaussian estimator
 
 class PythonGaussianMI(PythonGaussian):
     """Calculate mutual information with python Gaussian implementation.
@@ -1788,6 +1782,150 @@ class PythonGaussianTE(PythonGaussian):
         return _logdet_psd(schur)
 
     """
+
+
+
+# Discrete estimator
+
+################################################################################ TODO
+class PythonDiscreteMI(PythonDiscrete):
+    """Calculate MI with Python discrete-variable implementation.
+
+    Calculate the mutual information (MI) between two variables. 
+
+    Results are returned in bits.
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+
+            
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 'equal' for equal size bins, and 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1 and
+              alph2
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2, or the value set for n_discrete_bins)
+            - alph2 : int [optional] - number of discrete bins/levels for var2
+              (default=2, or the value set for n_discrete_bins)
+            - lag_mi : int [optional] - time difference in samples to calculate
+              the lagged MI between processes (default=0)
+            
+            ################################################ ???????????????????????????????????????????????????? local values ??????
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+            
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Set default alphabet sizes. Try to overwrite alphabet sizes with
+        # number of bins for discretisation if provided, otherwise assume
+        # binary variables.
+        super().__init__(settings)
+        self.settings.setdefault('lag_mi', int(0))
+        try:
+            n_discrete_bins = int(self.settings['n_discrete_bins'])
+            self.settings['alph1'] = n_discrete_bins
+            self.settings['alph2'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph_* set below
+        self.settings.setdefault('alph1', int(2))
+        self.settings.setdefault('alph2', int(2))
+
+        
+
+    def estimate(self, var1, var2):
+        """Estimate mutual information.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            return_calc : boolean
+                return the calculator used here as well as the numeric
+                calculated value(s)
+
+        Returns:
+            float | numpy array
+                average MI over all samples 
+
+                ################################################ ???????????????????????????????????????????????????? local values ??????
+                or local MI for individual
+                samples if 'local_values'=True
+        """
+        # Check and remember the no. dimensions for each variable before
+        # collapsing them into univariate arrays later.
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        var1_dim = var1.shape[1]
+        var2_dim = var2.shape[1]
+
+        # Discretise variables if requested.
+        var1, var2 = self._discretise_vars(var1, var2)
+
+        # Then collapse any multivariates into univariate arrays:
+        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
+        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
+
+        # Initialise estimator
+        #base_for_var1 = int(np.power(self.settings['alph1'], var1_dim))
+        #base_for_var2 = int(np.power(self.settings['alph2'], var2_dim))
+
+
+        # Count joint and marginal frequencies
+        joint_counts = Counter(zip(var1, var2))
+        var1_counts = Counter(var1)
+        var2_counts = Counter(var2)
+        n = len(var1)
+        
+        # Calculate mutual information: I(X;Y) = Σ p(x,y) * log(p(x,y) / (p(x) * p(y)))
+        mi = 0.0
+        for (xi, yi), count in joint_counts.items():
+            p_xy = count / n
+            p_x = var1_counts[xi] / n
+            p_y = var1_counts[yi] / n
+            
+            if p_xy > 0 and p_x > 0 and p_y > 0:
+                mi += p_xy * math.log2(p_xy / (p_x * p_y))
+        
+        return mi
+
+
+    def compute_joint_probs(data, indices):
+        """
+        Compute joint probability distribution over the variables at given indices.
+
+        data: list of tuples (samples), each tuple is a multivariate discrete sample.
+        indices: tuple of ints, the variable indices to consider.
+
+        Returns: Counter of joint outcomes -> probability.
+        """
+        # collect joint values for the given indices
+        joint_vals = tuple(
+            tuple(sample[i] for i in indices) for sample in data
+        )
+        counts = Counter(joint_vals)
+        n = len(data)
+        probs = {vals: float(c) / n for vals, c in counts.items()}
+        return probs
+
+
+
+
+
+
+
+# spectral estimator ?????????????????????????????????????????? TODO
+
 
 
 

@@ -380,6 +380,7 @@ def test_gaussian_cmi_gaussian(Sigma):
     assert np.isclose(cmi_jidt, cmi_python, rtol=1e-4)
 
 
+############################################################################################### TODO
 def test_gaussian_ais():
     """Test AIS estimation on an autoregressive process. """
 
@@ -415,6 +416,7 @@ def test_gaussian_ais():
     #assert np.isclose(jidt_mi_uncor, python_mi_uncor, rtol=1e-3)
 
 
+############################################################################################### TODO
 def test_kraskov_ais():
     """Test AIS estimation on an autoregressive process. """
 
@@ -462,14 +464,17 @@ def test_kraskov_te_gaussian():
     source2 = source2[1:]
     target = target[:-1]
     
-    ht=1
-    hs=1
-    hst = 1
+    ht=3
+    tt=2
+    hs=2
+    ts=2
+    hst=3
 
     print(f"\nAnalytical MI: {expected_mi}")
 
     # Run JIDT estimator as a reference
-    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1}
+    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "tau_target": tt,
+                            "tau_source": ts, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1}
     jidt_estimator = JidtKraskovTE(settings)
 
     itic = time.perf_counter()
@@ -489,7 +494,8 @@ def test_kraskov_te_gaussian():
     print(f"\nJidtKraskovTE (alg2): {te_jidt2} (took {itoc - itic} seconds)")
     """
 
-    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1, "knn_finder": "scipy_kdtree"}
+    settings = {"kraskov_k": 4, "history_target": ht, "history_source": hs, "tau_target": tt,
+                            "tau_source": ts, "source_target_delay": hst ,"noise_level": 0, "num_threads": 1, "knn_finder": "scipy_kdtree"}
     #print(settings)
     python_estimator = PythonKraskovTE(settings)
 

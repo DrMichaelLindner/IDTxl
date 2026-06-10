@@ -204,6 +204,80 @@ def test_gaussian_cmi():
 		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
 
 
+def test_gaussian_ais():
+
+	source1, source2 = _get_ar_data(seed=SEED)
+
+	vals =  [1,2,3]
+	time_jidt_cor = np.zeros(np.power(len(vals),2))
+	res_jidt_cor = np.zeros(np.power(len(vals),2))
+	time_python_cor = np.zeros(np.power(len(vals),2))
+	res_python_cor = np.zeros(np.power(len(vals),2))
+	time_jidt_uncor = np.zeros(np.power(len(vals),2))
+	res_jidt_uncor = np.zeros(np.power(len(vals),2))
+	time_python_uncor = np.zeros(np.power(len(vals),2))
+	res_python_uncor = np.zeros(np.power(len(vals),2))
+
+	count = 0
+
+	for h in vals:
+		for t in vals:
+
+			settings_j = {'history': h, 'tau': t}
+
+			settings_p = {'history': h, 'tau': t}
+	
+			jidt_estimator = JidtGaussianAIS(settings=settings_j)
+			python_estimator = PythonGaussianAIS(settings=settings_p)
+
+			itic = time.perf_counter()
+			res_jidt_cor[count] = jidt_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+	
+			itic = time.perf_counter()
+			res_jidt_uncor[count] = jidt_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
+			
+			itic = time.perf_counter()
+			res_python_cor[count] = python_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+			
+			itic = time.perf_counter()
+			res_python_uncor[count] = python_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+	print("JidtKraskovMI\t\tPythonKraskovMI")
+	print("correlated")
+	for i in range(len(res_jidt_cor)):
+		print(f"{res_jidt_cor[i]}\t{res_python_cor[i]}")
+	print("uncorrelated")
+	for i in range(len(res_jidt_uncor)):
+		print(f"{res_jidt_uncor[i]}\t{res_python_uncor[i]}")
+
+	if np.allclose(res_jidt_cor, res_python_cor, rtol=1e-04, atol=1e-04):
+		print("All mi results (corr) within tolerance (atol and rtol=1e-04)")
+	else:
+		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+	if np.allclose(res_jidt_uncor, res_python_uncor, rtol=1e-04, atol=1e-04):
+		print("All mi results (uncorr) within tolerance (atol and rtol=1e-04)")
+	else:
+		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+
+	print("\nmean calculation times:")
+	print(" JidtGaussianAIS (cor): ", np.mean(time_jidt_cor) )
+	print(" PythonGaussianAIS (cor): ", np.mean(time_python_cor) )
+	print(" JidtGaussianAIS (uncor): ", np.mean(time_jidt_uncor) )
+	print(" PythonGaussianAIS (uncor): ", np.mean(time_python_uncor) )
+
+
+
+
 def test_kraskov_mi():
 
 	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
@@ -308,8 +382,6 @@ def test_kraskov_mi_local_values():
 			print(f"local mi results within tolerance (atol and rtol=1e-04)")
 		else:
 			print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
-
-
 
 
 def test_kraskov_cmi():
@@ -418,77 +490,77 @@ def test_kraskov_cmi_local_values():
 			print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
 
 
-def test_gaussian_ais():
+def test_kraskov_te():
 
-	source1, source2 = _get_ar_data(seed=SEED)
+	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
+	# add delay of one sample
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
 
-	vals =  [1,2,3]
-	time_jidt_cor = np.zeros(np.power(len(vals),2))
-	res_jidt_cor = np.zeros(np.power(len(vals),2))
-	time_python_cor = np.zeros(np.power(len(vals),2))
-	res_python_cor = np.zeros(np.power(len(vals),2))
-	time_jidt_uncor = np.zeros(np.power(len(vals),2))
-	res_jidt_uncor = np.zeros(np.power(len(vals),2))
-	time_python_uncor = np.zeros(np.power(len(vals),2))
-	res_python_uncor = np.zeros(np.power(len(vals),2))
+	vals = [1,2,3]
+
+	time_jidt = np.empty(np.power(len(vals),5))
+	res_jidt = np.empty(np.power(len(vals),5))
+	time_python = np.empty(np.power(len(vals),5))
+	res_python = np.empty(np.power(len(vals),5))
 
 	count = 0
+	for hst in vals:
 
-	for h in vals:
-		for t in vals:
+		for ht in vals:
+			for hs in vals:
+				for tt in vals:
+					for ts in vals:
+					
 
-			settings_j = {'history': h, 'tau': t}
+						settings_j = {"kraskov_k": 4, 
+							"history_target": ht,
+							"history_source": hs,
+							"tau_target": tt,
+							"tau_source": ts,
+							"source_target_delay": hst,
+							"noise_level": 0, 
+							"num_threads": 1}
 
-			settings_p = {'history': h, 'tau': t}
-	
-			jidt_estimator = JidtGaussianAIS(settings=settings_j)
-			python_estimator = PythonGaussianAIS(settings=settings_p)
+						#print("\n\n")
+						#print(settings)
+						#print("\n")
+						
+						jidt_estimator = JidtKraskovTE(settings_j)
+						
+						itic = time.perf_counter()
+						te_jidt = jidt_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
 
-			itic = time.perf_counter()
-			res_jidt_cor[count] = jidt_estimator.estimate(source1)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-	
-			itic = time.perf_counter()
-			res_jidt_uncor[count] = jidt_estimator.estimate(source2)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-			
-			itic = time.perf_counter()
-			res_python_cor[count] = python_estimator.estimate(source1)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-			
-			itic = time.perf_counter()
-			res_python_uncor[count] = python_estimator.estimate(source2)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
+						time_jidt[count] = itoc
+						res_jidt[count] = te_jidt
 
-			count += 1
+						print(f"\nJidtKraskovTE: {te_jidt} (took {itoc - itic} seconds)")
+						
 
-	print("JidtKraskovMI\t\tPythonKraskovMI")
-	print("correlated")
-	for i in range(len(res_jidt_cor)):
-		print(f"{res_jidt_cor[i]}\t{res_python_cor[i]}")
-	print("uncorrelated")
-	for i in range(len(res_jidt_uncor)):
-		print(f"{res_jidt_uncor[i]}\t{res_python_uncor[i]}")
+						settings_p = {"kraskov_k": 4, 
+							"history_target": ht,
+							"history_source": hs,
+							"tau_target": tt,
+							"tau_source": ts,
+							"source_target_delay": hst,
+							"noise_level": 0, 
+							"num_threads": 1}
 
-	if np.allclose(res_jidt_cor, res_python_cor, rtol=1e-04, atol=1e-04):
-		print("All mi results (corr) within tolerance (atol and rtol=1e-04)")
-	else:
-		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
-	if np.allclose(res_jidt_uncor, res_python_uncor, rtol=1e-04, atol=1e-04):
-		print("All mi results (uncorr) within tolerance (atol and rtol=1e-04)")
-	else:
-		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+						
+						python_estimator = PythonKraskovTE(settings_p)
+						
+						itic = time.perf_counter()
+						te_python = python_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
 
-	print("\nmean calculation times:")
-	print(" JidtGaussianAIS (cor): ", np.mean(time_jidt_cor) )
-	print(" PythonGaussianAIS (cor): ", np.mean(time_python_cor) )
-	print(" JidtGaussianAIS (uncor): ", np.mean(time_jidt_uncor) )
-	print(" PythonGaussianAIS (uncor): ", np.mean(time_python_uncor) )
+						time_python[count] = itoc
+						res_python[count] = te_python
 
+						print(f"PythonKraskovTE: {te_python} (took {itoc - itic} seconds)")
+
+						count += 1
 
 
 
@@ -497,16 +569,22 @@ def test_gaussian_ais():
 
 if __name__ == '__main__':
     
-    
+	""" 
 	print("\n\nCompare GaussianMI:\n")
 	test_gaussian_mi()
 	
 	print("\n\nCompare GaussianCMI:\n")
 	test_gaussian_cmi()
+	"""
 
 	#print("\n\nCompare GaussianAIS:\n")
 	#test_gaussian_ais()
 
+	#print("\n\nCompare GaussianTE:\n") ################################################## TODO
+	#test_gaussian_te()
+
+
+	"""
 	print("\n\nCompare KraskovMI:\n")
 	test_kraskov_mi()
 
@@ -518,3 +596,17 @@ if __name__ == '__main__':
 
 	print("\n\nCompare KraskovCMI local values:\n")
 	test_kraskov_cmi_local_values()
+	"""
+
+	#print("\n\nCompare KraskovAIS:\n") ################################################## TODO
+	#test_kraskov_ais()
+
+	print("\n\nCompare KraskovTE:\n") ################################################## TODO
+	test_kraskov_te()
+
+	#print("\n\nCompare KraskovTE theiler T correction:\n") ################################################## TODO
+	#test_kraskov_te_theilert()
+
+
+	## TODO
+	# discete 
