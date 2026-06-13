@@ -369,7 +369,7 @@ def test_gaussian_cmi_gaussian(Sigma):
     assert np.isclose(cmi_gaussian, cmi_jidt, rtol=0.08)
 
     python_estimator = PythonGaussianCMI(
-        {}
+        {"noise_level": 0, "num_threads": 1}
     )
 
     itic = time.perf_counter()
@@ -464,11 +464,11 @@ def test_kraskov_te_gaussian():
     source2 = source2[1:]
     target = target[:-1]
     
-    ht=3
+    ht=2
     tt=2
     hs=2
     ts=2
-    hst=3
+    hst=1
 
     print(f"\nAnalytical MI: {expected_mi}")
 
@@ -761,7 +761,7 @@ if __name__ == '__main__':
     #    test_kraskov_cmi_gaussian(sigma)
         
     #print("\n\nTest Kraskov TE:\n")
-    test_kraskov_te_gaussian()
+    #test_kraskov_te_gaussian()
 
     #print("\n\nTest Kraskov Theiler_T correction:\n") ################################################## TODO
     #test_kraskov_theiler_t()
@@ -773,9 +773,9 @@ if __name__ == '__main__':
     #for sigma in _Sigmas_2var:
     #    test_gaussian_mi_gaussian(sigma)
     
-    #print("\n\nTest Gaussian CMI:\n")
-    #for sigma in _Sigmas_3var:
-    #    test_gaussian_cmi_gaussian(sigma)
+    print("\n\nTest Gaussian CMI:\n")
+    for sigma in _Sigmas_3var:
+        test_gaussian_cmi_gaussian(sigma)
 
     #print("\n\nTest Gaussian TE:\n")
     #test_gaussian_te_gaussian()

@@ -152,6 +152,54 @@ def test_gaussian_mi():
 	
 	#print(f"\nPythonGaussianMI is approx {xfast} times faster")
 
+
+
+def test_gaussian_mi_local_values():
+
+	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
+
+	vals = [0,1,2,3]
+
+	for lags in vals:
+		settings = {}
+		settings = {"lag_mi": lags,
+					"local_values": True,
+					"noise_level": 0}
+		
+		jidt_estimator = JidtGaussianMI(settings)
+		itic = time.perf_counter()
+		mi_jidt = jidt_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		print(f"\nJidtGaussianMI local_values (cor) took {itoc - itic} seconds)")
+
+		python_estimator = PythonGaussianMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		print(f"PythonGaussianMI local_values (cor) took {itoc - itic} seconds)")
+		
+		if np.allclose(mi_jidt, mi_python, rtol=1e-04, atol=1e-04):
+			print(f"local mi results (cor) within tolerance (atol and rtol=1e-04)")
+		else:
+			print("!!!!!!!!!!!!!!!!!!!!!! some results (cor) are not within tolerance (atol and rtol=1e-04)")
+
+		jidt_estimator = JidtGaussianMI(settings)
+		itic = time.perf_counter()
+		mi_jidt = jidt_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		print(f"\nJidtGaussianMI local_values (uncor) took {itoc - itic} seconds)")
+		
+		python_estimator = PythonGaussianMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		print(f"PythonGaussianMI local_values (uncor) took {itoc - itic} seconds)")
+		
+		if np.allclose(mi_jidt, mi_python, rtol=1e-04, atol=1e-04):
+			print(f"local mi results (uncor) within tolerance (atol and rtol=1e-04)")
+		else:
+			print("!!!!!!!!!!!!!!!!!!!!!! some results (uncor) are not within tolerance (atol and rtol=1e-04)")
+
 	
 def test_gaussian_cmi():
 
@@ -202,6 +250,59 @@ def test_gaussian_cmi():
 		print("All mi results within tolerance (atol and rtol=1e-04)")
 	else:
 		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+
+
+
+def test_gaussian_cmi_local_values():
+
+	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
+
+	settings={'local_values': True}
+	time_python=0
+	time_jidt=0
+
+	jidt_estimator = JidtGaussianCMI(settings)
+	python_estimator = PythonGaussianCMI(settings)
+	
+	
+	itic = time.perf_counter()
+	mi_jidt = jidt_estimator.estimate(source1, target, source2)
+	itoc = time.perf_counter()
+	print(f"\nJidtGaussianCMI local_values (uncor conditional) took {itoc - itic} seconds")
+
+	itic = time.perf_counter()
+	mi_python = python_estimator.estimate(source1, target, source2)
+	itoc = time.perf_counter()
+	print(f"PythonGaussianCMI local_values (uncor conditional) took {itoc - itic} seconds")
+
+	if np.allclose(mi_jidt, mi_python, rtol=1e-04, atol=1e-04):
+		print("All local mi results (uncor conditional) are within tolerance (atol and rtol=1e-04)")
+	else:
+		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+
+
+	itic = time.perf_counter()
+	mi_jidt = jidt_estimator.estimate(source2, target, source1)
+	itoc = time.perf_counter()
+	print(f"\nJidtGaussianCMI local_values (uncor source) took {itoc - itic} seconds")
+
+	itic = time.perf_counter()
+	mi_python = python_estimator.estimate(source2, target, source1)
+	itoc = time.perf_counter()
+	print(f"PythonGaussianCMI local_values (uncor source) took {itoc - itic} seconds")
+
+	if np.allclose(mi_jidt, mi_python, rtol=1e-04, atol=1e-04):
+		print("All local mi results (uncor source) are within tolerance (atol and rtol=1e-04)")
+	else:
+		print("!!!!!!!!!!!!!!!!!!!!!! some results are not within tolerance (atol and rtol=1e-04)")
+
+
+
+
+
+
+
+
 
 
 def test_gaussian_ais():
@@ -573,12 +674,19 @@ if __name__ == '__main__':
 	print("\n\nCompare GaussianMI:\n")
 	test_gaussian_mi()
 	
+	print("\n\nCompare GaussianMI local values:\n")
+	test_gaussian_mi_local_values()
+	
 	print("\n\nCompare GaussianCMI:\n")
 	test_gaussian_cmi()
+
+	print("\n\nCompare GaussianCMI local values:\n")
+	test_gaussian_cmi_local_values()
 	"""
 
-	#print("\n\nCompare GaussianAIS:\n")
-	#test_gaussian_ais()
+
+	print("\n\nCompare GaussianAIS:\n")
+	test_gaussian_ais()
 
 	#print("\n\nCompare GaussianTE:\n") ################################################## TODO
 	#test_gaussian_te()
@@ -601,8 +709,8 @@ if __name__ == '__main__':
 	#print("\n\nCompare KraskovAIS:\n") ################################################## TODO
 	#test_kraskov_ais()
 
-	print("\n\nCompare KraskovTE:\n") ################################################## TODO
-	test_kraskov_te()
+	#print("\n\nCompare KraskovTE:\n") ################################################## TODO
+	#test_kraskov_te()
 
 	#print("\n\nCompare KraskovTE theiler T correction:\n") ################################################## TODO
 	#test_kraskov_te_theilert()

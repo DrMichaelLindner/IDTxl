@@ -11,7 +11,7 @@ import idtxl.idtxl_utils as utils
 
 from collections import Counter
 import math
-
+from scipy.stats import multivariate_normal
 
 # Abstract classes
 
@@ -61,6 +61,19 @@ class PythonEstimator(Estimator):
                 past[i, j] = process[t - (j + 1) * tau]
 
         return past, current
+
+
+    def delay_embed(self, x, history=1, tau=1):
+
+        x = np.asarray(x, dtype=float)
+
+        n = len(x) - history * tau
+
+        if n <= 0:
+
+            raise ValueError("Time series too short for chosen k and tau")
+
+        return np.column_stack([x[(history - j) * tau:(history - j) * tau + n] for j in range(history)])
     """
     #################################################################################################### TODO
 
@@ -90,6 +103,28 @@ class PythonEstimator(Estimator):
         return ts[idx]
     """
 
+    def delay_embedding(self, ts, history, tau):
+
+        n = len(ts)
+
+        n_embed = n - (history - 1) * tau
+
+        embedded = np.zeros((n_embed, history))
+
+        for i in range(history):
+            embedded[:,i] = ts[(i * tau):(i * tau + n_embed)]
+
+        return embedded
+
+    def delay_embedding2(self, ts, history, tau, L, FirstP):
+
+        Y = np.zeros((L, history) , dtype=float)
+        for t in range(L):
+            for h in range(history):
+                Y[t,h] = ts[t + (FirstP-1) - (h-1) * tau]
+
+        return Y
+    
     def delay_embed_past(self, ts, history, tau, L, FirstP, u):
 
         Y = np.zeros((L, history) , dtype=float)
@@ -215,8 +250,11 @@ class PythonGaussian(PythonEstimator):
 
     def __init__(self, settings):
         # Check for currently unsupported settings
-        if settings.get('local_values', False):
-            raise ValueError('This estimator currently does not support local_values.')
+        
+
+        ####################################################################################### TODO
+        #if settings.get('local_values', False):
+        #    raise ValueError('This estimator currently does not support local_values.')
         settings.setdefault('local_values', False)
 
         settings.setdefault('normalise', False)
@@ -701,6 +739,7 @@ class PythonKraskovCMI(PythonKraskov):
             ) / np.log(self.settings['base'])
             
 
+################################################################################ TODO
 class PythonKraskovAIS(PythonKraskov):
     """Calculate active information storage with Python Kraskov implementation.
 
@@ -999,12 +1038,25 @@ class PythonKraskovTE(PythonKraskov):
         print("stepback target: ", -1 - (self.settings['history_target'] - 1) * self.settings['tau_target'])
         print((FirstP-1) - 1 - (self.settings['history_target'] - 1) * self.settings['tau_target'])
         
+        
+        #source_past = self.delay_embedding(source[:-self.settings['source_target_delay']], self.settings['history_source'], self.settings['tau_source'])
+        #target_past = self.delay_embedding(target[:-self.settings['source_target_delay']], self.settings['history_target'], self.settings['tau_target'])
+        #target_current = self.delay_embedding(target[self.settings['source_target_delay']:], self.settings['history_target'], self.settings['tau_target'])
+        #target_current = self.delay_embedding(target[self.settings['source_target_delay']:], 1, self.settings['tau_target'])
 
+        #source_current = self.delay_embedding(source[FirstP-1+self.settings['source_target_delay']:], self.settings['history_target'], self.settings['tau_target'])
+
+        #min_n = min(len(source_past), len(target_past), len(target_current))
+        #source_past=source_past[:min_n,:]
+        #target_past=target_past[:min_n,:]
+        #target_current=target_current[:min_n,:]
+        
         source_past = self.delay_embed_past(source, self.settings['history_source'], self.settings['tau_source'], L, FirstP, self.settings['source_target_delay']+1)
 
         target_past = self.delay_embed_past(target, self.settings['history_target'], self.settings['tau_target'], L, FirstP, 1)
 
-        target_current = self.delay_embed_future(target, self.settings['history_target'], self.settings['tau_target'], L, FirstP)
+        target_current = self.delay_embed_future(target, 1, self.settings['tau_target'], L, FirstP)
+        #target_current = self.delay_embed_future(target, self.settings['history_target'], self.settings['tau_target'], L, FirstP)
 
         source_current = self.delay_embed_future(source, self.settings['history_source'], self.settings['tau_source'], L, FirstP)
 
@@ -1252,20 +1304,40 @@ class PythonGaussianMI(PythonGaussian):
         #Z = np.hstack([X, Y])
 
         cov = np.cov(Z, rowvar=False, bias=False)
-        dx = var1.shape[1]
-        dy = var2.shape[1]
+        
 
-        cov_x = cov[:dx, :dx]
-        cov_y = cov[dx:, dx:]
+        if self.settings['local_values']:
+            # local MI   
+            m_var1 = np.mean(var1)
+            m_var2 = np.mean(var2)
 
-        sign_z, logdet_z = np.linalg.slogdet(cov)
-        sign_x, logdet_x = np.linalg.slogdet(cov_x)
-        sign_y, logdet_y = np.linalg.slogdet(cov_y)
+            rv_joint = multivariate_normal(mean=[m_var1, m_var2], cov=cov)
+            rv_x = multivariate_normal(mean=[m_var1], cov=[[cov[0,0]]])
+            rv_y = multivariate_normal(mean=[m_var2], cov=[[cov[1,1]]])
 
-        if sign_z <= 0 or sign_x <= 0 or sign_y <= 0:
-            raise ValueError("Covariance matrix is not positive definite enough.")
+            log_pxy = rv_joint.logpdf(Z)
+            log_px = rv_x.logpdf(var1)
+            log_py = rv_y.logpdf(var2)
 
-        mi = 0.5 * (logdet_x + logdet_y - logdet_z)
+            mi = log_pxy - log_px - log_py
+
+        else:
+            # MI
+            dx = var1.shape[1]
+            dy = var2.shape[1]
+
+            cov_x = cov[:dx, :dx]
+            cov_y = cov[dx:, dx:]
+
+            sign_z, logdet_z = np.linalg.slogdet(cov)
+            sign_x, logdet_x = np.linalg.slogdet(cov_x)
+            sign_y, logdet_y = np.linalg.slogdet(cov_y)
+
+            if sign_z <= 0 or sign_x <= 0 or sign_y <= 0:
+                raise ValueError("Covariance matrix is not positive definite enough.")
+
+            mi = 0.5 * (logdet_x + logdet_y - logdet_z)        
+
         return mi
 
 
@@ -1295,6 +1367,7 @@ class PythonGaussianCMI(PythonGaussian):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         super().__init__(settings)
+        self.est_mi = None
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
@@ -1355,13 +1428,14 @@ class PythonGaussianCMI(PythonGaussian):
 
         cov = np.cov(xyz, rowvar=False, bias=False)
 
-        nx = 1
-        ny = 1
-        nz = 1
+        nx = var1.shape[1]
+        ny = var2.shape[1]
+        nz = conditional.shape[1]
 
         ix = slice(0, nx)
         iy = slice(nx, nx + ny)
         iz = slice(nx + ny, nx + ny + nz)
+
 
         cov_xz = cov[np.ix_(list(range(nx)) + list(range(nx + ny, nx + ny + nz)),
                             list(range(nx)) + list(range(nx + ny, nx + ny + nz)))]
@@ -1370,7 +1444,7 @@ class PythonGaussianCMI(PythonGaussian):
         cov_z = cov[np.ix_(list(range(nx + ny, nx + ny + nz)),
                            list(range(nx + ny, nx + ny + nz)))]
         cov_xyz = cov
-
+        
         # add tiny regularization for numerical stability
         eps = 1e-10
         cov_xz += eps * np.eye(cov_xz.shape[0])
@@ -1378,16 +1452,51 @@ class PythonGaussianCMI(PythonGaussian):
         cov_z += eps * np.eye(cov_z.shape[0])
         cov_xyz += eps * np.eye(cov_xyz.shape[0])
 
-        det_xz = np.linalg.det(cov_xz)
-        det_yz = np.linalg.det(cov_yz)
-        det_z = np.linalg.det(cov_z)
-        det_xyz = np.linalg.det(cov_xyz)
 
-        cmi = 0.5 * np.log((det_xz * det_yz) / (det_z * det_xyz))
+        # local MI
+        if self.settings['local_values']:
+        
+            mean_xyz = np.mean(xyz, axis=0)
+
+            n = xyz.shape[0]
+        
+            cmi = np.empty(n, dtype=float)
+
+
+            for i in range(n):
+                v = xyz[i] - mean_xyz
+
+                vz = v[iz]
+                vxz = v[np.r_[0:nx, nx + ny:nx + ny + nz]]
+                vyz = v[np.r_[nx:nx + ny, nx + ny:nx + ny + nz]]
+
+                log_p_xyz = self.local_logpdf(v, cov_xyz)
+                log_p_xz = self.local_logpdf(vxz, cov_xz)
+                log_p_yz = self.local_logpdf(vyz, cov_yz)
+                log_p_z = self.local_logpdf(vz, cov_z)
+
+                cmi[i] = log_p_xyz + log_p_z - log_p_xz - log_p_yz
+
+        # MI
+        else:
+            
+            det_xz = np.linalg.det(cov_xz)
+            det_yz = np.linalg.det(cov_yz)
+            det_z = np.linalg.det(cov_z)
+            det_xyz = np.linalg.det(cov_xyz)
+
+            cmi = 0.5 * np.log((det_xz * det_yz) / (det_z * det_xyz))
 
         return cmi
 
+    def local_logpdf(self, subv, subcov):
+        k = len(subv)
+        inv = np.linalg.inv(subcov)
+        sign, ld = np.linalg.slogdet(subcov)
+        return -0.5 * (k * np.log(2 * np.pi) + ld + subv @ inv @ subv)
 
+
+############################################################################## TODO
 class PythonGaussianAIS(PythonGaussian):
     """Calculate active information storage with Python Gaussian implementation.
 
@@ -1459,8 +1568,23 @@ class PythonGaussianAIS(PythonGaussian):
         if num_valid <= 0:
             raise ValueError(f"Not enough valid embedding vectors")
         
+
+
+
         past, current = self.embed_past_current(process, num_valid, self.settings['history'], self.settings['tau'])
-        past = self.delay_embedding(process)
+        #past = self.delay_embedding(process)
+
+        current2 = process[self.settings['history'] * self.settings['tau']:]
+
+        past2 = self.delay_embed(process, history=self.settings['history'], tau=self.settings['tau'])
+        
+        print("History: ",self.settings['history'])
+        print("Tau: ",self.settings['tau'])
+        print(process[1:10])
+        print(past[0:5])
+        print(current[0:5])
+        print(past2[0:5])
+        print(current2[0:5])
 
         est_mi=PythonGaussianMI(self.settings)
         mi = est_mi.estimate(var1=current, var2=past)
@@ -1675,13 +1799,13 @@ class PythonGaussianTE(PythonGaussian):
         return 0.5 * (d * np.log(2.0 * np.pi * np.e) + logdet)
 
 
-    def delay_embed(self, x, dim, tau):
-        x = np.asarray(x, dtype=float)
-        n = len(x)
-        m = n - (dim - 1) * tau
-        if m <= 0:
-            raise ValueError("Time series too short for the chosen embedding.")
-        return np.column_stack([x[(dim - 1 - i) * tau:(dim - 1 - i) * tau + m] for i in range(dim)])
+    #def delay_embed(self, x, dim, tau):
+    #    x = np.asarray(x, dtype=float)
+    #    n = len(x)
+    #    m = n - (dim - 1) * tau
+    #    if m <= 0:
+    #        raise ValueError("Time series too short for the chosen embedding.")
+    #    return np.column_stack([x[(dim - 1 - i) * tau:(dim - 1 - i) * tau + m] for i in range(dim)])
 
     def _ols_resid_var(self, y, X):
         y = np.asarray(y, dtype=float).reshape(-1)
