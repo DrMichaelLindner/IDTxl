@@ -10,8 +10,199 @@ from idtxl.bivariate_te import BivariateTE
 
 SEED = 0
 
+##################################################################################### TODO
+def test_gauss_data_python_comp():
+    """Test nonlinear granger estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
 
-def test_gauss_data():
+    estimators = ["JidtGaussianCMI","PythonGaussianCMI"]
+    counter = 0
+    tes = np.zeros((len(estimators),3))
+
+    for e in estimators:
+
+        data = Data(
+            np.hstack((source, source_uncorr, target)), dim_order="sp", normalise=False
+        )
+        settings = {
+            "cmi_estimator": e,
+            "n_perm_max_stat": 21,
+            "n_perm_min_stat": 21,
+            "n_perm_max_seq": 21,
+            "n_perm_omnibus": 21,
+            "max_lag_sources": 2,
+            "min_lag_sources": 1,
+            'noise_level': 0
+        }
+        # perform GaussianCMI WITHOUT nonlinear data
+        nw = MultivariateTE()
+        results1 = nw.analyse_single_target(settings, data, target=2, sources=[0, 1])
+        te1 = results1.get_single_target(2, fdr=False)["te"][0]
+        tes[counter,0] = te1
+        sources1 = results1.get_target_sources(2, fdr=False)
+
+        # prepare data object for nonlinear analysis
+        settings["target"] = 2
+        settings, data = data.prepare_nonlinear(settings, data)
+
+        # perform GaussianCMI WITH nonlinear data - MultivariateTE
+        nonlin_analysis = MultivariateTE()
+        results2 = nonlin_analysis.analyse_single_target(settings, data,
+                                                        target=settings["nonlinear_settings"][
+                                                            "nonlinear_target_predictors"],
+                                                        sources=settings["nonlinear_settings"][
+                                                            "nonlinear_source_predictors"])
+        te2 = results2.get_single_target(2, fdr=False)["te"][0]
+        tes[counter,1] = te2
+        sources2 = results2.get_target_sources(2, fdr=False)
+
+        # perform GaussianCMI WITH nonlinear data - BivariateTE
+        nonlin_analysis2 = BivariateTE()
+        results3 = nonlin_analysis2.analyse_single_target(settings, data,
+                                                        target=settings["nonlinear_settings"][
+                                                            "nonlinear_target_predictors"],
+                                                        sources=settings["nonlinear_settings"][
+                                                            "nonlinear_source_predictors"])
+        te3 = results3.get_single_target(2, fdr=False)["te"][0]
+        tes[counter,2] = te3
+        sources3 = results3.get_target_sources(2, fdr=False)
+
+        # Assert that only the correlated source was detected.
+        assert sources1[0] == 0, "Wrong inferred source in standard estimation: {0}.".format(sources1[0])
+        assert sources1[0] == 0, "Wrong inferred source in standard estimation: {0}.".format(sources1[0])
+        assert sources2[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources2[0])
+        assert sources2[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources2[0])
+        assert sources3[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources3[0])
+        assert sources3[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources3[0])
+
+        # Assert that only the correlated source was detected.
+        assert np.isclose(te1, expected_mi, atol=0.05), (
+            "Estimated TE {0:0.6f} differs from expected TE {1:0.6f} using {2}.".format(te1, expected_mi, e))
+
+        assert np.isclose(te2, expected_mi, atol=0.05), (
+            "Estimated TE using multivariate nonlinear analysis {0:0.6f} differs from expected TE {1:0.6f}.".format(
+                te2, expected_mi))
+
+        assert np.isclose(te3, expected_mi, atol=0.05), (
+            "Estimated TE using bivariate nonlinear analysis {0:0.6f} differs from expected TE {1:0.6f}.".format(
+                te3, expected_mi))
+
+
+        assert np.isclose(te1, te2, atol=0.005), (
+            "Standard estimated TE {0:0.6f} differs from estimated TE using multivariate nonlinear analysis {1:0.6f}"
+            " (expected MI: {2:0.6f}).".format(te1, te2, expected_mi))
+
+        assert np.isclose(te1, te3, atol=0.005), (
+            "Standard estimated TE {0:0.6f} differs from estimated TE using bivariate nonlinear analysis {1:0.6f} "
+            "(expected MI: {2:0.6f}).".format(te1, te3, expected_mi))
+
+        #assert sources1[0] == sources2[0], (
+        #    "sources of standard TE estimation {0:0.0f} differs from sources of nonlinear TE estimation {1:0.0f}."
+        #        .format(sources1[0], sources2[0]))
+
+    assert np.isclose(tes[0,0], tes[1,0], atol=0.005), (
+        "Estimated TE using JistGaussianCMI {0:0.6f} differs from estimated TE using PythonGaussianCMI {1:0.6f} in standard TE estimation"
+        " (expected MI: {2:0.6f}).".format(tes[0,0], tes[1,0], expected_mi))
+    
+    assert np.isclose(tes[0,1], tes[1,1], atol=0.005), (
+        "Estimated TE using JistGaussianCMI {0:0.6f} differs from estimated TE using PythonGaussianCMI {1:0.6f} in multivariate nonlinear analysis"
+        " (expected MI: {2:0.6f}).".format(tes[0,1], tes[1,1], expected_mi))
+
+    assert np.isclose(tes[0,2], tes[1,2], atol=0.005), (
+        "Estimated TE using JistGaussianCMI {0:0.6f} differs from estimated TE using PythonGaussianCMI {1:0.6f} in bivariate nonlinear analysis"
+        " (expected MI: {2:0.6f}).".format(tes[0,2], tes[1,2], expected_mi))
+
+    
+def test_gauss_data_python():
+    """Test nonlinear granger estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(
+        np.hstack((source, source_uncorr, target)), dim_order="sp", normalise=False
+    )
+    settings = {
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 21,
+        "n_perm_min_stat": 21,
+        "n_perm_max_seq": 21,
+        "n_perm_omnibus": 21,
+        "max_lag_sources": 2,
+        "min_lag_sources": 1,
+        'noise_level': 0
+    }
+    # perform JidtGaussianCMI WITHOUT nonlinear data
+    nw = MultivariateTE()
+    results1 = nw.analyse_single_target(settings, data, target=2, sources=[0, 1])
+    te1 = results1.get_single_target(2, fdr=False)["te"][0]
+    sources1 = results1.get_target_sources(2, fdr=False)
+
+    # prepare data object for nonlinear analysis
+    settings["target"] = 2
+    settings, data = data.prepare_nonlinear(settings, data)
+
+    # perform JidtGaussianCMI WITH nonlinear data - MultivariateTE
+    nonlin_analysis = MultivariateTE()
+    results2 = nonlin_analysis.analyse_single_target(settings, data,
+                                                    target=settings["nonlinear_settings"][
+                                                        "nonlinear_target_predictors"],
+                                                    sources=settings["nonlinear_settings"][
+                                                        "nonlinear_source_predictors"])
+    te2 = results2.get_single_target(2, fdr=False)["te"][0]
+    sources2 = results2.get_target_sources(2, fdr=False)
+
+    nonlin_analysis2 = BivariateTE()
+    results3 = nonlin_analysis2.analyse_single_target(settings, data,
+                                                    target=settings["nonlinear_settings"][
+                                                        "nonlinear_target_predictors"],
+                                                    sources=settings["nonlinear_settings"][
+                                                        "nonlinear_source_predictors"])
+    te3 = results3.get_single_target(2, fdr=False)["te"][0]
+    sources3 = results3.get_target_sources(2, fdr=False)
+
+    # Assert that only the correlated source was detected.
+    assert sources1[0] == 0, "Wrong inferred source in standard estimation: {0}.".format(sources1[0])
+    assert sources1[0] == 0, "Wrong inferred source in standard estimation: {0}.".format(sources1[0])
+    assert sources2[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources2[0])
+    assert sources2[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources2[0])
+    assert sources3[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources3[0])
+    assert sources3[0] == 0, "Wrong inferred source in nonlinear estimation: {0}.".format(sources3[0])
+
+    # Assert that only the correlated source was detected.
+    assert np.isclose(te1, expected_mi, atol=0.05), (
+        "Estimated TE {0:0.6f} differs from expected TE {1:0.6f}.".format(te1, expected_mi))
+
+    assert np.isclose(te2, expected_mi, atol=0.05), (
+        "Estimated TE using multivariate nonlinear analysis {0:0.6f} differs from expected TE {1:0.6f}.".format(
+            te2, expected_mi))
+
+    assert np.isclose(te3, expected_mi, atol=0.05), (
+        "Estimated TE using bivariate nonlinear analysis {0:0.6f} differs from expected TE {1:0.6f}.".format(
+            te3, expected_mi))
+
+
+    assert np.isclose(te1, te2, atol=0.005), (
+        "Standard estimated TE {0:0.6f} differs from estimated TE using multivariate nonlinear analysis {1:0.6f}"
+        " (expected MI: {2:0.6f}).".format(te1, te2, expected_mi))
+
+    assert np.isclose(te1, te3, atol=0.005), (
+        "Standard estimated TE {0:0.6f} differs from estimated TE using bivariate nonlinear analysis {1:0.6f} "
+        "(expected MI: {2:0.6f}).".format(te1, te3, expected_mi))
+
+    #assert sources1[0] == sources2[0], (
+    #    "sources of standard TE estimation {0:0.0f} differs from sources of nonlinear TE estimation {1:0.0f}."
+    #        .format(sources1[0], sources2[0]))
+
+
+
+
+def test_gauss_data_jidt():
     """Test nonlinear granger estimation from correlated Gaussians."""
     # Generate data and add a delay one one sample.
     expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
@@ -83,11 +274,11 @@ def test_gauss_data():
 
     assert np.isclose(te1, te2, atol=0.005), (
         "Standard estimated TE {0:0.6f} differs from estimated TE using multivariate nonlinear analysis {1:0.6f}"
-        " (expected: MI {2:0.6f}).".format(te1, te2, expected_mi))
+        " (expected MI: {2:0.6f}).".format(te1, te2, expected_mi))
 
     assert np.isclose(te1, te3, atol=0.005), (
         "Standard estimated TE {0:0.6f} differs from estimated TE using bivariate nonlinear analysis {1:0.6f} "
-        "(expected: MI {2:0.6f}).".format(te1, te3, expected_mi))
+        "(expected MI: {2:0.6f}).".format(te1, te3, expected_mi))
 
     #assert sources1[0] == sources2[0], (
     #    "sources of standard TE estimation {0:0.0f} differs from sources of nonlinear TE estimation {1:0.0f}."
@@ -903,16 +1094,17 @@ def test_add_conditional_bivariate():
 
 
 if __name__ == '__main__':
-    test_gauss_data()
-    test_flags_and_result_output_multivariate()
-    test_flags_and_result_output_bivariate()
-    test_check_target_and_source_set()
-    test_nonlinear_result_functions_multivariate()
-    test_nonlinear_result_functions_bivariate()
-    test_nonlinear_network_analysis_multivariate()
-    test_nonlinear_network_analysis_bivariate()
-    test_return_local_values_multivariate()
-    test_return_local_values_bivariate()
-    test_add_conditional_multivariate()
-    test_add_conditional_bivariate()
+    #test_gauss_data_jidt()
+    test_gauss_data_python()
+    #test_flags_and_result_output_multivariate()
+    #test_flags_and_result_output_bivariate()
+    #test_check_target_and_source_set()
+    #test_nonlinear_result_functions_multivariate()
+    #test_nonlinear_result_functions_bivariate()
+    #test_nonlinear_network_analysis_multivariate()
+    #test_nonlinear_network_analysis_bivariate()
+    #test_return_local_values_multivariate()
+    #test_return_local_values_bivariate()
+    #test_add_conditional_multivariate()
+    #test_add_conditional_bivariate()
 

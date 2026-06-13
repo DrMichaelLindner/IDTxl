@@ -310,9 +310,9 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
         # Main algorithm.
         print("\n---------------------------- (1) include target candidates")
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
-            if settings["cmi_estimator"] != 'JidtGaussianCMI':
+            if settings["cmi_estimator"] not in ['JidtGaussianCMI','PythonGaussianCMI']:
                 raise RuntimeError(
-                    "For nonlinear analysis only the JidtGaussianCMI estimator can be used!"
+                    "For nonlinear analysis only the JidtGaussianCMI or PythonGaussianCMI estimator can be used!"
                 )
             print("                                  using original and nonlinear target candidates")
             self._include_lin_and_nonlin_target_candidates(data)
