@@ -760,7 +760,7 @@ if __name__ == '__main__':
     #for sigma in _Sigmas_3var:
     #    test_kraskov_cmi_gaussian(sigma)
         
-    #print("\n\nTest Kraskov TE:\n")
+    #print("\n\nTest Kraskov TE:\n") ################################################## TODO
     #test_kraskov_te_gaussian()
 
     #print("\n\nTest Kraskov Theiler_T correction:\n") ################################################## TODO
@@ -773,18 +773,19 @@ if __name__ == '__main__':
     #for sigma in _Sigmas_2var:
     #    test_gaussian_mi_gaussian(sigma)
     
-    print("\n\nTest Gaussian CMI:\n")
-    for sigma in _Sigmas_3var:
-        test_gaussian_cmi_gaussian(sigma)
+    #print("\n\nTest Gaussian CMI:\n")
+    #for sigma in _Sigmas_3var:
+    #    test_gaussian_cmi_gaussian(sigma)
 
-    #print("\n\nTest Gaussian TE:\n")
+    #print("\n\nTest Gaussian TE:\n") ################################################## TODO
     #test_gaussian_te_gaussian()
     
-    #print("\n\nTest Gaussian AIS:\n")
+    #print("\n\nTest Gaussian AIS:\n") ################################################## TODO
     #test_gaussian_ais()
     
 
-
+    print("\n\nTest Spectral MI:\n")
+    test_spectral_mi()
     
     
     #print("\n\nTest Discrete MI:\n") ################################################## TODO

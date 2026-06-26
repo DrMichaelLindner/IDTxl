@@ -9,9 +9,13 @@ from idtxl.knn.knn_finder_factory import get_knn_finder
 
 import idtxl.idtxl_utils as utils
 
-from collections import Counter
+from collections import Counter, defaultdict
 import math
-from scipy.stats import multivariate_normal
+from scipy.stats import multivariate_normal, chi2
+#from scipy.spatial.distance import cdist
+from scipy.spatial import distance_matrix
+from scipy.fft import fft, fftfreq
+from scipy.linalg import cholesky, solve_triangular, cho_solve
 
 # Abstract classes
 
@@ -38,118 +42,210 @@ class PythonEstimator(Estimator):
         """Standardise data to zero mean and unit variance."""
         return (data - np.mean(data, axis=0)) / np.std(data, axis=0)
     
-
-
-    #################################################################################################### TODO
     
-    def embed_past_current(self, process, num_valid, history, tau):
-        # Build the embedded past vectors and current values
-
-        past = np.zeros((num_valid, history), dtype=np.float64)
-        current = np.zeros(num_valid, dtype=np.float64)
-        
-        for i in range(num_valid):
-        #past = np.zeros((len(num_valid), history), dtype=np.float64)
-        #current = np.zeros(len(num_valid), dtype=np.float64)
-
-        #for i in range(len(num_valid)):
-            t = i + history * tau + 1
-            #current[i] = process[t+start]
-            current[i] = process[t]
-            for j in range(history):
-                #past[i, j] = process[t+start - (j + 1) * tau]
-                past[i, j] = process[t - (j + 1) * tau]
-
-        return past, current
 
 
-    def delay_embed(self, x, history=1, tau=1):
+    def computeStartTimeForFirstDestEmbedding(self, history_target, tau_target, history_source, tau_source, delay): 
+        """get first time point for embedding"""        
+        startTimeBasedOnTargetPast = (history_target - 1) * tau_target
+        startTimeBasedOnSourcePast = (history_source - 1) * tau_source + delay - 1
+        return max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast);
 
-        x = np.asarray(x, dtype=float)
 
-        n = len(x) - history * tau
-
-        if n <= 0:
-
-            raise ValueError("Time series too short for chosen k and tau")
-
-        return np.column_stack([x[(history - j) * tau:(history - j) * tau + n] for j in range(history)])
-    """
-    #################################################################################################### TODO
-
-    def takens_embedding(self, x, dim, delay):
-        x = np.asarray(x, dtype=float)
-        if x.ndim != 1:
-            raise ValueError("x must be a 1D array")  
-        n = len(x)
-        start = (dim - 1) * delay
-        if start >= n:
-            raise ValueError("Embedding dimension and delay too large for data length")
-        Y = np.zeros((n - start, dim), dtype=float)
-        for i in range(dim):
-            t = start - i * delay
-            Y[:, i] = x[t:t + n - start]
-        return Y
-
-    def delay_embedding(ts, dim, delay, step):
-        ts = np.asarray(ts)
-        n = len(ts)
-        m = n - (dim - 1) * delay
-        if m <= 0:
-            return np.empty((0, dim), dtype=ts.dtype)
-
-        idx = np.arange(m)[:, None] + delay * np.arange(dim)[None, :]
-        idx = idx[::step]
-        return ts[idx]
-    """
-
+    ##################################################################### TODO remove
     def delay_embedding(self, ts, history, tau):
 
         n = len(ts)
 
-        n_embed = n - (history - 1) * tau
+        m = n - (history - 1) * tau
 
-        embedded = np.zeros((n_embed, history))
+        return np.column_stack([ts[i * tau:i * tau + m] for i in range(history)])
 
-        for i in range(history):
-            embedded[:,i] = ts[(i * tau):(i * tau + n_embed)]
 
-        return embedded
 
-    def delay_embedding2(self, ts, history, tau, L, FirstP):
 
-        Y = np.zeros((L, history) , dtype=float)
-        for t in range(L):
-            for h in range(history):
-                Y[t,h] = ts[t + (FirstP-1) - (h-1) * tau]
+    def makeDelayEmbeddingVector(self, ts, history, tau, startFirstPoint, numEmbeddingVectors):
 
-        return Y
-    
-    def delay_embed_past(self, ts, history, tau, L, FirstP, u):
-
-        Y = np.zeros((L, history) , dtype=float)
-        for t in range(L):
-            for h in range(history):
-                Y[t,h] = ts[t + (FirstP-1) - u - (h-1) * tau]
-
-        return Y
+        embedded_vector = np.zeros((numEmbeddingVectors, history))
         
-    def delay_embed_future(self, ts, history, tau, L, FirstP):
+        for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
+            for i in range(history):
+                embedded_vector[t - startFirstPoint, i] = ts[t - i * tau]
 
-        #Y = np.zeros((L, history) , dtype=float)
-        Y = np.zeros((L) , dtype=float)
-        for t in range(L):
-            Y[t] = ts[t + (FirstP-1)]
-            #for h in range(history):
-                #if h == 0:
-                #Y[t,h] = ts[t + (FirstP)]
-                #else:
-                #    Y[t,h] = ts[t + FirstP - 1 - (h - 2) * tau]
-        return Y
+        return embedded_vector
+    
+    def makeDelayEmbeddingVectorCurrent(self, ts, history, startFirstPoint, numEmbeddingVectors):
+
+        embedded_vector = np.zeros((numEmbeddingVectors, history))
+
+        for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
+            for i in range(history):
+                embedded_vector[t - startFirstPoint, i] = ts[t - i]
+
+        return embedded_vector
 
 
+    ##################################################################### TODO move ???????    
+    def computeSignificanceEmpirical(self):
+
+        n = len(self.TEopt_var1)
+        
+        if isinstance(self.TEopt_permorder, int):
+            numPermutations = self.TEopt_permorder
+            perm = True
+        else:
+            assert permorder.ndim == 2, ("new Order must be have 2 dims (num_perm x n)")
+
+            numPermutations = len(self.TEopt_permorder)
+            perm = False
 
 
+        # surrogate testing
+        surrogateMeasurements = np.zeros(numPermutations)
+
+        for i in range(numPermutations):
+
+            # get shuffled data
+            if perm:
+                idx = np.random.shuffle(np.arange(n))
+            else:
+                idx = self.TEopt_permorder[i]
+            
+            if self.TEopt_varToReorder == 1:
+                shuffled_data = self.TEopt_var1[idx]
+
+                print("TEopt_var1: ",self.TEopt_var1.shape)
+                print("TEopt_var2: ",self.TEopt_var2.shape)
+                print("TEopt_conditional: ",self.TEopt_conditional.shape)
+                print("shuffled_data: ",shuffled_data.shape)
+                print("idx: ",len(idx))
+
+                surrogateMeasurements[i] = self.TEopt_estimator.calculateAverageCMI(shuffled_data, self.TEopt_var2, self.TEopt_conditional)
+            else:
+                shuffled_data = self.TEopt_var2[idx]
+                surrogateMeasurements[i] = self.TEopt_estimator.calculateAverageCMI(self.TEopt_var1, shuffled_data, self.TEopt_conditional)
+
+        return EmpiricalMeasurementDistribution(surrogateMeasurements, self.TEopt_lastAverage)
+
+
+    ##################################################################### TODO move ???????
+    def computeSignificanceAnalystic(self):
+
+        average = self.TEopt_estimator.calculateAverageCMI(self.TEopt_var1, self.TEopt_var2, self.TEopt_conditional)
+
+        C = ChiSquareMeasurementDistribution()
+
+        print(C)
+        print(type(C))
+
+        x = C.ChiSquareMeasurementDistribution(average, 
+                                            len(self.TEopt_var1),
+                                            self.TEopt_var1.shape[1] * self.TEopt_var2.shape[1],
+                                            False)
+        print(x)
+
+        return x
+
+    ##################################################################### TODO move ???????
+    def computeBiasToRemove(self, var=1, lastAverage=None):
+
+        self.TEopt_varToReorder = var
+        self.TEopt_lastAverage = lastAverage
+        
+        if self.TEopt_permorder == 0:
+            # Analytic bias correction
+
+            analyticMeasDist = self.computeSignificanceAnalystic()
+
+            print(analyticMeasDist)
+                
+            meanOfDist = analyticMeasDist.getMeanOfDistribution();
+
+        else:
+            # Empirical bias correction with numSurrogates surrogates
+
+            empMeasDist = self.computeSignificanceEmpirical()
+
+            meanOfDist = empMeasDist.getMeanOfDistribution();
+
+        del self.TEopt_varToReorder
+        del self.TEopt_lastAverage
+
+        return meanOfDist
+
+
+    def opt_te_source_delay(self, estimator, source, target_past, target_current, startFirstPoint, numSurrogates=0):
+        """detect best history_source and tau_source"""
+        bestTE = -np.inf
+        sh = 1
+        st = 1
+        self.TEopt_estimator = estimator
+        self.TEopt_var1 = source
+        self.TEopt_var2 = target_past
+        self.TEopt_conditional = target_current
+        self.TEopt_permorder = numSurrogates
+        
+        for h in range(1, self.settings['history_source']+1):
+            for t in range(1, self.settings['tau_source']+1):
+                
+                s_p = self.makeDelayEmbeddingVector(source, 
+                    h, 
+                    t,
+                    startFirstPoint + 1 - self.settings['source_target_delay'],
+                    source.shape[0] - startFirstPoint - 1)
+
+                
+                #ote = self.calculateAverageTE(s_p, target_past, target_current)
+                ote = estimator.calculateAverageCMI(s_p, target_current, target_past)
+                
+                self.TEopt_var1 = s_p
+        
+                ######################################################### TODO bia correction
+                #ote -= self.computeBiasToRemove(1, ote)
+
+                if ote > bestTE:
+                    bestTE = ote
+                    sh = h
+                    st = t
+
+        del self.TEopt_estimator
+        del self.TEopt_var1
+        del self.TEopt_var2
+        del self.TEopt_conditional
+        del self.TEopt_permorder
+        
+        return sh, st
+
+    ##################################################################### TODO remove ???
+    def opt_ais_source_delay(self, est, process, current, startFirstPoint, numSurrogates=0):
+        bestAIS = -np.inf
+        sh = 1
+        st = 1
+        for h in range(1, self.settings['history']+1):
+            for t in range(1, self.settings['tau']+1):
+                
+                s_p = self.makeDelayEmbeddingVector(process, 
+                    h, 
+                    t,
+                    startFirstPoint,
+                    process.shape[0] - startFirstPoint - 1)
+
+                #min_len = min(len(s_p), len(current))
+
+                oais = est.calculateAverageMI(s_p, current)
+
+                ######################################################### TODO bias correction
+                #self.TEopt_permorder = numSurrogates
+                #oais -= self.computeBiasToRemove()
+                
+                if oais > bestAIS:
+                    bestAIS = oais
+                    sh = h
+                    st = t
+
+        return sh, st
+    
+    
     #################################################################################################### TODO
 
 
@@ -160,6 +256,169 @@ class PythonEstimator(Estimator):
         return False
 
 
+
+
+
+################################################################################ TODO
+class PythonSpectral(PythonEstimator):
+    """Abstract class for implementation of Python Spectral-estimators.
+
+    Abstract class for implementation of Python Gaussian-estimators, child
+    classes implement estimators for mutual information (MI), conditional
+    mutual information (CMI), actice information storage (AIS) and
+    transfer entropy (TE) using python Gaussian estimator for continuous data. 
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+            
+            ################################################################################ TODO
+            - xxx : bool [optional] - z-standardise data (default=False)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+
+    """
+
+    def __init__(self, settings):
+        # check unsupported settings
+        if settings.get('local_values', False):
+            raise ValueError('This estimator currently does not support local_values.')
+        # set defaults
+        settings.setdefault('noise_level', 0)
+        settings.setdefault('normalise', False)
+        settings.setdefault('local_values', False)
+        super().__init__(settings)
+
+    def fft_spectral_data(self, data, axis=-1):
+        """
+        Compute FFT of spectral data and return magnitude spectrum.
+        data: input array (can be multi-dimensional)
+        axis: axis along which to apply FFT (default: last axis)
+        """
+        fft_result = np.fft.fft(data, axis=axis)
+        magnitude = np.abs(fft_result)
+        return magnitude
+
+
+class PythonSpectralMI(PythonSpectral):
+    """Estimate mutual information using Spectral estimator.
+
+    Compute mutual information between two signals in the 
+    frequency domain.
+    
+    Results are returned in nats.
+
+    Args:
+        settings : dict
+            set estimator parameters:
+
+            - bins: int - number of histogram bins for MI estimation
+            - normalise : bool [optional] - z-standardise data (default=False)
+            #- noise_level : float [optional] - random noise added to the data
+            #  (default=1e-8)
+            - lag_mi : int [optional] - time difference in samples to calculate
+              the lagged MI between processes (default=0)
+    
+    """
+
+    def __init__(self, settings):
+        """Initialise estimator with settings."""
+        settings = self._check_settings(settings)
+        try:
+            settings['bins']
+        except KeyError:
+            raise RuntimeError('bins was not provided for estimation.')
+        #settings.setdefault('bins', 50)
+        assert type(settings['bins']) is int, ('bins has to be an integer.')
+
+        settings.setdefault('lag_mi', 0)
+        super().__init__(settings)
+
+
+    def estimate(self, var1: np.ndarray, var2: np.ndarray):
+        """Estimate mutual information.
+
+        Args:
+            var1 : numpy array
+                realisations (1D) of first time-domain signal
+            var2 : numpy array
+                realisations of the second time-domain signal
+
+        Returns:
+            float | numpy array
+                - average mi over all samples 
+                if return_fs is True additionally:
+                - freqs: frequency array
+                - spec1, spec2: spectral magnitudes
+        """
+
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        
+        assert (
+            var1.shape[0] == var2.shape[0]
+        ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]})"
+
+        # Normalise data
+        if self.settings['normalise']:
+            var1 = self._normalise_data(var1)
+            var2 = self._normalise_data(var2)
+
+        # Add noise to avoid duplicate points
+        # Do not add noise inplace, because it would change the input data
+        if self.settings['noise_level'] > 0:
+            var1 = var1 + self._rng.normal(0, self.settings['noise_level'], var1.shape)
+            var2 = var2 + self._rng.normal(0, self.settings['noise_level'], var2.shape)
+
+        # Shift variables to calculate a lagged MI.
+        if self.settings['lag_mi'] > 0:
+            var1 = var1[:-self.settings['lag_mi'], :]
+            var2 = var2[self.settings['lag_mi']:, :]
+
+        # convert to FFT and get magnitude spectra
+        mag1 = self.fft_spectral_data(var1)
+        mag2 = self.fft_spectral_data(var2)
+
+        # Only use positive frequencies (first half of FFT output)
+        n_positive = len(mag1) // 2
+        mag1 = mag1[:n_positive]
+        mag2 = mag2[:n_positive]
+        
+        # Create 2D histogram for joint distribution
+        hist_joint, x_edges, y_edges = np.histogram2d(mag1[:,0], mag2[:,0], bins=self.settings['bins'], density=False)
+        
+        # Convert to probability distributions
+        p_joint = hist_joint / hist_joint.sum()  # Joint probability p(x,y)
+        p_x = p_joint.sum(axis=1)  # Marginal p(x)
+        p_y = p_joint.sum(axis=0)  # Marginal p(y)
+        
+        # Add small epsilon to avoid log(0)
+        epsilon = 1e-10
+        p_joint = p_joint + epsilon
+        p_x = p_x + epsilon
+        p_y = p_y + epsilon
+        
+        # Renormalize after adding epsilon
+        p_joint = p_joint / p_joint.sum()
+        p_x = p_x / p_x.sum()
+        p_y = p_y / p_y.sum()
+        
+        # Compute mutual information in nats: I(X;Y) = Σ p(x,y) * ln(p(x,y) / (p(x)*p(y)))
+        mi_nats = np.sum(p_joint * np.log(p_joint / (p_x * p_y)))
+        
+
+        ############################################################################################### TODO local values?
+
+        return mi_nats
+
+
+#class PythonSpectralCMI(PythonSpectral):
+
+    
+            
+###############################
+# Kraskov estimators
+###############################
 
 class PythonKraskov(PythonEstimator):
     """Abstract class for implementation of Python Kraskov estimators
@@ -198,13 +457,26 @@ class PythonKraskov(PythonEstimator):
         settings.setdefault('kraskov_k', 4)
         settings.setdefault('normalise', False)
         settings.setdefault('theiler_t', 0)
-        settings.setdefault('base', np.e)
+        settings.setdefault('base', np.e)  ############################# TODO
         settings.setdefault('noise_level', 1e-8)
         settings.setdefault('num_threads', 'USE_ALL')
         settings.setdefault("knn_finder", "scipy_ckdtree")
         settings.setdefault("lag_mi", 0)
         settings.setdefault('local_values', False)
         super().__init__(settings)
+
+        self._knn_finder_settings = settings.get("knn_finder_settings", {})
+        
+        # Set number of threads
+        num_threads = settings.get("num_threads", -1)
+        if num_threads == "USE_ALL":
+            num_threads = -1
+        self._knn_finder_settings["num_threads"] = num_threads
+
+        # Get KNN finder class
+        self._knn_finder_name = settings.get("knn_finder", "scipy_kdtree")
+        self._knn_finder_class = get_knn_finder(self._knn_finder_name)
+
 
         ################################################################################# TODO
 
@@ -227,183 +499,72 @@ class PythonKraskov(PythonEstimator):
     #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
     #    return knn_finder.count_all_neighbors_theiler(r, self.settings['theiler_t']) + 1
 
+
+    def getDigammasMI(self, var1, var2):
+        """get all Digammes for Kraskov MI calculation"""
+        # Compute distances to kth nearest neighbors in the joint space
+        epsilon = self._compute_epsilon(
+            np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
+        )
+
+        # Count neighbors ############################################################################################ TODO Theiler correction
+        #if self.settings['theiler_t'] > 0:
+        #    n_c_var1 = self._compute_n_theiler(var1, epsilon, self.settings['theiler_t'])
+        #else:
+        n_c_var1 = self._compute_n(var1, epsilon)
+        digamma_nc_var1 = digamma(n_c_var1)
+        del n_c_var1
+
+        #if self.settings['theiler_t'] > 0: ############################################################################################ TODO Theiler correction
+        #    n_c_var2 = self._compute_n_theiler(var2, epsilon, self.settings['theiler_t'])
+        #else:
+        n_c_var2 = self._compute_n(var2, epsilon)
+        digamma_nc_var2 = digamma(n_c_var2)
+        del n_c_var2
+
+        return digamma_nc_var1, digamma_nc_var2
+
+
+    def getDigammasCMI(self, var1, var2, conditional):
+        """get digamma values for CMI estimation"""
+        # Compute distances to kth nearest neighbors in the joint space
+        epsilon = self._compute_epsilon(
+            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
+        )
+
+        # Count neighbors in the conditional space
+        if conditional.shape[1] > 0:
+            #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
+            #    n_c = self._compute_n_theiler(conditional, epsilon, self.settings['theiler_t'])
+            #else:
+            n_c = self._compute_n(conditional, epsilon)
+            #mean_digamma_nc = np.mean(digamma(n_c))
+            digamma_nc = digamma(n_c)
+            del n_c
+
+        #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
+        #    n_c_var1 = self._compute_n_theiler(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
+        #else: 
+        n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon)
+        #mean_digamma_nc_var1 = np.mean(digamma(n_c_var1))
+        digamma_nc_var1 = digamma(n_c_var1)
+        del n_c_var1
+
+        #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
+        #    n_c_var2 = self._compute_n_theiler(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
+        #else: 
+        n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon)
+        #mean_digamma_nc_var2 = np.mean(digamma(n_c_var2))
+        digamma_nc_var2 = digamma(n_c_var2)
+        del n_c_var2
+
+        return digamma_nc_var1, digamma_nc_var2, digamma_nc
+
+
+
     def is_analytic_null_estimator(self):
         return False
 
-
-class PythonGaussian(PythonEstimator):
-    """Abstract class for implementation of Python Gaussian-estimators.
-
-    Abstract class for implementation of Python Gaussian-estimators, child
-    classes implement estimators for mutual information (MI), conditional
-    mutual information (CMI), actice information storage (AIS) and
-    transfer entropy (TE) using python Gaussian estimator for continuous data. 
-
-    Args:
-        settings : dict [optional]
-            set estimator parameters:
-
-            - normalise : bool [optional] - z-standardise data (default=False)
-            - noise_level : float [optional] - random noise added to the data
-              (default=0)
-    """
-
-    def __init__(self, settings):
-        # Check for currently unsupported settings
-        
-
-        ####################################################################################### TODO
-        #if settings.get('local_values', False):
-        #    raise ValueError('This estimator currently does not support local_values.')
-        settings.setdefault('local_values', False)
-
-        settings.setdefault('normalise', False)
-        settings.setdefault('noise_level', 0)
-        super().__init__(settings)
-        
-    def estimate_surrogates_analytic(self, n_perm=200, **data):
-        """Estimate the surrogate distribution analytically.
-        This method must be implemented because this class'
-        is_analytic_null_estimator() method returns true
-
-        Args:
-            n_perms : int
-                number of permutations (default=200)
-            data : numpy arrays
-                realisations of random variables required for the calculation
-                (varies between estimators, e.g. 2 variables for MI, 3 for
-                CMI). Formatted as per estimate_parallel for this estimator.
-
-        Returns:
-            float | numpy array
-                n_perm surrogates of the average MI/CMI/TE over all samples
-                under the null hypothesis of no relationship between var1 and
-                var2 (in the context of conditional)
-        """
-        return common_estimate_surrogates_analytic(self, n_perm, **data)
-
-    ##################################################################################################### TODO
-
-
-################################################################################ TODO
-class PythonDiscrete(PythonEstimator):
-    """Abstract class for implementation of Python Gaussian-estimators.
-
-    Abstract class for implementation of Python Gaussian-estimators, child
-    classes implement estimators for mutual information (MI), conditional
-    mutual information (CMI), 
-
-    active information storage (AIS), ############################################# ??????????????????????? TODO?
-
-    transfer
-    entropy (TE) using python Gaussian estimator for continuous data. 
-
-    Args:
-        settings : dict [optional]
-            set estimator parameters:
-
-            - normalise : bool [optional] - z-standardise data (default=False)
-            - noise_level : float [optional] - random noise added to the data
-              (default=0)
-    """
-
-    def __init__(self, settings):
-        settings.setdefault('discretise_method', 'none')
-        super().__init__(settings)
-
-    def _discretise_vars(self, var1, var2, conditional=None):
-        # Discretise variables if requested. Otherwise assert data are discrete
-        # and provided alphabet sizes are correct.
-        if self.settings['discretise_method'] == 'equal':
-            var1 = utils.discretise(var1, self.settings['alph1'])
-            var2 = utils.discretise(var2, self.settings['alph2'])
-            if conditional is not None:
-                conditional = utils.discretise(conditional,
-                                               self.settings['alphc'])
-
-        elif self.settings['discretise_method'] == 'max_ent':
-            var1 = utils.discretise_max_ent(var1, self.settings['alph1'])
-            var2 = utils.discretise_max_ent(var2, self.settings['alph2'])
-            if not (conditional is None):
-                conditional = utils.discretise_max_ent(conditional,
-                                                       self.settings['alphc'])
-
-        elif self.settings['discretise_method'] == 'none':
-            assert issubclass(var1.dtype.type, np.integer), (
-                'Var1 is not an integer numpy array. '
-                'Discretise data to use this estimator.')
-            assert issubclass(var2.dtype.type, np.integer), (
-                'Var2 is not an integer numpy array. '
-                'Discretise data to use this estimator.')
-            assert np.min(var1) >= 0, 'Minimum of var1 is smaller than 0.'
-            assert np.min(var2) >= 0, 'Minimum of var2 is smaller than 0.'
-            assert np.max(var1) < self.settings['alph1'], (
-                        'Maximum of var1 is larger than the alphabet size.')
-            assert np.max(var2) < self.settings['alph2'], (
-                        'Maximum of var2 is larger than the alphabet size.')
-            if conditional is not None:
-                assert np.min(conditional) >= 0, (
-                        'Minimum of conditional is smaller than 0.')
-                assert issubclass(conditional.dtype.type, np.integer), (
-                    'Conditional is not an integer numpy array. '
-                    'Discretise data to use this estimator.')
-                assert np.max(conditional) < self.settings['alphc'], (
-                    'Maximum of conditional is larger than the alphabet size.')
-        else:
-            raise ValueError('Unkown discretisation method.')
-
-        if conditional is not None:
-            return var1, var2, conditional
-        else:
-            return var1, var2
-
-    def is_analytic_null_estimator(self):
-        return True
-
-    def get_analytic_distribution(self, **data):
-        """Return a JIDT AnalyticNullDistribution object.
-
-        Required so that our estimate_surrogates_analytic method can use the
-        common_estimate_surrogates_analytic() method, where data is formatted
-        as per the estimate method for this estimator.
-
-        Args:
-            data : numpy arrays
-                realisations of random variables required for the calculation
-                (varies between estimators, e.g. 2 variables for MI, 3 for
-                CMI). Formatted as per the estimate method for this estimator.
-
-        Returns:
-            Java object
-                JIDT calculator that was used here
-        """
-        pass
-
-    def estimate_surrogates_analytic(self, n_perm=200, **data):
-        """Return estimate of the analytical surrogate distribution.
-
-        This method must be implemented because this class'
-        is_analytic_null_estimator() method returns true.
-
-        Args:
-            n_perms : int [optional]
-                number of permutations (default=200)
-            data : numpy arrays
-                realisations of random variables required for the calculation
-                (varies between estimators, e.g. 2 variables for MI, 3 for
-                CMI). Formatted as per the estimate method for this estimator.
-
-        Returns:
-            float | numpy array
-                n_perm surrogates of the average MI/CMI/TE over all samples
-                under the null hypothesis of no relationship between var1 and
-                var2 (in the context of conditional)
-        """
-        return common_estimate_surrogates_analytic(self, n_perm, **data)
-
-        
-
-# Kraskov estimator
 
 class PythonKraskovMI(PythonKraskov):
     """Estimate mutual information using Kraskov's estimator.
@@ -429,6 +590,8 @@ class PythonKraskovMI(PythonKraskov):
               available threads on the current machine)
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
+            - knn_finder : str [optional] - knn algorithm to use, can be
+              'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
 
@@ -449,7 +612,8 @@ class PythonKraskovMI(PythonKraskov):
             raise ValueError('This estimator currently does not support algorithm_num arguments.')
         """
         
-
+        ################################################################################################## TODO remove
+        
         self._kraskov_k = settings.get("kraskov_k", 4)
         self._base = settings.get("base", np.e)
         self._normalise = settings.get("normalise", False)
@@ -468,18 +632,31 @@ class PythonKraskovMI(PythonKraskov):
             rng_seed = settings.get("rng_seed", None)
             self._rng = np.random.default_rng(rng_seed)
         
-        self._knn_finder_settings = settings.get("knn_finder_settings", {})
-        
-        # Set number of threads
-        num_threads = settings.get("num_threads", -1)
-        if num_threads == "USE_ALL":
-            num_threads = -1
-        self._knn_finder_settings["num_threads"] = num_threads
+    
+    def calculateLocalMI(self, var1, var2):
+        """calculate lokal Kraskov MI"""
 
-        # Get KNN finder class
-        self._knn_finder_name = settings.get("knn_finder", "scipy_kdtree")
-        self._knn_finder_class = get_knn_finder(self._knn_finder_name)
+        digamma_nc_var1, digamma_nc_var2 = self.getDigammasMI(var1, var2)
+
+        mi = (digamma(self.settings['kraskov_k']) 
+                + digamma(len(var1))
+                - digamma_nc_var1
+                - digamma_nc_var2
+            ) / np.log(self.settings['base'])
+        return mi
+    
+    def calculateAverageMI(self, var1, var2):
+        """calculate Average Kraskov MI"""
         
+        digamma_nc_var1, digamma_nc_var2 = self.getDigammasMI(var1, var2)
+
+        mi = (digamma(self.settings['kraskov_k']) 
+                + digamma(len(var1))
+                - np.mean(digamma_nc_var1)
+                - np.mean(digamma_nc_var2)
+            ) / np.log(self.settings['base'])
+        return mi
+
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray):
         """Estimate mutual information.
@@ -494,10 +671,7 @@ class PythonKraskovMI(PythonKraskov):
 
         Returns:
             float | numpy array
-                average MI over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local MI for individual
+                average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
 
@@ -530,44 +704,12 @@ class PythonKraskovMI(PythonKraskov):
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
-
-
-        # Compute distances to kth nearest neighbors in the joint space
-        epsilon = self._compute_epsilon(
-            np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-        )
-
-        # Count neighbors ############################################################################################ TODO Theiler correction
-        #if self.settings['theiler_t'] > 0:
-        #    n_c_var1 = self._compute_n_theiler(var1, epsilon, self.settings['theiler_t'])
-        #else:
-        n_c_var1 = self._compute_n(var1, epsilon)
-        digamma_nc_var1 = digamma(n_c_var1)
-        del n_c_var1
-
-        #if self.settings['theiler_t'] > 0: ############################################################################################ TODO Theiler correction
-        #    n_c_var2 = self._compute_n_theiler(var2, epsilon, self.settings['theiler_t'])
-        #else:
-        n_c_var2 = self._compute_n(var2, epsilon)
-        digamma_nc_var2 = digamma(n_c_var2)
-        del n_c_var2
-
+        
         # Compute MI
         if self.settings["local_values"]:
-            mi = (digamma(self.settings['kraskov_k']) 
-                + digamma(len(var1))
-                - digamma_nc_var1
-                - digamma_nc_var2
-            ) / np.log(self.settings['base'])
-
+            return self.calculateLocalMI(var1, var2)
         else:
-            mi = (digamma(self.settings['kraskov_k']) 
-                + digamma(len(var1))
-                - np.mean(digamma_nc_var1)
-                - np.mean(digamma_nc_var2)
-            ) / np.log(self.settings['base'])
-
-        return mi
+            return self.calculateAverageMI(var1, var2)
 
 
 class PythonKraskovCMI(PythonKraskov):
@@ -627,8 +769,29 @@ class PythonKraskovCMI(PythonKraskov):
         self._knn_finder_name = settings.get("knn_finder", "scipy_ckdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
 
+    
+    def calculateAverageCMI(self, var1, var2, conditional):
+        """calculate Average Kraskov CMI"""
+        digamma_nc_var1, digamma_nc_var2, digamma_nc = self.getDigammasCMI(var1, var2, conditional)
+
+        return (
+                digamma(self.settings['kraskov_k'])
+                + np.mean(digamma_nc)
+                - np.mean(digamma_nc_var1)
+                - np.mean(digamma_nc_var2)
+            ) / np.log(self.settings['base'])
 
 
+    def calculateLocalCMI(self, var1, var2, conditional):
+        """calculate local Kraskov CMI"""
+        digamma_nc_var1, digamma_nc_var2, digamma_nc = self.getDigammasCMI(var1, var2, conditional)
+
+        return (
+                digamma(self.settings['kraskov_k'])
+                + digamma_nc
+                - digamma_nc_var1
+                - digamma_nc_var2
+            ) / np.log(self.settings['base'])     
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
@@ -647,10 +810,9 @@ class PythonKraskovCMI(PythonKraskov):
 
         Returns:
             float | numpy array
-                average MI over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-
+                average CMI over all samples or local CMI for individual
+                samples if 'local_values'=True
+                
         """
 
         # Return MI if no conditioning variable was provided.
@@ -691,55 +853,13 @@ class PythonKraskovCMI(PythonKraskov):
                 0, self.settings['noise_level'], conditional.shape
             )
 
-        # Compute distances to kth nearest neighbors in the joint space
-        epsilon = self._compute_epsilon(
-            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-        )
-
-        # Count neighbors in the conditional space
-        if conditional.shape[1] > 0:
-            #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
-            #    n_c = self._compute_n_theiler(conditional, epsilon, self.settings['theiler_t'])
-            #else:
-            n_c = self._compute_n(conditional, epsilon)
-            #mean_digamma_nc = np.mean(digamma(n_c))
-            digamma_nc = digamma(n_c)
-            del n_c
-
-        #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
-        #    n_c_var1 = self._compute_n_theiler(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
-        #else: 
-        n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon)
-        #mean_digamma_nc_var1 = np.mean(digamma(n_c_var1))
-        digamma_nc_var1 = digamma(n_c_var1)
-        del n_c_var1
-
-        #if int(self.settings['theiler_t']) > 0: ############################################################################################ TODO Theiler correction
-        #    n_c_var2 = self._compute_n_theiler(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
-        #else: 
-        n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon)
-        #mean_digamma_nc_var2 = np.mean(digamma(n_c_var2))
-        digamma_nc_var2 = digamma(n_c_var2)
-        del n_c_var2
-
         # Compute CMI
         if self.settings["local_values"]:
-            return (
-                digamma(self.settings['kraskov_k'])
-                + digamma_nc
-                - digamma_nc_var1
-                - digamma_nc_var2
-            ) / np.log(self.settings['base'])     
+            return self.calculateLocalCMI(var1, var2, conditional)
         else:
-            return (
-                digamma(self.settings['kraskov_k'])
-                + np.mean(digamma_nc)
-                - np.mean(digamma_nc_var1)
-                - np.mean(digamma_nc_var2)
-            ) / np.log(self.settings['base'])
+            return self.calculateAverageCMI(var1, var2, conditional)
             
 
-################################################################################ TODO
 class PythonKraskovAIS(PythonKraskov):
     """Calculate active information storage with Python Kraskov implementation.
 
@@ -794,6 +914,8 @@ class PythonKraskovAIS(PythonKraskov):
         assert type(settings['tau']) is int, ('Tau has to be an integer.')
 
         super().__init__(settings)
+        
+        
 
 
     def estimate(self, process):
@@ -815,28 +937,30 @@ class PythonKraskovAIS(PythonKraskov):
         # Check if number of points is sufficient for estimation.
         self._check_number_of_points(process.shape[0])
 
-        # len process
-        n = len(process)
+        startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
 
-        min_length = self.settings['history'] * self.settings['tau'] + 2
+        process_current = self.makeDelayEmbeddingVectorCurrent(process,
+            1,
+            startFirstPoint + 1,
+            process.shape[0] - startFirstPoint - 1)
+
+        process_past = self.makeDelayEmbeddingVector(process, 
+            self.settings['history'], 
+            self.settings['tau'], 
+            startFirstPoint, 
+            process.shape[0] - startFirstPoint - 1)
         
-        if n < min_length:
-            raise ValueError(f"Data too short: need at least {min_length} samples, got {n}")
-    
-        num_valid = n - self.settings['history'] * self.settings['tau'] - 1
-    
-        if num_valid <= 0:
-            raise ValueError(f"Not enough valid embedding vectors")
-        
-        past, current = self.embed_past_current(process, num_valid, self.settings['history'], self.settings['tau'])
+        if self.settings['local_values']:
+            ais = PythonKraskovMI.calculateLocalMI(self, process_past, process_current)
+            # correction to compare with JidtGaussianTE results
+            ais = np.hstack([np.zeros(startFirstPoint+1), ais])
 
-        est_mi=PythonKraskovMI(self.settings)
-        mi = est_mi.estimate(var1=current, var2=past)
+        else:
+            ais = PythonKraskovMI.calculateAverageMI(self, process_past, process_current)
 
-        return mi    
+        return ais
 
 
-################################################################################ TODO
 class PythonKraskovTE(PythonKraskov):
     """Estimate transfer using Kraskov's estimator.
      
@@ -869,13 +993,14 @@ class PythonKraskovTE(PythonKraskov):
               (default=1)
             - source_target_delay : int [optional] - information transfer delay
               between source and target (default=1)
-            
-
-            ################################################ ???????????????????????????????????????????????????? local values ??????
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
             
-
+            ###################################################################### TODO for all TE and AIS
+            - opt_source_hist_tau: bool [optional] - optimize history_source
+              and tau_source (default=False)
+            
+            ###################################################################### TODO 
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
 
@@ -890,8 +1015,8 @@ class PythonKraskovTE(PythonKraskov):
         super().__init__(settings)
 
         # Check for currently unsupported settings
-        if settings.get('local_values', False) or settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support local_values or algorithm_num arguments.')
+        if settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num argument.')
 
         if self.settings['noise_level'] > 0:
             rng_seed = settings.get("rng_seed", None)
@@ -929,6 +1054,7 @@ class PythonKraskovTE(PythonKraskov):
         settings.setdefault('tau_target', 1)
         settings.setdefault('tau_source', 1)
         settings.setdefault('source_target_delay', 1)
+        settings.setdefault('opt_source_hist_tau', False)
 
         assert type(settings['tau_target']) is int, (
             'Target tau has to be an integer.')
@@ -996,7 +1122,73 @@ class PythonKraskovTE(PythonKraskov):
             target = target + self._rng.normal(0, self.settings['noise_level'], target.shape)
         
 
+        # delay embedding
+        startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+            self.settings['history_target'],
+            self.settings['tau_target'],
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            self.settings['source_target_delay'],
+            )
+        target_past = self.makeDelayEmbeddingVector(target, 
+            self.settings['history_target'], 
+            self.settings['tau_target'], 
+            startFirstPoint, 
+            target.shape[0] - startFirstPoint - 1)
+        target_current = self.makeDelayEmbeddingVectorCurrent(target,
+            1,
+            startFirstPoint + 1,
+            target.shape[0] - startFirstPoint - 1)
+        
+        
 
+        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
+            est=PythonKraskovCMI({})
+            sh, st = self.opt_te_source_delay(est, source, target_past, target_current, startFirstPoint)
+                
+            startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+                    self.settings['history_target'],
+                    self.settings['tau_target'],
+                    sh,
+                    st,
+                    self.settings['source_target_delay'],
+                    )
+            
+            target_past = self.makeDelayEmbeddingVector(target, 
+                self.settings['history_target'], 
+                self.settings['tau_target'], 
+                startFirstPoint, 
+                target.shape[0] - startFirstPoint - 1)
+            target_current = self.makeDelayEmbeddingVectorCurrent(target,
+                1,
+                startFirstPoint + 1,
+                target.shape[0] - startFirstPoint - 1)
+       
+            source_past = self.makeDelayEmbeddingVector(source,
+                sh,
+                st,
+                startFirstPoint + 1 - self.settings['source_target_delay'],
+                source.shape[0] - startFirstPoint - 1)
+
+        else:
+        
+            source_past = self.makeDelayEmbeddingVector(source,
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            startFirstPoint + 1 - self.settings['source_target_delay'],
+            source.shape[0] - startFirstPoint - 1)
+            
+        if self.settings['local_values']:
+            te = PythonKraskovCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            # correction to compare with JidtGaussianTE results
+            te = np.hstack([np.zeros(startFirstPoint+1), te])
+
+        else:
+            te = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            #te = self.calculateAverageTE(source_past, target_past, target_current)
+
+        return te
+        """
         #min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
         #                self.settings['history_target'] * self.settings['tau_target'] + 2)
         
@@ -1093,6 +1285,8 @@ class PythonKraskovTE(PythonKraskov):
 
         
         #starts[0] = starts[0] -self.settings['source_target_delay']
+
+        """
         """
         valid_vec_source = np.arange(num_valid)
         valid_vec_target = valid_vec_source + self.settings['source_target_delay']
@@ -1154,7 +1348,7 @@ class PythonKraskovTE(PythonKraskov):
 
         """
         #k = self.settings['kraskov_k']
-
+        """
         # Compute distances to kth nearest neighbors in the joint space
         epsilon = self._compute_epsilon(
             np.hstack([target_current, target_past, source_past]), self.settings['kraskov_k']
@@ -1180,7 +1374,7 @@ class PythonKraskovTE(PythonKraskov):
             te = digamma(self.settings['kraskov_k']) + np.mean(digamma(n_y) - digamma(n_xy) - digamma(n_yf))
 
 
-
+        """
         ######################################################################################################## TODO algorithm 2
         # algorithm 2
         """
@@ -1223,13 +1417,88 @@ class PythonKraskovTE(PythonKraskov):
 
         return te
 
+
+
+###############################
+# Gaussian estimators
+###############################
+
+class PythonGaussian(PythonEstimator):
+    """Abstract class for implementation of Python Gaussian-estimators.
+
+    Abstract class for implementation of Python Gaussian-estimators, child
+    classes implement estimators for mutual information (MI), conditional
+    mutual information (CMI), actice information storage (AIS) and
+    transfer entropy (TE) using python Gaussian estimator for continuous data. 
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+
+            - normalise : bool [optional] - z-standardise data (default=False)
+            - noise_level : float [optional] - random noise added to the data
+              (default=0)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+    """
+
+    def __init__(self, settings):
+        settings.setdefault('local_values', False)
+        settings.setdefault('normalise', False)
+        settings.setdefault('noise_level', 0)
+        super().__init__(settings)
         
+    def logdet_cholesky(self, cov):
+        """
+        Stable log-determinant via Cholesky.
+        cov must be symmetric positive definite.
+        """
+        L = cholesky(cov, lower=True, check_finite=False)
+        return 2.0 * np.sum(np.log(np.diag(L)))
+
+    def cov_reg(self, X, eps=1e-10):
+        C = np.cov(X, rowvar=False, bias=True)
+        if C.ndim != 0:
+            return C + eps * np.eye(C.shape[0])
+        else:
+            return C
+    
+    def logpdf_gaussian(self, X, mu, cov):
+        X = np.atleast_2d(X)
+        d = cov.shape[0]
+        L = cholesky(cov, lower=True, check_finite=False)
+        XC = (X - mu).T
+        Y = solve_triangular(L, XC, lower=True, check_finite=False)
+        maha = np.sum(Y * Y, axis=0)
+        logdet = 2.0 * np.sum(np.log(np.diag(L)))
+        return -0.5 * (d * np.log(2.0 * np.pi) + logdet + maha)
 
 
 
+    ##################################################################################################### TODO
+    def estimate_surrogates_analytic(self, n_perm=200, **data):
+        """Estimate the surrogate distribution analytically.
+        This method must be implemented because this class'
+        is_analytic_null_estimator() method returns true
 
+        Args:
+            n_perms : int
+                number of permutations (default=200)
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per estimate_parallel for this estimator.
 
-# Gaussian estimator
+        Returns:
+            float | numpy array
+                n_perm surrogates of the average MI/CMI/TE over all samples
+                under the null hypothesis of no relationship between var1 and
+                var2 (in the context of conditional)
+        """
+        return common_estimate_surrogates_analytic(self, n_perm, **data)
+
+    ##################################################################################################### TODO
+
 
 class PythonGaussianMI(PythonGaussian):
     """Calculate mutual information with python Gaussian implementation.
@@ -1244,9 +1513,8 @@ class PythonGaussianMI(PythonGaussian):
             
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
-            
-            ################################################ ???????????????????????????????????????????????????? local values ??????
-            - local_values : False, 
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False) 
             
 
     """
@@ -1256,6 +1524,55 @@ class PythonGaussianMI(PythonGaussian):
         settings.setdefault('lag_mi', int(0))
         super().__init__(settings)
 
+
+    def calculateAverageMI(self, var1, var2):
+        """calculate avarage mutual information for gaussian data"""
+
+        xy = np.hstack([var1, var2])
+        
+        cov_xy = np.cov(xy, rowvar=False, bias=False)
+        cov_x = np.cov(var1, rowvar=False, bias=False)
+        cov_y = np.cov(var2, rowvar=False, bias=False)
+        
+        if cov_x.ndim == 0:
+            cov_x = np.array([[cov_x]])
+        if cov_y.ndim == 0:
+            cov_y = np.array([[cov_y]])
+        
+        ld_xy = self.logdet_cholesky(cov_xy)
+        ld_x  = self.logdet_cholesky(cov_x)
+        ld_y  = self.logdet_cholesky(cov_y)
+        
+        mi = 0.5 * (ld_x + ld_y - ld_xy)
+
+        return mi
+
+
+    def calculateLocalMI(self, var1, var2):
+        """calculate avarage mutual information for gaussian data"""
+
+        xy = np.hstack([var1, var2])
+        
+        eps=1e-10
+        cov_xy = self.cov_reg(xy, eps)
+
+        dx = var1.shape[1]
+
+        cov_x = cov_xy[:dx, :dx]
+        cov_y = cov_xy[dx:, dx:]
+
+        mu_xy = xy.mean(axis=0)
+        mu_x = var1.mean(axis=0)
+        mu_y = var2.mean(axis=0)
+        
+        l_xy = self.logpdf_gaussian(xy, mu_xy, cov_xy)
+        l_x  = self.logpdf_gaussian(var1,  mu_x,  cov_x)
+        l_y  = self.logpdf_gaussian(var2,  mu_y,  cov_y)
+
+        mi = l_xy -l_x - l_y 
+        
+        return mi
+        
     def estimate(self, var1: np.ndarray, var2: np.ndarray):
         """Estimate mutual information between var1 and var2
 
@@ -1269,10 +1586,7 @@ class PythonGaussianMI(PythonGaussian):
 
         Returns:
             float | numpy array
-                average MI over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local MI for individual
+                average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
 
@@ -1299,46 +1613,10 @@ class PythonGaussianMI(PythonGaussian):
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
 
-
-        Z = np.concatenate((var1, var2), axis=1)
-        #Z = np.hstack([X, Y])
-
-        cov = np.cov(Z, rowvar=False, bias=False)
-        
-
         if self.settings['local_values']:
-            # local MI   
-            m_var1 = np.mean(var1)
-            m_var2 = np.mean(var2)
-
-            rv_joint = multivariate_normal(mean=[m_var1, m_var2], cov=cov)
-            rv_x = multivariate_normal(mean=[m_var1], cov=[[cov[0,0]]])
-            rv_y = multivariate_normal(mean=[m_var2], cov=[[cov[1,1]]])
-
-            log_pxy = rv_joint.logpdf(Z)
-            log_px = rv_x.logpdf(var1)
-            log_py = rv_y.logpdf(var2)
-
-            mi = log_pxy - log_px - log_py
-
+            return self.calculateLocalMI(var1, var2)
         else:
-            # MI
-            dx = var1.shape[1]
-            dy = var2.shape[1]
-
-            cov_x = cov[:dx, :dx]
-            cov_y = cov[dx:, dx:]
-
-            sign_z, logdet_z = np.linalg.slogdet(cov)
-            sign_x, logdet_x = np.linalg.slogdet(cov_x)
-            sign_y, logdet_y = np.linalg.slogdet(cov_y)
-
-            if sign_z <= 0 or sign_x <= 0 or sign_y <= 0:
-                raise ValueError("Covariance matrix is not positive definite enough.")
-
-            mi = 0.5 * (logdet_x + logdet_y - logdet_z)        
-
-        return mi
+            return self.calculateAverageMI(var1, var2)
 
 
 class PythonGaussianCMI(PythonGaussian):
@@ -1357,7 +1635,6 @@ class PythonGaussianCMI(PythonGaussian):
         settings : dict [optional]
             sets estimation parameters:
             
-            ################################################ ???????????????????????????????????????????????????? local values ??????
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
 
@@ -1368,6 +1645,72 @@ class PythonGaussianCMI(PythonGaussian):
         settings = self._check_settings(settings)
         super().__init__(settings)
         self.est_mi = None
+
+    
+    def calculateAverageCMI(self, var1, var2, conditional):
+        """calculate avarage conditional mutual information for gaussian data"""
+
+        if conditional.ndim == 1:
+            conditional = conditional[:,None]
+
+        xyz = np.hstack([var1, var2, conditional])
+        xz = np.hstack([var1, conditional])
+        yz = np.hstack([var2, conditional])
+        
+        eps=1e-10
+        cov_xyz = self.cov_reg(xyz, eps)
+        cov_xz  = self.cov_reg(xz, eps)
+        cov_yz  = self.cov_reg(yz, eps)
+        cov_z   = self.cov_reg(conditional, eps)
+
+        # Handle 1D Z cleanly
+        if cov_z.ndim == 0:
+            cov_z = np.array([[cov_z]])
+
+        ld_xyz = self.logdet_cholesky(cov_xyz)
+        ld_xz  = self.logdet_cholesky(cov_xz)
+        ld_yz  = self.logdet_cholesky(cov_yz)
+        ld_z   = self.logdet_cholesky(cov_z)
+
+        cmi = 0.5 * (ld_xz + ld_yz - ld_z - ld_xyz)
+
+        return cmi
+
+
+    def calculateLocalCMI(self, var1, var2, conditional):
+        """calculate avarage conditional mutual information for gaussian data"""
+
+        if conditional.ndim == 1:
+            conditional = conditional[:,None]
+        
+        xyz = np.hstack([var1, var2, conditional])
+        xz = np.hstack([var1, conditional])
+        yz = np.hstack([var2, conditional])
+
+        mu_xyz = xyz.mean(axis=0)
+        mu_xz = xz.mean(axis=0)
+        mu_yz = yz.mean(axis=0)
+        mu_z = conditional.mean(axis=0)
+
+        eps=1e-10
+        cov_xyz = self.cov_reg(xyz, eps)
+        cov_xz  = self.cov_reg(xz, eps)
+        cov_yz  = self.cov_reg(yz, eps)
+        cov_z   = self.cov_reg(conditional, eps)
+        
+        # Handle 1D Z cleanly
+        if cov_z.ndim == 0:
+            cov_z = np.array([[cov_z]])
+
+        l_xyz = self.logpdf_gaussian(xyz, mu_xyz, cov_xyz)
+        l_xz  = self.logpdf_gaussian(xz,  mu_xz,  cov_xz)
+        l_yz  = self.logpdf_gaussian(yz,  mu_yz,  cov_yz)
+        l_z   = self.logpdf_gaussian(conditional,   mu_z,   cov_z)
+        
+        lcmi = l_xyz + l_z - l_xz - l_yz
+
+        return lcmi
+
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
@@ -1386,9 +1729,9 @@ class PythonGaussianCMI(PythonGaussian):
 
         Returns:
             float | numpy array
-                average MI over all samples 
+                average CMI over all samples or local CMI for individual
+                samples if 'local_values'=True
 
-                ################################################ ???????????????????????????????????????????????????? local values ??????
         """
 
         # Return MI if no conditioning variable was provided.
@@ -1403,11 +1746,9 @@ class PythonGaussianCMI(PythonGaussian):
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
 
-        
         assert (
             var1.shape[0] == var2.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]}, conditional: {conditional.shape[0]})"
-
 
         # Normalise data
         if self.settings['normalise']:
@@ -1424,79 +1765,14 @@ class PythonGaussianCMI(PythonGaussian):
                 0, self._noise_level, conditional.shape
             )
 
-        xyz = np.hstack([var1, var2, conditional])
-
-        cov = np.cov(xyz, rowvar=False, bias=False)
-
-        nx = var1.shape[1]
-        ny = var2.shape[1]
-        nz = conditional.shape[1]
-
-        ix = slice(0, nx)
-        iy = slice(nx, nx + ny)
-        iz = slice(nx + ny, nx + ny + nz)
-
-
-        cov_xz = cov[np.ix_(list(range(nx)) + list(range(nx + ny, nx + ny + nz)),
-                            list(range(nx)) + list(range(nx + ny, nx + ny + nz)))]
-        cov_yz = cov[np.ix_(list(range(nx, nx + ny)) + list(range(nx + ny, nx + ny + nz)),
-                            list(range(nx, nx + ny)) + list(range(nx + ny, nx + ny + nz)))]
-        cov_z = cov[np.ix_(list(range(nx + ny, nx + ny + nz)),
-                           list(range(nx + ny, nx + ny + nz)))]
-        cov_xyz = cov
-        
-        # add tiny regularization for numerical stability
-        eps = 1e-10
-        cov_xz += eps * np.eye(cov_xz.shape[0])
-        cov_yz += eps * np.eye(cov_yz.shape[0])
-        cov_z += eps * np.eye(cov_z.shape[0])
-        cov_xyz += eps * np.eye(cov_xyz.shape[0])
-
-
-        # local MI
         if self.settings['local_values']:
-        
-            mean_xyz = np.mean(xyz, axis=0)
-
-            n = xyz.shape[0]
-        
-            cmi = np.empty(n, dtype=float)
-
-
-            for i in range(n):
-                v = xyz[i] - mean_xyz
-
-                vz = v[iz]
-                vxz = v[np.r_[0:nx, nx + ny:nx + ny + nz]]
-                vyz = v[np.r_[nx:nx + ny, nx + ny:nx + ny + nz]]
-
-                log_p_xyz = self.local_logpdf(v, cov_xyz)
-                log_p_xz = self.local_logpdf(vxz, cov_xz)
-                log_p_yz = self.local_logpdf(vyz, cov_yz)
-                log_p_z = self.local_logpdf(vz, cov_z)
-
-                cmi[i] = log_p_xyz + log_p_z - log_p_xz - log_p_yz
-
-        # MI
+            cmi = self.calculateLocalCMI(var1, var2, conditional)
         else:
-            
-            det_xz = np.linalg.det(cov_xz)
-            det_yz = np.linalg.det(cov_yz)
-            det_z = np.linalg.det(cov_z)
-            det_xyz = np.linalg.det(cov_xyz)
-
-            cmi = 0.5 * np.log((det_xz * det_yz) / (det_z * det_xyz))
+            cmi = self.calculateAverageCMI(var1, var2, conditional)
 
         return cmi
 
-    def local_logpdf(self, subv, subcov):
-        k = len(subv)
-        inv = np.linalg.inv(subcov)
-        sign, ld = np.linalg.slogdet(subcov)
-        return -0.5 * (k * np.log(2 * np.pi) + ld + subv @ inv @ subv)
 
-
-############################################################################## TODO
 class PythonGaussianAIS(PythonGaussian):
     """Calculate active information storage with Python Gaussian implementation.
 
@@ -1538,6 +1814,45 @@ class PythonGaussianAIS(PythonGaussian):
 
         super().__init__(settings)
 
+
+    def calculateLocalAIS(self, current, past):
+        """calculate local AIS for Gaussian data"""
+        k_neighbors=20
+
+        # Global (unconditional) distribution
+        global_mean = np.mean(current)
+        global_var = np.var(current) + 1e-10
+        
+        # Conditional distribution via nearest neighbors
+        n = len(current)
+        cond_mean = np.zeros(n)
+        cond_var = np.zeros(n)
+        
+        distances = np.sum((past - past[:, np.newaxis]) ** 2, axis=2)
+        
+        print(global_mean)
+        print(global_var)
+        print(distances.shape)
+        print(n)
+
+
+        for i in range(n):
+            neighbor_idx = np.argsort(distances[i])[1:k_neighbors+1]
+            neighbor_futures = current[neighbor_idx]
+            cond_mean[i] = np.mean(neighbor_futures)
+            cond_var[i] = np.var(neighbor_futures) + 1e-10
+        
+        # Local AIS = log₂(p_cond / p_uncond)
+        local_ais = np.zeros(n)
+        for i in range(n):
+            x = current[i]
+            log_p_cond = -0.5 * np.log(2 * np.pi * cond_var[i]) - 0.5 * (x - cond_mean[i])**2 / cond_var[i]
+            log_p_uncond = -0.5 * np.log(2 * np.pi * global_var) - 0.5 * (x - global_mean)**2 / global_var
+            local_ais[i] = (log_p_cond - log_p_uncond) / np.log(2)
+        
+        return local_ais
+
+
     def estimate(self, process):
         """Estimate active information storage.
 
@@ -1555,6 +1870,7 @@ class PythonGaussianAIS(PythonGaussian):
 
         process = self._ensure_one_dim_input(process)
 
+        """
         # len process
         n = len(process)
 
@@ -1567,30 +1883,64 @@ class PythonGaussianAIS(PythonGaussian):
     
         if num_valid <= 0:
             raise ValueError(f"Not enough valid embedding vectors")
+        """
+        
+    
+        startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
+
+        process_current = self.makeDelayEmbeddingVectorCurrent(process,
+            1,
+            startFirstPoint + 1,
+            process.shape[0] - startFirstPoint - 1)
+
+
+        #maxlag = (self.settings['history'] - 1) * self.settings['tau']
+        #current = process[maxlag+1:]
+        
+        # delay optimization
+        """
+        if self.settings['history'] > 1 or self.settings['tau'] > 1:
+            est=PythonGaussianMI({})
+            sh, st = self.opt_ais_source_delay(est, process, process_current, startFirstPoint)
+            
+            #past = self.delay_embedding(process, history=sh, tau=st)
+        
+            process_past = self.makeDelayEmbeddingVector(process, 
+                sh, 
+                st, 
+                startFirstPoint, 
+                process.shape[0] - startFirstPoint- 1) 
         
 
 
-
-        past, current = self.embed_past_current(process, num_valid, self.settings['history'], self.settings['tau'])
-        #past = self.delay_embedding(process)
-
-        current2 = process[self.settings['history'] * self.settings['tau']:]
-
-        past2 = self.delay_embed(process, history=self.settings['history'], tau=self.settings['tau'])
+        else:
+            #past = self.delay_embedding(process, history=self.settings['history'], tau=self.settings['tau'])
+        """
+        process_past = self.makeDelayEmbeddingVector(process, 
+            self.settings['history'], 
+            self.settings['tau'], 
+            startFirstPoint, 
+            process.shape[0] - startFirstPoint - 1)
         
-        print("History: ",self.settings['history'])
-        print("Tau: ",self.settings['tau'])
-        print(process[1:10])
-        print(past[0:5])
-        print(current[0:5])
-        print(past2[0:5])
-        print(current2[0:5])
 
-        est_mi=PythonGaussianMI(self.settings)
-        mi = est_mi.estimate(var1=current, var2=past)
+
+        #n = len(current)
+        #if current.ndim == 1:
+        #    current = current[:, None]
+        #past = past[:n,:]
+
+
+        if self.settings['local_values']:
+            ais = PythonGaussianMI.calculateLocalMI(self, process_current, process_past)
+            # correction to compare with JidtGaussianTE results
+            ais = np.hstack([np.zeros(startFirstPoint+1), ais])
+
+        else:
+            #ais = self.calculateAverageAIS(process_current, process_past)
+            ais = PythonGaussianMI.calculateAverageMI(self, process_current, process_past)
         
-        return mi
-
+        return ais
+        
 
 ################################################################ TODO
 class PythonGaussianTE(PythonGaussian):
@@ -1624,8 +1974,10 @@ class PythonGaussianTE(PythonGaussian):
               (default=1)
             - source_target_delay : int [optional] - information transfer delay
               between source and target (default=1)
+            - opt_source_hist_tau: bool [optional] - optimize history_source
+              and tau_source (default=False)
             
-            ################################################ ???????????????????????????????????????????????????? local values ??????
+
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
 
@@ -1638,9 +1990,1470 @@ class PythonGaussianTE(PythonGaussian):
         super().__init__(settings)
 
         # Check for currently unsupported settings
-        if settings.get('local_values', False) or settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support local_values or algorithm_num arguments.')
+        if settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
+
+    def _set_te_defaults(self, settings):
+        """Set defaults for transfer entropy estimation."""
+        try:
+            history_target = settings['history_target']
+        except KeyError:
+            raise RuntimeError('No target history was provided for TE '
+                               'estimation.')
+        settings.setdefault('history_source', history_target)
+        settings.setdefault('tau_target', 1)
+        settings.setdefault('tau_source', 1)
+        settings.setdefault('source_target_delay', 1)
+        settings.setdefault('opt_source_hist_tau', False)
+
+        assert type(settings['tau_target']) is int, (
+            'Target tau has to be an integer.')
+        assert type(settings['tau_source']) is int, (
+            'Source tau has to be an integer.')
+        assert type(settings['history_target']) is int, (
+            'Target history has to be an integer.')
+        assert type(settings['history_source']) is int, (
+            'Source history has to be an integer.')
+        assert type(settings['source_target_delay']) is int, (
+            'Source-target delay has to be an integer.')
+        assert settings['tau_target'] >= 1, 'Target tau must be >= 1'
+        assert settings['tau_source'] >= 1, 'Source tau must be >= 1'
+        assert settings['history_target'] >= 0, 'Target history must be >= 0'
+        assert settings['history_source'] >= 1, 'Source history must be >= 1'
+        assert settings['source_target_delay'] >= 0, (
+            'Source-target delay must be >= 0')
+        return settings
+    
+
+    
+    def residual_cov(self, X, Y):
+
+        n = X.shape[0]
+        # Add intercept
+        Y1 = np.column_stack([np.ones(n), Y])
+        # Least-squares fit
+        beta, *_ = np.linalg.lstsq(Y1, X, rcond=None)
+        E = X - Y1 @ beta
+        # unbiased sample covariance of residuals
+        return self.cov_reg(E)
+        #return np.cov(E, rowvar=False, bias=False)
+
+    
+    def calculateAverageTE(self, source_past, target_past, target_current):
+        """calaculate Average transfer entropy for gaussian data"""
+        
+        cov_y_given_y = self.residual_cov(target_current, target_past)
+        cov_y_given_xy = self.residual_cov(target_current, np.hstack([target_past, source_past]))
+
+        if cov_y_given_y.ndim == 0:
+            cov_y_given_y = np.array([[cov_y_given_y]])
+        if cov_y_given_xy.ndim == 0:
+            cov_y_given_xy = np.array([[cov_y_given_xy]])
+
+        ld_y = self.logdet_cholesky(cov_y_given_y)
+        ld_yx = self.logdet_cholesky(cov_y_given_xy)
+
+        return 0.5 * (ld_y - ld_yx)
+
+    
+    def estimate(self, source: np.ndarray, target: np.ndarray):
+        """Estimate transfer entropy from a source to a target variable.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            target : numpy array
+                realisations of target variable (similar to var1)
+
+        Returns:
+            float | numpy array
+                average TE over all samples or local TE for individual
+                samples if 'local_values'=True
+        
+
+
+        TE_{Y->X} = 0.5 * log det Sigma(X_t | X_past) / det Sigma(X_t | X_past, Y_past)
+        where X_past = X_{t-lag}, Y_past = Y_{t-lag}
+        
+        """
+
+        source = self._ensure_one_dim_input(source)
+        target = self._ensure_one_dim_input(target)
+
+        assert (
+            source.shape[0] == target.shape[0]
+        ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
+
+     
+        # delay embedding
+        startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+            self.settings['history_target'],
+            self.settings['tau_target'],
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            self.settings['source_target_delay'],
+            )
+
+        target_past = self.makeDelayEmbeddingVector(target, 
+            self.settings['history_target'], 
+            self.settings['tau_target'], 
+            startFirstPoint, 
+            target.shape[0] - startFirstPoint - 1)
+        target_current = self.makeDelayEmbeddingVectorCurrent(target,
+            1,
+            startFirstPoint + 1,
+            target.shape[0] - startFirstPoint - 1)
+        
+
+        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
+            est=PythonGaussianCMI({})
+            sh, st = self.opt_te_source_delay(est, source, target_past, target_current, startFirstPoint)
+            
+            target_past = self.makeDelayEmbeddingVector(target, 
+                self.settings['history_target'], 
+                self.settings['tau_target'], 
+                startFirstPoint, 
+                target.shape[0] - startFirstPoint - 1)
+            target_current = self.makeDelayEmbeddingVectorCurrent(target,
+                1,
+                startFirstPoint + 1,
+                target.shape[0] - startFirstPoint - 1)
+       
+            source_past = self.makeDelayEmbeddingVector(source,
+                sh,
+                st,
+                startFirstPoint + 1 - self.settings['source_target_delay'],
+                source.shape[0] - startFirstPoint - 1)
+
+        else:
+            source_past = self.makeDelayEmbeddingVector(source,
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            startFirstPoint + 1 - self.settings['source_target_delay'],
+            source.shape[0] - startFirstPoint - 1)
+            
+        if self.settings['local_values']:
+            te = PythonGaussianCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            # correction to compare with JidtGaussianTE results
+            te = np.hstack([np.zeros(startFirstPoint+1), te])
+
+        else:
+            te = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            #te = self.calculateAverageTE(source_past, target_past, target_current)
+
+        return te
+
+
+################################################################ TODO
+class PythonGaussianCTE(PythonGaussian):
+    """Calculate conditional transfer entropy with Python Gaussian 
+    implementation.
+
+    
+    ################################################################################# TODO
+    Calculate transfer entropy between a source and a target variable using
+    Pathon implementation of the Gaussian estimator. Transfer entropy is
+    defined as the conditional mutual information between the source's past
+    state and the target's current value, conditional on the target's past.
+
+    Past states need to be defined in the settings dictionary, where a past
+    state is defined as a uniform embedding with parameters history and tau.
+    The history describes the number of samples taken from a variable's past,
+    tau descrices the embedding delay, i.e., the spacing between every two
+    samples from the processes' past.
+
+    Results are returned in nats.        
+
+    Args:
+        settings : dict
+            sets estimation parameters:
+
+            - history_target : int - number of samples in the target's past
+              used as embedding
+            - history_source  : int [optional] - number of samples in the
+              source's past used as embedding (default=same as the target
+              history)
+            - history_conditional  : int [optional] - number of samples in the
+              conditional's past used as embedding (default=same as the target
+              history)
+            - tau_source : int [optional] - source's embedding delay
+              (default=1)
+            - tau_target : int [optional] - target's embedding delay
+              (default=1)
+            - tau_conditional : int [optional] - conditional's embedding delay
+              (default=1)
+            - source_target_delay : int [optional] - information transfer delay
+              between source and target (default=1)
+            - conditional_target_delay : int [optional] - information transfer delay
+              between conditional and target (default=1)
+            
+            ################################################################# TODO Nooooo!
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+
+
+    """
+    def __init__(self, settings):
+        """Initialise estimator with settings."""
+        settings = self._check_settings(settings)
+        settings = self._set_te_defaults(settings)
+        super().__init__(settings)
+
+        # Check for currently unsupported settings
+        if settings.get('local_values') or settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support local values and algorithm_num arguments.')
+
+
+    def _set_te_defaults(self, settings):
+        """Set defaults for transfer entropy estimation."""
+        try:
+            history_target = settings['history_target']
+        except KeyError:
+            raise RuntimeError('No target history was provided for TE '
+                               'estimation.')
+        settings.setdefault('history_source', history_target)
+        settings.setdefault('history_conditional', history_target)
+        settings.setdefault('tau_target', 1)
+        settings.setdefault('tau_source', 1)
+        settings.setdefault('tau_conditional', 1)
+        settings.setdefault('source_target_delay', 1)
+        settings.setdefault('conditional_target_delay', 1)
+        settings.setdefault('opt_source_hist_tau', False)
+
+        assert type(settings['tau_target']) is int, (
+            'Target tau has to be an integer.')
+        assert type(settings['tau_source']) is int, (
+            'Source tau has to be an integer.')
+        assert type(settings['tau_conditional']) is int, (
+            'Conditional tau has to be an integer.')
+        assert type(settings['history_target']) is int, (
+            'Target history has to be an integer.')
+        assert type(settings['history_source']) is int, (
+            'Source history has to be an integer.')
+        assert type(settings['history_conditional']) is int, (
+            'Conditional history has to be an integer.')
+        assert type(settings['source_target_delay']) is int, (
+            'Source-target delay has to be an integer.')
+        assert settings['tau_target'] >= 1, 'Target tau must be >= 1'
+        assert settings['tau_source'] >= 1, 'Source tau must be >= 1'
+        assert settings['tau_conditional'] >= 1, 'Conditional tau must be >= 1'
+        assert settings['history_target'] >= 0, 'Target history must be >= 0'
+        assert settings['history_source'] >= 1, 'Source history must be >= 1'
+        assert settings['history_conditional'] >= 1, 'Conditional history must be >= 1'
+        assert settings['source_target_delay'] >= 0, (
+            'Source-target delay must be >= 0')
+        assert settings['conditional_target_delay'] >= 0, (
+            'Conditional-target delay must be >= 0')
+        return settings
+    
+
+    """
+    def residual_cov(self, X, Y):
+
+        n = X.shape[0]
+        # Add intercept
+        Y1 = np.column_stack([np.ones(n), Y])
+        # Least-squares fit
+        beta, *_ = np.linalg.lstsq(Y1, X, rcond=None)
+        E = X - Y1 @ beta
+        # unbiased sample covariance of residuals
+        return self.cov_reg(E)
+        #return np.cov(E, rowvar=False, bias=False)
+    """
+        
+    def sample_cov(self, X, rowvar=False, bias=False):
+        # X: (n_samples, n_vars) if rowvar=False
+        if rowvar:
+            X = X.T
+        n = X.shape[0]
+        mean = X.mean(axis=0)
+        Xc = X - mean
+        ddof = 0 if bias else 1
+        return (Xc.T @ Xc) / (n - ddof)
+
+    def logdet_from_cholesky(self, S):
+        # S must be positive-definite
+        L = cholesky(S, lower=True)
+        # logdet(S) = 2 * sum(log(diag(L)))
+        return 2.0 * np.sum(np.log(np.diag(L)))
+
+    def cond_cov_from_joint(self, joint_cov, idx_keep, idx_cond):
+        # Compute conditional covariance of keep given cond from joint covariance matrix:
+        # Sigma_{keep|cond} = Sigma_{keep,keep} - Sigma_{keep,cond} Sigma_{cond,cond}^{-1} Sigma_{cond,keep}
+        # Use Cholesky solve for stability.
+        S_kk = joint_cov[np.ix_(idx_keep, idx_keep)]
+        S_kc = joint_cov[np.ix_(idx_keep, idx_cond)]
+        S_cc = joint_cov[np.ix_(idx_cond, idx_cond)]
+        # Solve S_cc * X = S_ck (we want X = S_cc^{-1} S_ck)
+        # Use cho_solve after cholesky
+        Lc = cholesky(S_cc, lower=True)
+        X = cho_solve((Lc, True), S_kc.T).T  # result shape (len(idx_keep), len(idx_cond))
+        return S_kk - X @ S_kc
+
+    def calculateAverageCTE(self, source_past, target_past, target_current, conditional_past):
+        """calculate Average conditional transfer entropy for gaussian data"""
+        
+        n = target_current.shape[0]
+        # Stack variables to form joint vectors for each sample
+        # joint vector ordering: [y_present, y_past, x_past, z_past]
+        parts = [source_past, target_past, target_current, conditional_past]
+        # Concatenate horizontally
+        joint = np.hstack(parts)
+        # indices mapping
+        dims = [p.shape[1] for p in parts]
+        idx = np.cumsum([0] + dims)
+        i_y_present = list(range(idx[0], idx[1]))
+        i_y_past = list(range(idx[1], idx[2]))
+        i_x_past = list(range(idx[2], idx[3]))
+        i_z_past = list(range(idx[3], idx[4]))
+        
+        # Estimate joint covariance (variables across columns)
+        Sigma = self.sample_cov(joint, rowvar=False, bias=False)
+        # Regularize tiny numerical issues
+        Sigma += 1e-10 * np.eye(Sigma.shape[0])
+
+        # We'll compute conditional covariances needed for Gaussian TE:
+        # TE = 0.5 * ln(|Sigma(y_present | y_past, z_past)| / |Sigma(y_present | y_past, x_past, z_past)|)
+        # So compute both conditional covariances.
+        cond1_cond = i_y_past + i_z_past  # conditioning for baseline (without x)
+        cond2_cond = i_y_past + i_x_past + i_z_past  # conditioning with x
+        
+        Sigma_y_given_cond1 = self.cond_cov_from_joint(Sigma, i_y_present, cond1_cond) if len(cond1_cond) > 0 else Sigma[np.ix_(i_y_present, i_y_present)]
+        Sigma_y_given_cond2 = self.cond_cov_from_joint(Sigma, i_y_present, cond2_cond) if len(cond2_cond) > 0 else Sigma[np.ix_(i_y_present, i_y_present)]
+
+        # Ensure symmetric numerical
+        Sigma_y_given_cond1 = (Sigma_y_given_cond1 + Sigma_y_given_cond1.T) / 2.0
+        Sigma_y_given_cond2 = (Sigma_y_given_cond2 + Sigma_y_given_cond2.T) / 2.0
+
+        # Compute log determinants via cholesky
+        logdet1 = self.logdet_from_cholesky(Sigma_y_given_cond1)
+        logdet2 = self.logdet_from_cholesky(Sigma_y_given_cond2)
+
+        # Global Gaussian TE (averaged) in nats:
+        TE = 0.5 * (logdet1 - logdet2)
+        """
+        cov_y_given_y = self.residual_cov(target_current, target_past)
+        cov_y_given_xy = self.residual_cov(target_current, np.hstack([target_past, source_past]))
+
+        if cov_y_given_y.ndim == 0:
+            cov_y_given_y = np.array([[cov_y_given_y]])
+        if cov_y_given_xy.ndim == 0:
+            cov_y_given_xy = np.array([[cov_y_given_xy]])
+
+        ld_y = self.logdet_cholesky(cov_y_given_y)
+        ld_yx = self.logdet_cholesky(cov_y_given_xy)
+
+        return 0.5 * (ld_y - ld_yx)
+        """
+    
+    def estimate(self, source: np.ndarray, target: np.ndarray, conditional: np.ndarray):
+        """Estimate conditional transfer entropy from a source to a target variable
+        conditioned on another.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            target : numpy array
+                realisations of target variable (similar to var1)
+
+        Returns:
+            float | numpy array
+                average TE over all samples
+        
+        """
+
+        source = self._ensure_two_dim_input(source)
+        target = self._ensure_two_dim_input(target)
+        conditional = self._ensure_two_dim_input(conditional)
+
+        assert (
+            source.shape[0] == target.shape[0] == conditional.shape[0]
+        ), f"Unequal number of observations (source: {source.shape[0]}, target: {conditional.shape[0]}, target: {conditional.shape[0]})"
+
+     
+        # delay embedding
+        startTimeBasedOnTargetPast = (self.settings['history_target'] - 1) * self.settings['tau_target']
+        startTimeBasedOnSourcePast = (self.settings['history_source'] - 1) * self.settings['tau_source'] + self.settings['source_target_delay'] - 1
+        #startTimeBasedOnConditionalPast = (self.settings['history_conditional'] - 1) * self.settings['tau_conditional'] + self.settings['conditional_target_delay'] - 1
+        
+        startTimeBasedOnConditionalPast = 0
+        dimOfConditionals = 0
+        for i in range(self.settings['conditional_target_delay']):
+            st = (self.settings['history_conditional'] - 1) * self.settings['tau_conditional'] + self.settings['conditional_target_delay'] - 1
+            if st > startTimeBasedOnConditionalPast:
+                startTimeBasedOnConditionalPast = st
+        startFirstPoint = max(startTimeBasedOnTargetPast, max(startTimeBasedOnSourcePast, startTimeBasedOnConditionalPast))
+
+        target_past = self.makeDelayEmbeddingVector(target, 
+            self.settings['history_target'], 
+            self.settings['tau_target'], 
+            startFirstPoint, 
+            target.shape[0] - startFirstPoint - 1)
+        target_current = self.makeDelayEmbeddingVectorCurrent(target,
+            1,
+            startFirstPoint + 1,
+            target.shape[0] - startFirstPoint - 1)
+        source_past = self.makeDelayEmbeddingVector(source,
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            startFirstPoint + 1 - self.settings['source_target_delay'],
+            source.shape[0] - startFirstPoint - 1)
+        conditional_past = self.makeDelayEmbeddingVector(conditional,
+            self.settings['history_conditional'],
+            self.settings['tau_conditional'],
+            startFirstPoint + 1 - self.settings['conditional_target_delay'],
+            conditional.shape[0] - startFirstPoint - 1)
+        
+        #print(conditional_past.shape)
+        #print(target_current.shape)
+        condCombine = np.hstack([target_current, conditional_past])
+        #print(condCombine.shape)
+
+        cte = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_past, condCombine)
+        #cte = self.calculateAverageCTE(source_past, target_past, target_current, conditional_past)
+
+        return cte
+
+
+
+
+###############################
+# Discrete estimators
+###############################
+
+
+################################################################################ TODO
+class PythonDiscrete(PythonEstimator):
+    """Abstract class for implementation of Python Gaussian-estimators.
+
+    Abstract class for implementation of Python Gaussian-estimators, child
+    classes implement estimators for mutual information (MI), conditional
+    mutual information (CMI), 
+
+    active information storage (AIS), ############################################# ??????????????????????? TODO?
+
+    transfer
+    entropy (TE) using python Gaussian estimator for continuous data. 
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+
+            - normalise : bool [optional] - z-standardise data (default=False)
+            - noise_level : float [optional] - random noise added to the data
+              (default=0)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+    """
+
+    def __init__(self, settings):
+        settings.setdefault('discretise_method', 'none')
+        settings.setdefault('local_values', False)
+        super().__init__(settings)
+
+    def _discretise_vars(self, var1, var2=None, conditional=None):
+        # Discretise variables if requested. Otherwise assert data are discrete
+        # and provided alphabet sizes are correct.
+        if self.settings['discretise_method'] == 'equal':
+            var1 = utils.discretise(var1, self.settings['alph1'])
+            if var2 is not None:
+                var2 = utils.discretise(var2, self.settings['alph2'])
+            if conditional is not None:
+                conditional = utils.discretise(conditional,
+                                               self.settings['alphc'])
+
+        elif self.settings['discretise_method'] == 'max_ent':
+            var1 = utils.discretise_max_ent(var1, self.settings['alph1'])
+            if var2 is not None:
+                var2 = utils.discretise_max_ent(var2, self.settings['alph2'])
+            if not (conditional is None):
+                conditional = utils.discretise_max_ent(conditional,
+                                                       self.settings['alphc'])
+
+        elif self.settings['discretise_method'] == 'none':
+            assert issubclass(var1.dtype.type, np.integer), (
+                'Var1 is not an integer numpy array. '
+                'Discretise data to use this estimator.')
+            assert np.min(var1) >= 0, 'Minimum of var1 is smaller than 0.'
+            assert np.max(var1) < self.settings['alph1'], (
+                        'Maximum of var1 is larger than the alphabet size.')
+            if var2 is not None:
+                assert issubclass(var2.dtype.type, np.integer), (
+                'Var2 is not an integer numpy array. '
+                'Discretise data to use this estimator.')
+                assert np.min(var2) >= 0, 'Minimum of var2 is smaller than 0.'
+                assert np.max(var2) < self.settings['alph2'], (
+                        'Maximum of var2 is larger than the alphabet size.')
+            if conditional is not None:
+                assert np.min(conditional) >= 0, (
+                        'Minimum of conditional is smaller than 0.')
+                assert issubclass(conditional.dtype.type, np.integer), (
+                    'Conditional is not an integer numpy array. '
+                    'Discretise data to use this estimator.')
+                assert np.max(conditional) < self.settings['alphc'], (
+                    'Maximum of conditional is larger than the alphabet size.')
+                assert var1.shape[0] == var2.shape[0] == conditional.shape[0], (
+                    'var1, var2 and conditional must ahve same length.')
+
+        else:
+            raise ValueError('Unkown discretisation method.')
+
+        if conditional is not None:
+            return var1, var2, conditional
+        elif var2 is not None:    
+            return var1, var1
+        else:
+            return var1
+
+    def getProbsMI(self, var1, var2):
+        """get all counts for CMI for discrete data"""
+        counts_xy = defaultdict(int)
+        counts_x = defaultdict(int)
+        counts_y = defaultdict(int)
+
+        for xi, yi in zip(var1, var2):
+            counts_xy[(xi, yi)] += 1
+            counts_x[xi] += 1
+            counts_y[yi] += 1
+        
+        #n_var1 = var1.shape[0]
+        #counts_xy = {k: v / n_var1 for k, v in counts_xy.items()}
+        #counts_x = {k: v / n_var1 for k, v in counts_x.items()}
+        #counts_y = {k: v / n_var1 for k, v in counts_y.items()}
+
+        return counts_xy, counts_x, counts_y
+
+    def getProbsCMI(self, var1, var2, conditional):
+        """get all counts and probs for CMI for discrete data"""
+        counts_xyz = defaultdict(int)
+        counts_xz = defaultdict(int)
+        counts_yz = defaultdict(int)
+        counts_z = defaultdict(int)
+
+        for xi, yi, zi in zip(var1, var2, conditional):
+            counts_xyz[(xi, yi, zi)] += 1
+            counts_z[zi] += 1
+        
+        n_var1 = var1.shape[0]
+        counts_xyz = {k: v / n_var1 for k, v in counts_xyz.items()}
+        counts_z = {k: v / n_var1 for k, v in counts_z.items()}
+
+        for (x, y, z), p_xyz in counts_xyz.items():
+            if counts_z[z] > 0:
+                counts_xz[(z,x)] += p_xyz / counts_z[z]
+                counts_yz[(z,y)] += p_xyz / counts_z[z]
+
+        return counts_xyz, counts_xz, counts_yz, counts_z
+
+    def entropy_discrete(self, samples):
+        n = len(samples)
+
+        print(type(samples))
+
+        counts = Counter(samples)
+        return -sum((c/n) * log2(c/n) for c in counts.values())
+
+    def entropy(self, X):
+        """
+        Calculate Shannon entropy H(X) for discrete data.
+    
+        H(X) = -sum(p(x) * log2(p(x)))
+    
+        Returns entropy in bits
+        """
+
+        print(type(X))
+
+        counts = Counter(X)
+        n = len(X)
+        
+        entropy_val = 0.0
+        for count in counts.values():
+            if count > 0:
+                p = count / n
+                entropy_val -= p * math.log2(p)
+        
+        return entropy_val
+
+    def joint_entropy(self, X, Y):
+        """
+        Calculate joint entropy H(X, Y) for two discrete datasets.
+        
+        H(X,Y) = -sum(p(x,y) * log2(p(x,y)))
+        
+        Returns entropy in bits
+        """
+        
+        joint_counts = Counter(zip(X, Y))
+        n = len(X)
+        
+        joint_entropy_val = 0.0
+        for count in joint_counts.values():
+            if count > 0:
+                p = count / n
+                joint_entropy_val -= p * math.log2(p)
+        
+        return joint_entropy_val
+
+    def mutual_information(self, X, Y):
+        """
+        Calculate mutual information I(X; Y) for discrete data.
+        
+        I(X; Y) = H(X) + H(Y) - H(X, Y)
+                = H(X) - H(X|Y)
+        
+        Returns mutual information in bits
+        """
+        print("X: ",type(X))
+        print("Y: ",type(Y))
+        
+        h_x = self.entropy(list(X))
+        h_y = self.entropy(list(Y))
+        h_xy = self.joint_entropy(list(X), list(Y))
+        
+        return h_x + h_y - h_xy
+
+    def vector_to_discrete(self, embedded_vector):
+        """
+        Convert an embedding vector to a discrete tuple for counting.
+        
+        Args:
+            embedded_vector: List of discrete values
+        
+        Returns:
+            Tuple of values (hashable for Counter)
+        """
+        return tuple(embedded_vector)
+
+    def prob_count_joint(self, n, X, Y):
+        counts = defaultdict(int)
+
+        if X.ndim > 1:
+            joint = zip(X[:,0], X[:,1], Y[:,0])
+        else:
+            joint = zip(X,Y)
+
+        for combo in joint: #zip(*arrays):
+            counts[combo] += 1
+        
+        probs = {obs: count / n for obs, count in counts.items()}
+        return probs, counts
+
+    def conditional_entropy(self, X, Z):
+        """
+        Compute conditional entropy H(X|Z) for discrete data.
+        H(X|Z) = sum_z P(z) * H(X|Z=z) = - sum_x,z P(x,z) * log(P(x|z))
+        """
+        
+        n = X.shape[0]
+        prob_joint, counts_joint = self.prob_count_joint(n, X, Z)
+        
+        # Count Z frequencies
+        z_counts = defaultdict(int)
+        for row in counts_joint.keys():
+            z_counts[row[1]] += counts_joint[row]
+
+        h_xz = 0.0
+        try:
+            for (x, z), prob in prob_joint.items():
+                if prob > 0:
+                    p_z = z_counts[z] / n
+                    p_x_given_z = prob / p_z
+                    if p_x_given_z > 0:
+                        h_xz -= prob * np.log2(p_x_given_z)
+        except:
+            for (x, y, z), prob in prob_joint.items():
+                if prob > 0:
+                    p_z = z_counts[z] / n
+                    p_xy_given_z = prob / p_z
+                    if p_xy_given_z > 0:
+                        h_xz -= prob * np.log2(p_xy_given_z)
+
+        return h_xz
+
+
+    def is_analytic_null_estimator(self):
+        return True
+
+    def get_analytic_distribution(self, **data):
+        """Return a JIDT AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per the estimate method for this estimator.
+
+        """
+        pass
+
+    def estimate_surrogates_analytic(self, n_perm=200, **data):
+        """Return estimate of the analytical surrogate distribution.
+
+        This method must be implemented because this class'
+        is_analytic_null_estimator() method returns true.
+
+        Args:
+            n_perms : int [optional]
+                number of permutations (default=200)
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per the estimate method for this estimator.
+
+        Returns:
+            float | numpy array
+                n_perm surrogates of the average MI/CMI/TE over all samples
+                under the null hypothesis of no relationship between var1 and
+                var2 (in the context of conditional)
+        """
+        return common_estimate_surrogates_analytic(self, n_perm, **data)
+
+
+
+class PythonDiscreteMI(PythonDiscrete):
+    """Calculate MI with Python discrete-variable implementation.
+
+    Calculate the mutual information (MI) between two variables. 
+
+    Results are returned in bits.
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+
+            
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning
+
+
+               'equal' for equal size bins, and ############################################# TODO equal
+              
+
+              or 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1 and
+              alph2
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2, or the value set for n_discrete_bins)
+            - alph2 : int [optional] - number of discrete bins/levels for var2
+              (default=2, or the value set for n_discrete_bins)
+            - lag_mi : int [optional] - time difference in samples to calculate
+              the lagged MI between processes (default=0)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+            
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Set default alphabet sizes. Try to overwrite alphabet sizes with
+        # number of bins for discretisation if provided, otherwise assume
+        # binary variables.
+        super().__init__(settings)
+        self.settings.setdefault('lag_mi', int(0))
+        try:
+            n_discrete_bins = int(self.settings['n_discrete_bins'])
+            self.settings['alph1'] = n_discrete_bins
+            self.settings['alph2'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph_* set below
+        self.settings.setdefault('alph1', int(2))
+        self.settings.setdefault('alph2', int(2))
+    
+    def calculateLocalMI(self, var1, var2):
+        """Calculate local mutual information for discrete data """
+        local_mi = np.zeros(var1.shape[0])
+        
+        prob_xy, prob_x, prob_y = self.getProbsMI(var1, var2)
+
+        for i in range(var1.shape[0]):
+            px = prob_x[var1[i]]
+            py = prob_y[var2[i]]
+            pxy = prob_xy[(var1[i], var2[i])]
+            
+            if px > 0 and py > 0 and pxy > 0:
+                local_mi[i] = math.log(pxy / (px * py)) / math.log(2.0)
+            else:
+                local_mi[i] = 0.0
+
+        return local_mi
+
+    def calculateAverageMI(self, var1, var2):
+        """Calculate average mutual information for discrete data """
+
+        counts_xy, counts_x, counts_y = self.getProbsMI(var1, var2)
+
+        #print(len(prob_xy))
+        #print(prob_xy)
+        #print(type(prob_xy))
+        #print(len(prob_x))
+        #print(type(prob_x))
+        #print(len(prob_y))
+        #print(type(prob_y))
+        #print(prob_xy[0,0])
+        #print(prob_xy2)
+        #print(len(prob_x2))
+        #print(len(prob_y2))
+        n = var1.shape[0]        
+        # Calculate mutual information:
+        mi = 0.0
+        for (xi, yi), count in counts_xy.items():
+            p_xy = count / n
+            p_x = counts_x[xi] / n
+            p_y = counts_y[yi] / n
+            
+            if p_xy > 0 and p_x > 0 and p_y > 0:
+                mi += p_xy * math.log(p_xy / (p_x * p_y)) / math.log(2.0)
+        
+        """
+        mi = 0.0
+        for i in range(len(prob_x)):
+            for j in range(len(prob_y)):
+                print("i, j: ", i,j)
+                print(prob_xy[i,j])
+                if prob_xy[i,j] > 0 and prob_x[i] > 0 and prob_y[j] > 0:
+
+                    mi += prob_xy[i,j] * math.log(prob_xy[i,j] / (prob_x[i] * prob_y[j])) / math.log(2.0)
+        """       
+        return mi
+
+    def estimate(self, var1, var2):
+        """Estimate mutual information.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            return_calc : boolean
+                return the calculator used here as well as the numeric
+                calculated value(s)
+
+        Returns:
+            float | numpy array
+                average MI over all samples or local MI for individual
+                samples if 'local_values'=True
+        """
+        # Check and remember the no. dimensions for each variable before
+        # collapsing them into univariate arrays later.
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+
+        # Shift variables to calculate a lagged MI.
+        if self.settings['lag_mi'] > 0:
+            var1 = var1[:-self.settings['lag_mi'], :]
+            var2 = var2[self.settings['lag_mi']:, :]
+
+        # Discretise variables if requested.
+        var1, var2 = self._discretise_vars(var1, var2)
+
+        # Then collapse any multivariates into univariate arrays:
+        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
+        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
+
+        print(type(var1))
+        if self.settings['local_values']:
+            return self.calculateLocalMI(var1, var2)
+        else:
+            return self.calculateAverageMI(var1, var2)
+
+
+class PythonDiscreteCMI(PythonDiscrete):
+    """Calculate CMI with Python implementation for discrete variables.
+
+    Calculate the conditional mutual information between two variables given
+    the third. 
+
+    Results are returned in bits.
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+
+            - debug : bool [optional] - return debug information when calling
+              JIDT (default=False)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning
+
+              , 'equal' for equal size bins, and  ############################################# TODO equal
+
+              or 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1, alph2
+              and alphc
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2, or the value set for n_discrete_bins)
+            - alph2 : int [optional] - number of discrete bins/levels for var2
+              (default=2, or the value set for n_discrete_bins)
+            - alphc : int [optional] - number of discrete bins/levels for
+              conditional (default=2, or the value set for n_discrete_bins)
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Set default alphabet sizes. Try to overwrite alphabet sizes with
+        # number of bins for discretisation if provided, otherwise assume
+        # binary variables.
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+            settings['alph2'] = n_discrete_bins
+            settings['alphc'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph_* set below
+        settings.setdefault('alph1', int(2))
+        settings.setdefault('alph2', int(2))
+        settings.setdefault('alphc', int(2))
+        super().__init__(settings)
+
+    def calculateAverageCMIviaEntropy(self, var1, var2, conditional):
+        # calculate average CMI using entropies
+        h_x_z = self.conditional_entropy(var1, conditional)
+        h_y_z = self.conditional_entropy(var2, conditional)
+        h_xy_z = self.conditional_entropy(np.column_stack([var1, var2]), conditional[:,None])
+        
+        cmi = h_x_z + h_y_z - h_xy_z
+
+        return cmi
+
+    def calculateAverageCMIviaEntropy2(self, var1, var2, conditional):
+        # calculate average CMI using entropies
+        xz = list(zip(var1, conditional))
+        yz = list(zip(var2, conditional))
+        xyz = list(zip(var1, var2, conditional))
+        h_x_z = self.entropy_discrete(xz)
+        h_y_z = self.entropy_discrete(yz)
+        h_xy_z = self.entropy_discrete(xyz)
+        h_z = self.entropy_discrete(conditional)
+        
+        cmi = h_x_z + h_y_z - h_xy_z - h_z
+
+        return cmi
+
+
+    def calculateAverageCMI(self, var1, var2, conditional):
+        # Calculate avarage CMI using the formula: sum P(x,y,z) * log( P(x,y|z) / (P(x|z) * P(y|z)) )
+        
+        counts_xyz, counts_xz, counts_yz, counts_z = self.getProbsCMI(var1, var2, conditional)
+
+        cmi = 0.0
+        for (x, y, z), p_xyz in counts_xyz.items():
+
+            if p_xyz > 0 and counts_z[z] > 0:
+
+                p_xy_z = p_xyz / counts_z[z]
+                p_x_z = counts_xz[(z,x)]
+                p_y_z = counts_yz[(z,y)]
+
+                if p_x_z > 0 and p_y_z > 0:
+                    logterm = p_xy_z / (p_x_z * p_y_z)
+                    cmi += p_xyz * np.log(logterm) / np.log(2.0)
+                else:
+                    cmi += 0.0
+        
+        return cmi
+
+    def calculateLocalCMI(self, var1, var2, conditional):
+        """ calculate local conditional information for disrete data"""
+
+        counts_xyz, counts_xz, counts_yz, counts_z = self.getProbsCMI(var1, var2, conditional)
+
+        n = var1.shape[0]
+        local_cmi = np.zeros(n)
+
+        for r in range(n):
+            val1 = var1[r]
+            val2 = var2[r]
+            cond = conditional[r]
+
+            p_xyz = counts_xyz[val1,val2,cond]
+            p_xz = counts_xz[val1,cond]
+            p_yz = counts_yz[val2,cond]
+            p_z = counts_z[cond]
+
+            if p_xyz > 0 and p_xz > 0 and p_yz > 0:
+                
+                logterm = (p_xyz / p_xz) / (p_yz * p_z)
+                if logterm > 0:
+                    local_cmi[r] = np.log(logterm) / np.log(2.0)
+                else:
+                    local_cmi[r] = 0.0             
+
+        return local_cmi
+
+    def estimate(self, var1, var2, conditional=None):
+        """Estimate conditional mutual information.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2
+            
+        Returns:
+            float | numpy array
+                average CMI over all samples or local CMI for individual
+                samples if 'local_values'=True
+            
+        """
+
+        # Return MI if no conditioning variable was provided.
+        if conditional is None:
+            if (self.est_mi is None):
+                self.est_mi = PythonDiscreteMI(self.settings)
+            return self.est_mi.estimate(var1, var2)
+        else:
+            assert(conditional.size != 0), 'Conditional Array is empty.'
+
+
+        # Check and remember the no. dimensions for each variable before
+        # collapsing them into univariate arrays later.
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        conditional = self._ensure_two_dim_input(conditional)
+
+        # Discretise if requested.
+        var1, var2, conditional = self._discretise_vars(var1, var2,
+                                                        conditional)
+
+        # Then collapse any mulitvariates into univariate arrays:
+        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
+        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
+        conditional = utils.combine_discrete_dimensions(conditional,
+                                                        self.settings['alphc'])
+
+        assert (
+            var1.shape[0] == var2.shape[0] == conditional.shape[0]
+        ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]}, conditional: {conditional.shape[0]})"
+
+        #var1_dim = var1.shape[1]
+        #var2_dim = var2.shape[1]
+        #cond_dim = conditional.shape[1]
+        # We have a non-trivial conditional, so make a proper conditional MI
+        # calculation
+        #alph1_base = int(np.power(self.settings['alph1'], var1_dim))
+        #alph2_base = int(np.power(self.settings['alph2'], var2_dim))
+        #cond_base = int(np.power(self.settings['alphc'], cond_dim))
+        
+        if self.settings['local_values']:
+            return self.calculateLocalCMI(var1, var2, conditional)
+        else:
+            return self.calculateAverageCMIviaEntropy(var1, var2, conditional)
+
+
+class PythonDiscreteAIS(PythonDiscrete):
+    """Calculate AIS with Python discrete-variable implementation.
+
+    Calculate the active information storage (AIS) for one process. 
+
+    Results are returned in bits.
+
+    Args:
+        settings : dict
+            set estimator parameters:
+
+            - history : int - number of samples in the target's past used as
+              embedding (>= 0)
+              
+              # ################################################################################################# TODO local values
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 
+
+              'equal' for equal size bins, and ####################################### TODO equal
+
+              'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph. (>= 2)
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2 , or the value set for n_discrete_bins). (>= 2)
+    """
+
+    def __init__(self, settings):
+        settings = self._check_settings(settings)
+        try:
+            settings['history']
+        except KeyError:
+            raise RuntimeError('No history was provided for AIS estimation.')
+        assert type(settings['history']) is int, (
+                                            'History has to be an integer.')
+        assert settings['history'] >= 0, 'History must be >= 0'
+
+        # Get alphabet sizes and check if discretisation is requested
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph set below
+        settings.setdefault('alph1', int(2))
+        assert settings['alph1'] >= 2, 'Number of bins must be >= 2'
+        super().__init__(settings)
+
+    def get_probabilities(states):
+        """Estimate probability distribution from discrete states."""
+        if states.ndim > 1:
+            state_tuples = [tuple(row) for row in states]
+        else:
+            state_tuples = list(states)
+        
+        counts = Counter(state_tuples)
+        total = len(state_tuples)
+
+        return {state: count / total for state, count in counts.items()}
+
+    def getProbsMI_emb1(self, var1, var2):
+        """get all probs for MI for discrete data"""
+        print(var1.shape)
+        print(var2.shape)
+        n_samples = var1.shape[0]
+        
+        #counts_var1 = np.zeros((np.unique(var1), np.unique(var1)))
+
+        #for i in range(n_samples):
+        #    is 
+        
+
+
+
+        # Combine var1 dims into single joint states
+        unique_combinations = {}
+        joint_var1 = np.zeros(n_samples, dtype=int)
+        
+        for i in range(n_samples):
+            state_tuple = tuple(var1[i])
+            if state_tuple not in unique_combinations:
+                unique_combinations[state_tuple] = len(unique_combinations)
+            joint_var1[i] = unique_combinations[state_tuple]
+        
+        print(type(unique_combinations))
+
+        # Get unique values
+        unique_var1 = np.unique(joint_var1)
+        unique_var2 = np.unique(var2)
+    
+        counts_xy = np.zeros((len(unique_var1), len(unique_var2)), dtype=int)
+        counts_x = np.zeros(len(unique_var1), dtype=int)
+        counts_y = np.zeros(len(unique_var2), dtype=int)
+        
+        # Map values to indices
+        var1_map = {val: idx for idx, val in enumerate(unique_var1)}
+        var2_map = {val: idx for idx, val in enumerate(unique_var2)}
+        
+        print(type(var1_map))
+        print(type(var2_map))
+        print(var2_map.items())
+        
+        # Count occurrences
+        for i in range(n_samples):
+            xi = var1_map[joint_var1[i]]
+            #print(xi)
+            #print(var2[i])
+            yi = var2_map[var2[i]]
+            #print(xi, yi)
+            counts_xy[xi, yi] += 1
+            counts_x[xi] += 1
+            counts_y[yi] += 1
+        
+        # Convert to probabilities
+        prob_xy = counts_xy / n_samples
+        prob_x = counts_x / n_samples
+        prob_y = counts_y / n_samples
+
+        return prob_xy, prob_x, prob_y
+
+    def calculateAverageAIS(self, past, current):
+        """Calculate Average AIS for discrete data"""
+
+        print(type(past))
+
+        print("current: ",current.shape)
+        past = np.asarray(past)
+        print("past: ",past.shape)
+        
+
+        prob_xy, prob_x, prob_y = self.getProbsMI_emb1(past, current)
+
+        # Calculate mutual information:
+        mi = 0.0
+        for i in range(len(prob_x)):
+            for j in range(len(prob_y)):
+                if prob_xy[i,j] > 0 and prob_x[i] > 0 and prob_y[j] > 0:
+
+                    mi += prob_xy[i,j] * math.log(prob_xy[i,j] / (prob_x[i] * prob_y[j])) / math.log(2.0)
+                
+        return mi
+
+        #past=past.flatten()
+        #print("past flatten: ",past.shape)
+        
+        #past=past[:, None]
+        #print("past cor: ",past.shape)
+        
+        """
+        # Get unique values and counts
+        xy_pairs = np.column_stack([past, current])
+        unique_xy, counts_xy = np.unique(xy_pairs, axis=0, return_counts=True)
+        
+
+        print(xy_pairs.shape)
+        print(unique_xy.shape)
+
+
+        unique_x, counts_x = np.unique(past, return_counts=True)
+        unique_y, counts_y = np.unique(current, return_counts=True)
+        
+        n = len(past)
+        
+        # Probability estimates
+        p_xy = counts_xy / n
+        p_x = counts_x / n
+        p_y = counts_y / n
+        
+        # Create lookup dictionaries
+        x_to_idx = {val: idx for idx, val in enumerate(unique_x)}
+        y_to_idx = {val: idx for idx, val in enumerate(unique_y)}
+        
+        print(x_to_idx.items())
+        
+
+        # Compute MI
+        mi = 0.0
+        #for i, (x_val, y_val) in enumerate(unique_xy):
+        for i, u in enumerate(unique_xy):
+
+            print(len(u))
+
+            #if len(u) == 2:
+
+            x_val = u[0]
+            y_val = u[1]
+
+            if p_xy[i] > 0:
+                px = p_x[x_to_idx[x_val]]
+                py = p_y[y_to_idx[y_val]]
+                if px > 0 and py > 0:
+                    mi += p_xy[i] * np.log2(p_xy[i] / (px * py))
+
+            #else:
+
+            #    x_val = u[:-1]
+            #    y_val = u[-1]
+
+            #    print(x_val)
+
+            #    if p_xy[i] > 0:
+            #        px = p_x[x_to_idx[x_val]]
+            #        py = p_y[y_to_idx[y_val]]
+            #        if px > 0 and py > 0:
+            #            mi += p_xy[i] * np.log2(p_xy[i] / (px * py))
+
+        """
+
+
+
+    def calculateLocalAIS(self, past, current):
+        """Calculate Local AIS for discrete data"""
+        
+        n=len(current)
+
+        local_ais = np.zeros(n)
+        
+        unique_vals = np.unique(current)
+        
+        for i in range(n):
+            x_past = past[i]
+            x_t = current[i]
+            
+            # Pointwise MI: log2(p(x_past, x_t) / (p(x_past) * p(x_t)))
+            # Using empirical probabilities from the full dataset
+            joint_counts = np.zeros((len(unique_vals), len(unique_vals)))
+            x_past_flat = past.flatten()
+            
+            for j in range(len(x_past_flat)):
+                idx_past = np.where(unique_vals == x_past_flat[j])[0][0]
+                idx_t = np.where(unique_vals == x_t[j])[0][0]
+                joint_counts[idx_past, idx_t] += 1
+            
+            p_joint = joint_counts / len(xt)
+            p_past = p_joint.sum(axis=1)
+            p_t = p_joint.sum(axis=0)
+            
+            # Find indices for current sample
+            idx_past_curr = np.where(unique_vals == x_past[0] if len(x_past) > 0 else x_past)[0][0]
+            idx_t_curr = np.where(unique_vals == x_t)[0][0]
+            
+            if p_joint[idx_past_curr, idx_t_curr] > 0 and p_past[idx_past_curr] > 0 and p_t[idx_t_curr] > 0:
+                local_ais[i] = np.log2(
+                    p_joint[idx_past_curr, idx_t_curr] / (p_past[idx_past_curr] * p_t[idx_t_curr])
+                )
+        
+        return local_ais
+
+
+
+
+    def estimate(self, process):
+        """Estimate active information storage.
+
+        Args:
+            process : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+
+        Returns:
+            float | numpy array
+                average AIS over all samples  
+                
+                ######################################################### TODO local values
+                or local MI for individual
+                samples if 'local_values'=True
+
+        """
+
+        process = self._ensure_one_dim_input(process)
+        
+        # Discretise variables if requested.
+        process = self._discretise_vars(process)
+        
+        ## Then collapse any multivariates into univariate arrays:
+        #process = utils.combine_discrete_dimensions(process, self.settings['alph1'])
+
+        maxlag = (self.settings['history'] - 1) * self.settings['tau']
+        current = process[maxlag+1:]
+        
+        # delay optimization
+        if self.settings['history'] > 1 or self.settings['tau'] > 1:
+            est=PythonGaussianMI({})
+            sh, st = self.opt_ais_source_delay(est, process, current)
+            past = self.delay_embedding(process, history=sh, tau=st)
+        
+        else:
+            past = self.delay_embedding(process, history=self.settings['history'], tau=self.settings['tau'])
+        
+        n = len(current)
+        #if current.ndim == 1:
+        #    current = current[:, None]
+        past = past[:n,:]
+
+
+        
+        if self.settings['local_values']:
+            ais = self.calculateLocalAIS(past, current)
+            
+        else:
+            ## Convert embedded vectors to discrete tuples for MI calculation
+            #past_tuples = [self.vector_to_discrete(v) for v in past]
+
+            #ais = self.mutual_information(past_tuples, current.tolist())
+            ais = self.calculateAverageAIS(past, current)
+
+            #ais = PythonDiscreteMI.calculateAverageMI(self, current, past)
+        return ais
+
+
+
+
+class PythonDiscreteTE(PythonDiscrete):
+    """Calculate TE with Python implementation for discrete variables.
+
+    Calculate the transfer entropy between two time series processes.
+    
+    Results are returned in bits.
+
+    Args:
+        settings : dict
+            sets estimation parameters:
+
+            - history_target : int - number of samples in the target's past
+              used as embedding. (>= 0)
+            - history_source  : int [optional] - number of samples in the
+              source's past used as embedding (default=same as the target
+              history). (>= 1)
+            - tau_source : int [optional] - source's embedding delay
+              (default=1). (>= 1)
+            - tau_target : int [optional] - target's embedding delay
+              (default=1). (>= 1)
+            - source_target_delay : int [optional] - information transfer delay
+              between source and target (default=1) (>= 0)
+            
+            #################################################################### TODO
+            - opt_source_hist_tau: bool [optional] - optimize history_source
+              and tau_source (default=False)
+            
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 'equal' for equal size bins, and 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1 and
+              alph2. (>= 2)
+            - alph1 : int [optional] - number of discrete bins/levels for
+              source (default=2, or the value set for n_discrete_bins). (>= 2)
+            - alph2 : int [optional] - number of discrete bins/levels for
+              target (default=2, or the value set for n_discrete_bins). (>= 2)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+    """
+
+    def __init__(self, settings):
+        settings = self._check_settings(settings)
+        # Get embedding and delay parameters.
+        settings = self._set_te_defaults(settings)
+
+        # Get alphabet sizes and check if discretisation is requested. Try to
+        # overwrite alphabet sizes with number of bins.
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+            settings['alph2'] = n_discrete_bins
+        except KeyError:
+            # do nothing and set alphabet sizes to default below
+            pass
+        settings.setdefault('alph1', int(2))
+        settings.setdefault('alph2', int(2))
+        assert type(settings['alph1']) is int, (
+            'Num discrete levels for source has to be an integer.')
+        assert type(settings['alph2']) is int, (
+            'Num discrete levels for target has to be an integer.')
+        assert settings['alph1'] >= 2, (
+            'Num discrete levels for source must be >= 2')
+        assert settings['alph2'] >= 2, (
+            'Num discrete levels for target must be >= 2')
+        super().__init__(settings)
 
     def _set_te_defaults(self, settings):
         """Set defaults for transfer entropy estimation."""
@@ -1672,54 +3485,170 @@ class PythonGaussianTE(PythonGaussian):
             'Source-target delay must be >= 0')
         return settings
     
-    def check_number_of_points(self, n_points):
-        """Sanity check for number of points going into the estimator."""
-        if (n_points - 1) <= int(self.settings["kraskov_k"]):
-            raise RuntimeError(
-                f"Insufficient number of points ({n_points}) for the requested number of nearest neighbours "
-                f"(kraskov_k: {self.settings['kraskov_k']})."
-            )
+    def getProbsTE(self, source, target, target_future):
+        """get all counts and probs for TE for discrete data"""
+        counts_xyz = defaultdict(int)
+        counts_xy = defaultdict(int)
+        counts_yyf = defaultdict(int)
+        counts_y = defaultdict(int)
+        
+        #counts_x = Counter(source)
+        #counts_yf = Counter(target_future)
 
-    def estimate(self, source: np.ndarray, target: np.ndarray):
+        
+        for xi, yi, zi in zip(source, target, target_future):
+
+            #print(xi, yi, zi)
+            #print(type((xi, yi, zi)))
+            counts_xyz[(xi[0], yi[0], zi)] += 1
+
+        for xi, yi in zip(source, target):
+            counts_xy[(xi[0], yi[0])] += 1
+        for xi, yi in zip(target, target_future):
+            counts_yyf[(xi[0], yi)] += 1
+        for row in source:
+            counts_y[(row[0])] += 1
+            
+        #counts_xyz = {k: v / n_var1 for k, v in counts_xyz.items()}
+        #counts_z = {k: v / n_var1 for k, v in counts_z.items()}
+
+        #for (x, y, z), p_xyz in counts_xyz.items():
+        #    if counts_z[z] > 0:
+        #        counts_xz[(z,x)] += p_xyz / counts_z[z]
+        #        counts_yz[(z,y)] += p_xyz / counts_z[z]
+
+        return counts_xyz, counts_xy, counts_yyf, counts_y
+
+
+
+    def calculateAverageTE(self, source, target, target_future):
+        """Calculate average transfer entropy for discrete data"""
+
+        counts_xyz, counts_xy, counts_yyf, counts_y = self.getProbsTE(source, target, target_future)
+        
+        te = 0.0
+        total = sum(counts_xyz.values())
+        for (y_h, x_t, y_f), count in counts_xyz.items():
+            p_yf_yh_xt = count / counts_xy[(y_h, x_t)]
+            p_yf_yh = counts_yyf[(y_h, y_f)] / counts_y[y_h]
+            
+            #if p_yf_yh_xt > 0:
+
+            
+            if p_yf_yh_xt > 0 and p_yf_yh > 0:
+                te += (count / total) * math.log(p_yf_yh_xt / p_yf_yh) / np.log(2.0)
+        
+        return te if te >= 0 else 0.0
+        
+
+
+    def calculatelocalTE(self, source, target, target_future):
+        """Calculate local transfer entropy for discrete data"""
+
+
+    def estimate(self, source, target):
         """Estimate transfer entropy from a source to a target variable.
 
         Args:
             source : numpy array
                 realisations of source variable, either a 2D numpy array where
                 array dimensions represent [realisations x variable dimension]
-                or a 1D array representing [realisations]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
             target : numpy array
                 realisations of target variable (similar to var1)
+            return_calc : boolean
+                return the calculator used here as well as the numeric
+                calculated value(s)
 
         Returns:
             float | numpy array
-                average TE over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local TE for individual
+                average TE over all samples or local TE for individual
                 samples if 'local_values'=True
-        
-
-
-        TE_{Y->X} = 0.5 * log det Sigma(X_t | X_past) / det Sigma(X_t | X_past, Y_past)
-        where X_past = X_{t-lag}, Y_past = Y_{t-lag}
-        
+            
         """
-
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
 
-        ############################################################################################### TODO
-        # Check if number of points is sufficient for estimation.
-        self.check_number_of_points(source.shape[0] -
-                                     self.settings['source_target_delay'])
+        # Discretise variables if requested.
+        source, target = self._discretise_vars(source, target)
 
         assert (
             source.shape[0] == target.shape[0]
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
-
-
         
+
+
+        # delay embedding
+        startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+            self.settings['history_target'],
+            self.settings['tau_target'],
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            self.settings['source_target_delay'],
+            )
+        target_past = self.makeDelayEmbeddingVector(target, 
+            self.settings['history_target'], 
+            self.settings['tau_target'], 
+            startFirstPoint, 
+            target.shape[0] - startFirstPoint - 1)
+        target_current = self.makeDelayEmbeddingVectorCurrent(target,
+            1,
+            startFirstPoint + 1,
+            target.shape[0] - startFirstPoint - 1)
+        
+        
+
+        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
+            est=PythonDiscreteCMI({})
+            sh, st = self.opt_te_source_delay(est, source, target_past, target_current, startFirstPoint)
+                
+            startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+                    self.settings['history_target'],
+                    self.settings['tau_target'],
+                    sh,
+                    st,
+                    self.settings['source_target_delay'],
+                    )
+            
+            target_past = self.makeDelayEmbeddingVector(target, 
+                self.settings['history_target'], 
+                self.settings['tau_target'], 
+                startFirstPoint, 
+                target.shape[0] - startFirstPoint - 1)
+            target_current = self.makeDelayEmbeddingVectorCurrent(target,
+                1,
+                startFirstPoint + 1,
+                target.shape[0] - startFirstPoint - 1)
+       
+            source_past = self.makeDelayEmbeddingVector(source,
+                sh,
+                st,
+                startFirstPoint + 1 - self.settings['source_target_delay'],
+                source.shape[0] - startFirstPoint - 1)
+
+        else:
+        
+            source_past = self.makeDelayEmbeddingVector(source,
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            startFirstPoint + 1 - self.settings['source_target_delay'],
+            source.shape[0] - startFirstPoint - 1)
+            
+        if self.settings['local_values']:
+            te = PythonDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            # correction to compare with JidtGaussianTE results
+            te = np.hstack([np.zeros(startFirstPoint+1), te])
+
+        else:
+            te = PythonDiscreteCMI.calculateAverageCMIviaEntropy2(self, source_past, target_current, target_past)
+            #te = self.calculateAverageTE(source_past, target_past, target_current)
+
+        return te
+
+
+
+
         N = source.shape[0]
 
         min_length = max(self.settings['history_source'] * self.settings['tau_source'] + 2,
@@ -1734,313 +3663,321 @@ class PythonGaussianTE(PythonGaussian):
         if num_valid <= 0:
             raise ValueError(f"Not enough valid embedding vectors")
         
-        
+
+        # Ragwitz optimisation
+
+        #best_hist_source, best_tau_source = self.ragwitz (var1, var1, self.settings['history_target'], self.settings['tau_target'], self.settings['history_source'], self.settings['tau_source'])
+
         source_past, source_current = self.embed_past_current(source, num_valid, self.settings['history_source'], self.settings['tau_source'])
         
         target_past, target_current = self.embed_past_current(target, num_valid, self.settings['history_target'], self.settings['tau_target'])
 
+
+        if self.settings['local_values']:
+            return self.calculateLocalTE(source_past, target_past, target_current)
+        else:
+            return self.calculateAverageTE(source_past, target_past, target_current) ########################## TODO
+
+
+################################################################ TODO
+class EmpiricalMeasurementDistribution():
+    """
+    ######################################################## TODO
+    """
+
+    
+    def new_dist(self, numPermutationsToCheck):
+        """Create new empty distribtution array"""
+        self.distribution = np.zeros(numPermutationsToCheck)
+
+    def EmpiricalMeasurementDistribution(self, distribution, actualValue):
+        self.distribution = distribution
+        countWhereActualIsNotGreater = 0;
+        for i in range(len(distribution)):
+            if distribution[i] >= actualValue:
+                countWhereActualIsNotGreater += 1
+        pValue = countWhereActualIsNotGreater / len(distribution);
+        return pValue
+
+    def getTScore(self):
+        """get T score of actual value"""
+        meanOfDist = np.mean(self.distribution)
+        stdOfDist = np.std(self.distribution)
+
+        t = (actualValue - meanOfDist) / stdOfDist
+        return t
+
+    def getMeanOfDistribution(self):
+        meanOfDist = np.mean(self.distribution)
+        return meanOfDist
+
+    def getStdOfDistribution(self):
+        stdOfDist = np.std(self.distribution)
+        return stdOfDist
+
+    ######################################################################### TODO
+    def generateRandomPerturbations(self, n, numberOfPerturbations):
+        """Generate numberOfPerturbations perturbations of [0..n-1],
+        which are not necessarily distinct."""
+
+        sets = np.zeros((n, numberOfPerturbations))
+        for i in range(numberOfPerturbations):
+            sets[:,i]=np.random.permutation(n)
+
+        return sets
+
+
+class AnalyticalMeasurementDistribution():
+
+    def AnalyticalMeasurementDistribution(self, actualValue, pValue):
+
+        self.actualValue = actualValue
+        self.pValue = pValue
+
+
+    def computePValuesForGivenEstimates(self, estimates):
+
+        self.pValues = np.zeros(len(estimates)) 
+        for i in range(len(estimates)):
+            self.pValues[i] = computePValuesForGivenEstimate(estimates[i])
+
+        self.estimates = estimates
+        return estimates
+
+
+
+class ChiSquareMeasurementDistribution(AnalyticalMeasurementDistribution):
+
+
+    def ChiSquareMeasurementDistribution(self, actualValue, numObservations, degreesOfFreedom, isBiasCorrected):
+
+        self.actualValue = actualValue
+        self.numObservations = numObservations
+        self.degreesOfFreedom = degreesOfFreedom
+        self.isBiasCorrected = isBiasCorrected
+
+        if degreesOfFreedom > 0:
+            self.chi2dist = chi2
+            values = self.chi2dist.rvs(degreesOfFreedom, size=numObservations)
+            mean = chi2.stats(degreesOfFreedom, moments='m')
+            self.meanOfUncorrectedDistribution = self.chi2dist.stats(degreesOfFreedom, moments='m') / (2.0 * numObservations)
+        else:
+            self.chi2dist = 0.0
+            self.meanOfUncorrectedDistribution = 0
+
         
-        if target_current.ndim == 1:
-            target_current = target_current[:, None]
-     
+        pValue = self.computePValueForGivenEstimate(actualValue)
+
+        return pValue
+
+
+    def computePValueForGivenEstimate(self, estimate):
+        if self.chi2dist == 0.0:
+            if estimate > 0:
+                return 1
+            else:
+                return 0
+        if self.isBiasCorrected:
+            cdf = self.chi2dist.cdf(2.0 * self.numObservations * (estimate + self.meanOfUncorrectedDistribution), self.degreesOfFreedom)
+        else:
+            cdf = self.chi2dist.cdf(2.0 * self.numObservations * estimate, self.degreesOfFreedom)
+
+        return 1 - cdf    
+
+    def computeEstimateForGivenPValue(self, pValue):
+        if self.chi2dist == 0.0:
+            # All p-values map to estimate 0
+            return 0
+
+        uncorrectedEstimate = self.chi2dist.ppf((1 - pValue) / (2.0 * self.numObservations))
+        if isBiasCorrected:
+            return uncorrectedEstimate - self.meanOfUncorrectedDistribution
+        else:
+            return uncorrectedEstimate;
+
+    def getMeanOfDistribution(self):
+        if self.isBiasCorrected:
+            return 1
+        else:
+            return self.meanOfUncorrectedDistribution
+
+    def getMeanOfUncorrectedDistribution(self):
+        return self.meanOfUncorrectedDistribution
+
+    def getStdOfDistribution(self):
+        if self.chi2dist == 0.0:
+            return 0
+
+        std =  np.square(self.chi2dist.stats(moments='v') / (2.0 * self.numObservations))
+        return std
 
 
 
+
+
+
+################################################################ TODO remove
+class DelayEmbeddingOptimizer:
+    """
+    RAGWITZ-based delay embedding optimization for transfer entropy.
+    
+    The RAGWITZ criterion selects delay τ that minimizes:
+    Q(τ) = (1/n) * sum(||x_{t+1} - f(x_t, τ)||^2)
+    
+    where f is a local linear predictor. For Gaussian data, we use
+    autocorrelation-based optimization.
+    """
+    
+    def __init__(self, source, target, max_delay=None):
+        self.source = np.array(source)
+        self.target = np.array(target)
+        self.n = len(self.target)
         
-
-        #target_f = target[max_shift:]
-        #target_past = self.delay_embed(target[:-1], self.settings['history_target'], self.settings['tau_target'])
-        #target_past = target_past[max((self.settings['history_target'] - 1) * self.settings['tau_target'], self.settings['source_target_delay']):]
-
-        #source_past = self.delay_embed(source[:-1-self.settings['source_target_delay']], self.settings['history_source'], self.settings['tau_source'])
-        #source_past = source_past[max((self.settings['history_source'] -1) * self.settings['tau_source'], 0):]
-
-        #m = min(len(target_f), len(target_past), len(source_past))
-        #target_f = target_f[:m]
-        #target_past = target_past[:m]
-        #source_past = source_past[:m]
-
-        var_y = self._ols_resid_var(target_current, target_past)
-        var_yx = self._ols_resid_var(target_current, np.column_stack([target_past, source_past]))
-        te_nats = 0.5 * np.log(var_y / var_yx)
-        #print(te_nats)
-        te_bits = te_nats / np.log(2.0)
-        #print(te_bits)
-
+        if max_delay is None:
+            self.max_delay = min(100, self.n // 4)
+        else:
+            self.max_delay = max_delay
         
-        return te_nats
-
-
-    def takens_embed(x, m=1, tau=1):
-        x = np.asarray(x, dtype=float).ravel()
-        n = x.size - (m - 1) * tau
-        if n <= 0:
-            raise ValueError("Time series too short for the requested embedding.")
-        return np.column_stack([x[i*tau:i*tau+n] for i in range(m)])
-
-    def align_te_series(x, y, m_x=1, m_y=1, tau_x=1, tau_y=1, delay=1):
-        x = np.asarray(x, dtype=float).ravel()
-        y = np.asarray(y, dtype=float).ravel()
-        max_lag = max((m_x - 1) * tau_x, (m_y - 1) * tau_y + delay)
-        n = min(len(x), len(y)) - max_lag - 1
-        if n <= 0:
-            raise ValueError("Time series too short for the requested delay/embedding.")
-        xt = np.column_stack([x[max_lag - i*tau_x : max_lag - i*tau_x + n] for i in range(m_x)])
-        yt_past = np.column_stack([y[max_lag - delay - i*tau_y : max_lag - delay - i*tau_y + n] for i in range(m_y)])
-        x_next = x[max_lag + 1 : max_lag + 1 + n][:, None]
-        return x_next, xt, yt_past
-
-    def gaussian_entropy(cov):
-        cov = np.asarray(cov, dtype=float)
-        d = cov.shape[0]
-        sign, logdet = np.linalg.slogdet(cov)
-        if sign <= 0:
-            raise np.linalg.LinAlgError("Covariance matrix must be positive definite.")
-        return 0.5 * (d * np.log(2.0 * np.pi * np.e) + logdet)
-
-
-    #def delay_embed(self, x, dim, tau):
-    #    x = np.asarray(x, dtype=float)
-    #    n = len(x)
-    #    m = n - (dim - 1) * tau
-    #    if m <= 0:
-    #        raise ValueError("Time series too short for the chosen embedding.")
-    #    return np.column_stack([x[(dim - 1 - i) * tau:(dim - 1 - i) * tau + m] for i in range(dim)])
-
-    def _ols_resid_var(self, y, X):
-        y = np.asarray(y, dtype=float).reshape(-1)
-        if X.size == 0:
-            resid = y - y.mean()
-            return np.mean(resid ** 2)
-        X = np.asarray(X, dtype=float)
-        X1 = np.column_stack([np.ones(len(y)), X])
-        beta, *_ = np.linalg.lstsq(X1, y, rcond=None)
-        resid = y - X1 @ beta
-        return np.mean(resid ** 2)
-
-    def delay_embedding(self, series, dimension, delay, step):
-        series = list(series)
-        n = len(series) - (dimension - 1) * delay
-        if n <= 0:
-            return []
-
-        embedded = []
-        for i in range(0, n, step):
-            point = [series[i + j * delay] for j in range(dimension)]
-            embedded.append(point)
-
-        print("embedded:")
-        print(len(embedded))
-        print("embedded as array:")
-        print(np.array(embedded, dtype=np.float64).shape)
-
-        return np.array(embedded, dtype=np.float64)
-
+        self.te_estimator = PythonGaussianTE()
+    
+    def _autocorrelation(self, x, max_lag):
+        """Compute normalized autocorrelation function."""
+        n = len(x)
+        var = np.var(x)
+        if var == 0:
+            return np.ones(max_lag + 1)
+        
+        acf = np.zeros(max_lag + 1)
+        for lag in range(max_lag + 1):
+            if lag == 0:
+                acf[lag] = 1.0
+            else:
+                acf[lag] = np.mean((x[:n-lag] - np.mean(x)) * 
+                                   (x[lag:] - np.mean(x))) / var
+        
+        return acf
+    
+    def _ragwitz_criterion_autocorr(self, delay):
         """
-        #??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-        # Normalise data
-        if self._normalise:
-            source = self._normalise_data(source)
-            target = self._normalise_data(target)
-            
-        # Add noise to avoid duplicate points
-        # Do not add noise inplace, because it would change the input data
-        if self._noise_level > 0:
-            source = source + self._rng.normal(0, self._noise_level, source.shape)
-            target = target + self._rng.normal(0, self._noise_level, target.shape)
-        #??????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+        RAGWITZ criterion based on autocorrelation.
         
-        
-        ##################################################################################################### TODO
-        Xt = source[lag:]
-        Xp = source[:-lag]
-        Yp = target[:-lag]
-
-        num = conditional_logdet(Xt, Xp)
-        den = conditional_logdet(Xt, _stack(Xp, Yp))
-        te = 0.5 * (num - den)
-
-        return te
+        For Gaussian data, optimal delay is where autocorrelation
+        first crosses 1/e ≈ 0.368 or reaches first minimum.
         """
-
-    """
-    def _as_2d(a):
-        a = np.asarray(a, dtype=float)
-        if a.ndim == 1:
-            a = a[:, None]
-        te = a
-
-        return te
-
-    def _logdet_psd(a, eps=1e-12):
-        a = np.asarray(a, dtype=float)
-        a = 0.5 * (a + a.T)
-        s, logdet = np.linalg.slogdet(a + eps * np.eye(a.shape[0]))
-        if s <= 0:
-            w = np.linalg.eigvalsh(a + eps * np.eye(a.shape[0]))
-            return np.sum(np.log(np.maximum(w, eps)))
-        return logdet
-
-    def _cov(x):
-        x = _as_2d(x)
-        x = x - x.mean(axis=0, keepdims=True)
-        return np.cov(x, rowvar=False, bias=False)
-
-    def _stack(*arrays):
-        arrays = [_as_2d(a) for a in arrays]
-        return np.hstack(arrays)
-
-    def _cov_block(*arrays):
-        return _cov(_stack(*arrays))
-
-    def conditional_logdet(target, cond):
-        target = _as_2d(target)
-        cond = _as_2d(cond)
-        if cond.shape[1] == 0:
-            return _logdet_psd(_cov(target))
-        c_tt = _cov(target)
-        c_cc = _cov(cond)
-        c_tc = np.cov(_stack(target, cond), rowvar=False, bias=False)[:target.shape[1], target.shape[1]:]
-        c_ct = c_tc.T
-        schur = c_tt - c_tc @ np.linalg.pinv(c_cc) @ c_ct
-        return _logdet_psd(schur)
-
-    """
-
-
-
-# Discrete estimator
-
-################################################################################ TODO
-class PythonDiscreteMI(PythonDiscrete):
-    """Calculate MI with Python discrete-variable implementation.
-
-    Calculate the mutual information (MI) between two variables. 
-
-    Results are returned in bits.
-
-    Args:
-        settings : dict [optional]
-            sets estimation parameters:
-
-            
-            - discretise_method : str [optional] - if and how to discretise
-              incoming continuous data, can be 'max_ent' for maximum entropy
-              binning, 'equal' for equal size bins, and 'none' if no binning is
-              required (default='none')
-            - n_discrete_bins : int [optional] - number of discrete bins/
-              levels or the base of each dimension of the discrete variables
-              (default=2). If set, this parameter overwrites/sets alph1 and
-              alph2
-            - alph1 : int [optional] - number of discrete bins/levels for var1
-              (default=2, or the value set for n_discrete_bins)
-            - alph2 : int [optional] - number of discrete bins/levels for var2
-              (default=2, or the value set for n_discrete_bins)
-            - lag_mi : int [optional] - time difference in samples to calculate
-              the lagged MI between processes (default=0)
-            
-            ################################################ ???????????????????????????????????????????????????? local values ??????
-            - local_values : bool [optional] - return local TE instead of
-              average TE (default=False)
-            
-    """
-
-    def __init__(self, settings=None):
-        settings = self._check_settings(settings)
-        # Set default alphabet sizes. Try to overwrite alphabet sizes with
-        # number of bins for discretisation if provided, otherwise assume
-        # binary variables.
-        super().__init__(settings)
-        self.settings.setdefault('lag_mi', int(0))
+        acf = self._autocorrelation(self.target, delay)
+        
+        if delay == 0:
+            return 1.0
+        
+        # Normalize: we want delay where autocorrelation is "just right"
+        # Too small: high correlation (red)
+        # Too large: no correlation (noise)
+        # Optimal: correlation around 0.3-0.5
+        
+        acf_val = acf[delay]
+        
+        # RAGWITZ-like criterion: minimize prediction error
+        # For Gaussian: use autocorrelation decay
+        criterion = (acf_val - 1/np.e) ** 2
+        
+        return criterion
+    
+    def _ragwitz_criterion_te(self, delay):
+        """
+        Direct RAGWITZ optimization using transfer entropy.
+        
+        Optimal delay maximizes transfer entropy (information flow).
+        """
+        if delay <= 0 or delay >= self.n // 3:
+            return -1e10  # Invalid delay
+        
         try:
-            n_discrete_bins = int(self.settings['n_discrete_bins'])
-            self.settings['alph1'] = n_discrete_bins
-            self.settings['alph2'] = n_discrete_bins
-        except KeyError:
-            pass  # Do nothing and use the default for alph_* set below
-        self.settings.setdefault('alph1', int(2))
-        self.settings.setdefault('alph2', int(2))
-
+            te = self.te_estimator.compute_transfer_entropy(
+                self.source, self.target, delay, k=2, l=2
+            )
+            # Maximize TE, so minimize negative TE
+            return -te
+        except Exception as e:
+            return 1e10
+    
+    def optimize_delay_autocorr(self, method='first_1e'):
+        """
+        Optimize delay using autocorrelation-based RAGWITZ criterion.
         
-
-    def estimate(self, var1, var2):
-        """Estimate mutual information.
-
-        Args:
-            var1 : numpy array
-                realisations of first variable, either a 2D numpy array where
-                array dimensions represent [realisations x variable dimension]
-                or a 1D array representing [realisations], array type can be
-                float (requires discretisation) or int
-            var2 : numpy array
-                realisations of the second variable (similar to var1)
-            return_calc : boolean
-                return the calculator used here as well as the numeric
-                calculated value(s)
-
+        Parameters:
+        -----------
+        method : str, 'first_1e' (first crossing of 1/e) or 'minimum' (first minimum)
+        
         Returns:
-            float | numpy array
-                average MI over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local MI for individual
-                samples if 'local_values'=True
+        --------
+        optimal_delay : int
+        acf : array, autocorrelation function
         """
-        # Check and remember the no. dimensions for each variable before
-        # collapsing them into univariate arrays later.
-        var1 = self._ensure_two_dim_input(var1)
-        var2 = self._ensure_two_dim_input(var2)
-        var1_dim = var1.shape[1]
-        var2_dim = var2.shape[1]
-
-        # Discretise variables if requested.
-        var1, var2 = self._discretise_vars(var1, var2)
-
-        # Then collapse any multivariates into univariate arrays:
-        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
-        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
-
-        # Initialise estimator
-        #base_for_var1 = int(np.power(self.settings['alph1'], var1_dim))
-        #base_for_var2 = int(np.power(self.settings['alph2'], var2_dim))
-
-
-        # Count joint and marginal frequencies
-        joint_counts = Counter(zip(var1, var2))
-        var1_counts = Counter(var1)
-        var2_counts = Counter(var2)
-        n = len(var1)
+        acf = self._autocorrelation(self.target, self.max_delay)
         
-        # Calculate mutual information: I(X;Y) = Σ p(x,y) * log(p(x,y) / (p(x) * p(y)))
-        mi = 0.0
-        for (xi, yi), count in joint_counts.items():
-            p_xy = count / n
-            p_x = var1_counts[xi] / n
-            p_y = var1_counts[yi] / n
+        if method == 'first_1e':
+            # Find first lag where acf < 1/e
+            threshold = 1/np.e
+            for lag in range(1, len(acf)):
+                if acf[lag] < threshold:
+                    return lag, acf
             
-            if p_xy > 0 and p_x > 0 and p_y > 0:
-                mi += p_xy * math.log2(p_xy / (p_x * p_y))
+            # If not found, return lag where acf is closest to 1/e
+            closest_idx = np.argmin(np.abs(acf[1:] - threshold)) + 1
+            return closest_idx, acf
         
-        return mi
-
-
-    def compute_joint_probs(data, indices):
+        elif method == 'minimum':
+            # Find first local minimum after lag 1
+            for lag in range(2, len(acf)):
+                if acf[lag] < acf[lag-1] and acf[lag] < acf[lag+1]:
+                    return lag, acf
+            
+            # Return lag with minimum acf (excluding lag 0)
+            return np.argmin(acf[1:]) + 1, acf
+        
+        else:
+            raise ValueError(f"Unknown method: {method}")
+    
+    def optimize_delay_te(self, bounds=(1, 1)):
         """
-        Compute joint probability distribution over the variables at given indices.
-
-        data: list of tuples (samples), each tuple is a multivariate discrete sample.
-        indices: tuple of ints, the variable indices to consider.
-
-        Returns: Counter of joint outcomes -> probability.
+        Optimize delay by maximizing transfer entropy directly.
+        This is the most accurate but computationally expensive method.
+        
+        Returns:
+        --------
+        optimal_delay : int
+        te_values : array, transfer entropy for each delay
         """
-        # collect joint values for the given indices
-        joint_vals = tuple(
-            tuple(sample[i] for i in indices) for sample in data
-        )
-        counts = Counter(joint_vals)
-        n = len(data)
-        probs = {vals: float(c) / n for vals, c in counts.items()}
-        return probs
+        delays = np.arange(bounds[0], bounds[1] + 1)
+        te_values = np.zeros(len(delays))
+        
+        for i, delay in enumerate(delays):
+            te = self.te_estimator.compute_transfer_entropy(
+                self.source, self.target, delay, k=2, l=2
+            )
+            te_values[i] = te
+        
+        optimal_idx = np.argmax(te_values)
+        optimal_delay = delays[optimal_idx]
+        
+        return optimal_delay, te_values
+    
+    def optimize_delay_ragwitz_combined(self):
+        """
+        Combined approach: use autocorrelation for initial guess,
+        then refine using transfer entropy.
+        """
+        # Step 1: Autocorrelation-based estimate
+        delay_autocorr, acf = self.optimize_delay_autocorr(method='first_1e')
+        
+        # Step 2: Refine around this estimate using TE
+        search_range = max(3, delay_autocorr // 2)
+        bounds = (max(1, delay_autocorr - search_range), 
+                  min(self.max_delay, delay_autocorr + search_range))
+        
+        optimal_delay, te_values = self.optimize_delay_te(bounds=bounds)
+        
+        return optimal_delay, delay_autocorr, te_values
 
 
 
@@ -2048,11 +3985,8 @@ class PythonDiscreteMI(PythonDiscrete):
 
 
 
-# spectral estimator ?????????????????????????????????????????? TODO
 
-
-
-
+############################################################################# TODO
 
 def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
     """Estimate the surrogate distribution analytically for PythonEstimator.
