@@ -132,7 +132,7 @@ class PythonEstimator(Estimator):
 
         return x
 
-    ##################################################################### TODO move ???????
+    ##################################################################### TODO remove or move ???????
     def computeBiasToRemove(self, var=1, lastAverage=None):
 
         self.TEopt_varToReorder = var
@@ -160,79 +160,7 @@ class PythonEstimator(Estimator):
         return meanOfDist
 
 
-    def opt_te_source_delay(self, estimator, source, target_past, target_current, startFirstPoint, numSurrogates=0):
-        """detect best history_source and tau_source"""
-        bestTE = -np.inf
-        sh = 1
-        st = 1
-        self.TEopt_estimator = estimator
-        self.TEopt_var1 = source
-        self.TEopt_var2 = target_past
-        self.TEopt_conditional = target_current
-        self.TEopt_permorder = numSurrogates
-        
-        for h in range(1, self.settings['history_source']+1):
-            for t in range(1, self.settings['tau_source']+1):
-                
-                s_p = self.makeDelayEmbeddingVector(source, 
-                    h, 
-                    t,
-                    startFirstPoint + 1 - self.settings['source_target_delay'],
-                    source.shape[0] - startFirstPoint - 1)
-
-                
-                #ote = self.calculateAverageTE(s_p, target_past, target_current)
-                ote = estimator.calculateAverageCMI(s_p, target_current, target_past)
-                
-                self.TEopt_var1 = s_p
-        
-                ######################################################### TODO bia correction
-                #ote -= self.computeBiasToRemove(1, ote)
-
-                if ote > bestTE:
-                    bestTE = ote
-                    sh = h
-                    st = t
-
-        del self.TEopt_estimator
-        del self.TEopt_var1
-        del self.TEopt_var2
-        del self.TEopt_conditional
-        del self.TEopt_permorder
-        
-        return sh, st
-
-    ##################################################################### TODO remove ???
-    def opt_ais_source_delay(self, est, process, current, startFirstPoint, numSurrogates=0):
-        bestAIS = -np.inf
-        sh = 1
-        st = 1
-        for h in range(1, self.settings['history']+1):
-            for t in range(1, self.settings['tau']+1):
-                
-                s_p = self.makeDelayEmbeddingVector(process, 
-                    h, 
-                    t,
-                    startFirstPoint,
-                    process.shape[0] - startFirstPoint - 1)
-
-                #min_len = min(len(s_p), len(current))
-
-                oais = est.calculateAverageMI(s_p, current)
-
-                ######################################################### TODO bias correction
-                #self.TEopt_permorder = numSurrogates
-                #oais -= self.computeBiasToRemove()
-                
-                if oais > bestAIS:
-                    bestAIS = oais
-                    sh = h
-                    st = t
-
-        return sh, st
-    
-    
-    #################################################################################################### TODO
+    ################################################################ TODO e.g. kraskov and theiler str to int
 
     def _set_te_defaults(self, settings):
         """Set defaults for transfer entropy estimation."""
@@ -245,8 +173,7 @@ class PythonEstimator(Estimator):
         settings.setdefault('tau_target', 1)
         settings.setdefault('tau_source', 1)
         settings.setdefault('source_target_delay', 1)
-        settings.setdefault('opt_source_hist_tau', False)
-
+        
         assert type(settings['tau_target']) is int, (
             'Target tau has to be an integer.')
         assert type(settings['tau_source']) is int, (
@@ -271,8 +198,7 @@ class PythonEstimator(Estimator):
 
         settings.setdefault('history_conditional', settings['history_target'])
         settings.setdefault('conditional_target_delay', 1)
-        settings.setdefault('opt_source_hist_tau', False)
-
+        
         assert type(settings['history_conditional']) is int, (
             'Conditional history has to be an integer.')
         assert type(settings['tau_conditional']) is int, (
@@ -719,8 +645,6 @@ class PythonKraskovCMI(PythonKraskov):
         return (np.mean(vals) / np.log(base))
 
 
-
-
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
         conditional.
@@ -924,10 +848,6 @@ class PythonKraskovTE(PythonKraskov):
             - theiler_t : int [optional] - no. next temporal neighbours ignored
               in KNN and range searches (default=0)
 
-            ###################################################################### TODO for all TE and AIS
-            - opt_source_hist_tau: bool [optional] - optimize history_source
-              and tau_source (default=False)
-            
             ###################################################################### TODO 
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
@@ -1033,37 +953,7 @@ class PythonKraskovTE(PythonKraskov):
             startFirstPoint + 1,
             target.shape[0] - startFirstPoint - 1)
         
-        # source hist and tau optimization
-        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
-            est=PythonKraskovCMI({})
-            sh, st = self.opt_te_source_delay(est, source, target_past, target_current, startFirstPoint)
-                
-            startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
-                    self.settings['history_target'],
-                    self.settings['tau_target'],
-                    sh,
-                    st,
-                    self.settings['source_target_delay'],
-                    )
-            
-            target_past = self.makeDelayEmbeddingVector(target, 
-                self.settings['history_target'], 
-                self.settings['tau_target'], 
-                startFirstPoint, 
-                target.shape[0] - startFirstPoint - 1)
-            target_current = self.makeDelayEmbeddingVectorCurrent(target,
-                1,
-                startFirstPoint + 1,
-                target.shape[0] - startFirstPoint - 1)
-       
-            source_past = self.makeDelayEmbeddingVector(source,
-                sh,
-                st,
-                startFirstPoint + 1 - self.settings['source_target_delay'],
-                source.shape[0] - startFirstPoint - 1)
-
-        else:
-            source_past = self.makeDelayEmbeddingVector(source,
+        source_past = self.makeDelayEmbeddingVector(source,
             self.settings['history_source'],
             self.settings['tau_source'],
             startFirstPoint + 1 - self.settings['source_target_delay'],
@@ -1704,8 +1594,6 @@ class PythonGaussianAIS(PythonGaussian):
 
         process = self._ensure_one_dim_input(process)
 
-        
-
         startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
 
         process_current = self.makeDelayEmbeddingVectorCurrent(process,
@@ -1762,10 +1650,6 @@ class PythonGaussianTE(PythonGaussian):
               (default=1)
             - source_target_delay : int [optional] - information transfer delay
               between source and target (default=1)
-            - opt_source_hist_tau: bool [optional] - optimize history_source
-              and tau_source (default=False)
-            
-
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
 
@@ -1862,29 +1746,7 @@ class PythonGaussianTE(PythonGaussian):
             startFirstPoint + 1,
             target.shape[0] - startFirstPoint - 1)
         
-
-        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
-            est=PythonGaussianCMI({})
-            sh, st = self.opt_te_source_delay(est, source, target_past, target_current, startFirstPoint)
-            
-            target_past = self.makeDelayEmbeddingVector(target, 
-                self.settings['history_target'], 
-                self.settings['tau_target'], 
-                startFirstPoint, 
-                target.shape[0] - startFirstPoint - 1)
-            target_current = self.makeDelayEmbeddingVectorCurrent(target,
-                1,
-                startFirstPoint + 1,
-                target.shape[0] - startFirstPoint - 1)
-       
-            source_past = self.makeDelayEmbeddingVector(source,
-                sh,
-                st,
-                startFirstPoint + 1 - self.settings['source_target_delay'],
-                source.shape[0] - startFirstPoint - 1)
-
-        else:
-            source_past = self.makeDelayEmbeddingVector(source,
+        source_past = self.makeDelayEmbeddingVector(source,
             self.settings['history_source'],
             self.settings['tau_source'],
             startFirstPoint + 1 - self.settings['source_target_delay'],
@@ -3155,11 +3017,6 @@ class PythonDiscreteTE(PythonDiscrete):
               (default=1). (>= 1)
             - source_target_delay : int [optional] - information transfer delay
               between source and target (default=1) (>= 0)
-            
-            #################################################################### TODO
-            - opt_source_hist_tau: bool [optional] - optimize history_source
-              and tau_source (default=False)
-            
             - discretise_method : str [optional] - if and how to discretise
               incoming continuous data, can be 'max_ent' for maximum entropy
               binning, 'equal' for equal size bins, and 'none' if no binning is
@@ -3238,58 +3095,6 @@ class PythonDiscreteTE(PythonDiscrete):
         return counts_xyz, counts_xy, counts_yyf, counts_y
 
 
-    def opt_te_source_delay_discrete(self, estimator, source, target_past, target_current, startFirstPoint, numSurrogates=0):
-        """detect best history_source and tau_source"""
-        bestTE = -np.inf
-        sh = 1
-        st = 1
-        #self.TEopt_estimator = estimator
-        #self.TEopt_var1 = source
-        #self.TEopt_var2 = target_past
-        #self.TEopt_conditional = target_current
-        #self.TEopt_permorder = numSurrogates
-         
-        
-        #target_past = utils.combine_discrete_dimensions(target_past, self.settings['alph2'])
-        #target_past = self._ensure_one_dim_input(target_past)
-        #target_current = self._ensure_one_dim_input(target_current)
-
-        for h in range(1, self.settings['history_source']+1):
-            for t in range(1, self.settings['tau_source']+1):
-                
-                s_p = self.makeDelayEmbeddingVector(source, 
-                    h, 
-                    t,
-                    startFirstPoint + 1 - self.settings['source_target_delay'],
-                    source.shape[0] - startFirstPoint - 1)
-
-                s_p = self.combine_embedding_dimensions(s_p, self.settings['alph1'])
-                
-                #s_p = utils.combine_discrete_dimensions(s_p, self.settings['alph1'])
-                #s_p = self._ensure_one_dim_input(s_p)
-        
-                #ote = self.calculateAverageTE(s_p, target_past, target_current)
-                #ote = PythonDiscreteCMI.calculateAverageCMI(self, s_p, target_current, target_past)
-                ote = estimator.estimate( s_p, target_current, target_past)
-                
-                #self.TEopt_var1 = s_p
-        
-                ######################################################### TODO bia correction
-                #ote -= self.computeBiasToRemove(1, ote)
-
-                if ote > bestTE:
-                    bestTE = ote
-                    sh = h
-                    st = t
-
-        #del self.TEopt_estimator
-        #del self.TEopt_var1
-        #del self.TEopt_var2
-        #del self.TEopt_conditional
-        #del self.TEopt_permorder
-        
-        return sh, st
-
 
     def calculateAverageTE(self, source, target, target_future):
         """Calculate average transfer entropy for discrete data"""
@@ -3307,6 +3112,7 @@ class PythonDiscreteTE(PythonDiscrete):
         
         return te if te >= 0 else 0.0
         
+
 
 
     def calculatelocalTE(self, source, target, target_future):
@@ -3377,43 +3183,11 @@ class PythonDiscreteTE(PythonDiscrete):
         target_current = target_current.astype(int)
 
 
-        if self.settings['opt_source_hist_tau'] and (self.settings['history_source'] > 1 or self.settings['tau_source'] > 1):
-            est_setting = self.settings
-            est_setting['local_values'] = False
-            print(est_setting)
-            print(self.settings)
-            est=PythonDiscreteCMI(est_setting)
-            sh, st = self.opt_te_source_delay_discrete(est, source, target_past, target_current, startFirstPoint)
-            """
-            target_past = self.makeDelayEmbeddingVector(target, 
-                self.settings['history_target'], 
-                self.settings['tau_target'], 
-                startFirstPoint, 
-                target.shape[0] - startFirstPoint - 1)
-            target_past = self.combine_embedding_dimensions(target_past, self.settings['alph2'])
-        
-            target_current = self.makeDelayEmbeddingVectorCurrent(target,
-                1,
-                startFirstPoint + 1,
-                target.shape[0] - startFirstPoint - 1)
-            target_current = self._ensure_one_dim_input(target_current)
-            target_current = target_current.astype(int)
-            """
-            source_past = self.makeDelayEmbeddingVector(source,
-                sh,
-                st,
-                startFirstPoint + 1 - self.settings['source_target_delay'],
-                source.shape[0] - startFirstPoint - 1)
-        
-            print("opt: ", sh, st)
-            
-        else:
-        
-            source_past = self.makeDelayEmbeddingVector(source,
-                self.settings['history_source'],
-                self.settings['tau_source'],
-                startFirstPoint + 1 - self.settings['source_target_delay'],
-                source.shape[0] - startFirstPoint - 1)
+        source_past = self.makeDelayEmbeddingVector(source,
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            startFirstPoint + 1 - self.settings['source_target_delay'],
+            source.shape[0] - startFirstPoint - 1)
                 
         source_past = self.combine_embedding_dimensions(source_past, self.settings['alph1'])
         #target_current = self.combine_embedding_dimensions(target_current, self.settings['alph2'])
