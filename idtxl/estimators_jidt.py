@@ -552,6 +552,116 @@ class JidtKraskovTE(JidtKraskov):
             return float(self.calc.computeAverageLocalOfObservations())
 
 
+class JidtKraskovCTE(JidtKraskov):
+    """Calculate conditional transfer entropy with JIDT's Kraskov implementation.
+
+    Computes the differential conditional transfer entropy (TE) between two univariate
+    sets of observations, conditioned on another
+
+    See parent class for references. Results are returned in nats.
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+            
+            - history_target : int - number of samples in the target's past
+              used as embedding
+            - history_source  : int [optional] - number of samples in the
+              source's past used as embedding (default=same as the target
+            - history_conditional  : int [optional] - number of samples in the
+              codnitional's past used as embedding (default=same as the target
+              history)
+            - tau_source : int [optional] - source's embedding delay
+              (default=1)
+            - tau_target : int [optional] - target's embedding delay
+              (default=1)
+            - tau_conditdional : int [optional] - conditional's embedding delay
+              (default=1)
+            - source_target_delay : int [optional] - information transfer delay
+              between source and target (default=1)
+            - conditional_target_delay : int [optional] - information transfer delay
+              between conditional and target (default=1)
+            - debug : bool [optional] - return debug information when calling
+              JIDT (default=False)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+
+    Note:
+        Some technical details: JIDT normalises over realisations, IDTxl
+        normalises over raw data once, outside the CMI estimator to save
+        computation time. The Theiler window ignores trial boundaries. The
+        CMI estimator does add noise to the data as a default. To make analysis
+        runs replicable set noise_level to 0.
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Start JAVA virtual machine and create JAVA object.
+        self._start_jvm()
+        CalcClass = (jp.JPackage('infodynamics.measures.continuous.kraskov').
+                     ConditionalTransferEntropyCalculatorKraskov)
+
+        settings = self._set_te_defaults(settings)
+        settings.setdefault('history_conditional', settings['history_target'] )
+        settings.setdefault('tau_conditional', 1)
+        settings.setdefault('conditional_target_delay', 1)
+        assert type(settings['tau_conditional']) is int, (
+            'Conditional tau has to be an integer.')
+        assert type(settings['history_conditional']) is int, (
+            'Conditional history has to be an integer.')
+        assert settings['tau_conditional'] >= 1, 'Conditional tau must be >= 1'
+        assert settings['history_conditional'] >= 1, 'Conditional history must be >= 1'
+        assert settings['conditional_target_delay'] >= 0, (
+            'Conditional-target delay must be >= 0')
+        
+        super().__init__(CalcClass, settings)
+        self.est_mi = None
+
+    def estimate(self, source, target, conditional):
+        """Estimate conditional transfer entropy.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2
+
+        Returns:
+            float | numpy array
+                average CMI over all samples or local CMI for individual
+                samples if 'local_values'=True
+        """
+        
+
+        source = self._ensure_one_dim_input(source)
+        target = self._ensure_one_dim_input(target)
+        cond = self._ensure_one_dim_input(conditional)
+
+        assert(source.shape[0] == target.shape[0] == cond.shape[0]), (
+            'Unequal number of observations (source: {0}, target: {1}), cond: {2}.'.format(
+                var1.shape[0], var2.shape[0], cond.shape[0]))
+        
+        self.calc.initialise(self.settings['history_target'],
+                             self.settings['tau_target'],
+                             self.settings['history_source'],
+                             self.settings['tau_source'],
+                             self.settings['history_conditional'],
+                             self.settings['source_target_delay'],
+                             self.settings['tau_conditional'],
+                             self.settings['conditional_target_delay'])
+        self.calc.setObservations(source, target, cond)
+        if self.settings['local_values']:
+            return np.array(self.calc.computeLocalOfPreviousObservations())
+        else:
+            return float(self.calc.computeAverageLocalOfObservations())
+
+
+
 ###############################
 # Gaussian estimators
 ###############################
@@ -949,17 +1059,6 @@ class JidtGaussianTE(JidtGaussian):
         # Get embedding and delay parameters.
         settings = self._set_te_defaults(settings)
 
-        settings.setdefault('history_conditional', self.settings['history_target'] )
-        settings.setdefault('tau_conditional', 1)
-        settings.setdefault('conditional_target_delay', 1)
-        assert type(settings['tau_conditional']) is int, (
-            'Conditional tau has to be an integer.')
-        assert type(settings['history_conditional']) is int, (
-            'Conditional history has to be an integer.')
-        assert settings['tau_conditional'] >= 1, 'Conditional tau must be >= 1'
-        assert settings['history_conditional'] >= 1, 'Conditional history must be >= 1'
-        assert settings['conditional_target_delay'] >= 0, (
-            'Conditional-target delay must be >= 0')
         
         super().__init__(CalcClass, settings)
 
@@ -1046,6 +1145,20 @@ class JidtGaussianCTE(JidtGaussian):
         self._start_jvm()
         CalcClass = (jp.JPackage('infodynamics.measures.continuous.gaussian').
                      ConditionalTransferEntropyCalculatorGaussian)
+        
+        settings = self._set_te_defaults(settings)
+        settings.setdefault('history_conditional', settings['history_target'] )
+        settings.setdefault('tau_conditional', 1)
+        settings.setdefault('conditional_target_delay', 1)
+        assert type(settings['tau_conditional']) is int, (
+            'Conditional tau has to be an integer.')
+        assert type(settings['history_conditional']) is int, (
+            'Conditional history has to be an integer.')
+        assert settings['tau_conditional'] >= 1, 'Conditional tau must be >= 1'
+        assert settings['history_conditional'] >= 1, 'Conditional history must be >= 1'
+        assert settings['conditional_target_delay'] >= 0, (
+            'Conditional-target delay must be >= 0')
+        
         super().__init__(CalcClass, settings)
         self.est_mi = None
 
