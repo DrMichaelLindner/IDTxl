@@ -34,27 +34,32 @@ class ScipyKDTreeKnnFinder(TreeKnnFinder):
             workers=self._num_threads,
         )
 
-    def count_neighbors_theiler(self, x: np.ndarray, r: float, theiler) -> np.ndarray:
-        counts = np.empty(len(x), dtype=int)
-        #### round eps slightly smaller to mimic "strictly within" behavior
-        ###eps_shrunk = r - 1e-12 if r > 0 else eps
-        for i, p in enumerate(x):
-            neighbors = self._tree.query_ball_point(p, r)
-            if  theiler <= 0:
-                # exclude self if present
-                cnt = len(neighbors) - (1 if i in neighbors else 0)
-            else:
-                # exclude indices j with |i-j| <= theiler, and exclude self
-                cnt = 0
-                low = i - theiler
-                high = i + theiler
-                for j in neighbors:
-                    if j < low or j > high:
-                        if j != i:
-                            cnt += 1
-            counts[i] = cnt
-        return counts
+    def find_neighbors_theiler(self, x: np.ndarray, k: int, theiler_t) -> np.ndarray:
+        
+        epsilon = np.zeros(len(x))
+        for i in range(len(x)):
+            dists, idxs  = self._tree.query(x[i], k=k+20, p=np.inf, workers=self._num_threads)
 
+            dists = np.atleast_1d(dists)
+            idxs = np.atleast_1d(idxs)
+
+            valid_dists = []
+            for d, j in zip(dists, idxs):
+                if j == i:
+                    continue
+                if abs(i - j) < theiler_t:
+                    continue
+                valid_dists.append(d)
+                if len(valid_dists) == k:
+                    break
+
+            if len(valid_dists) < k:
+                # fallback: could re-query with larger k or adapt radius here
+                raise RuntimeError("Not enough neighbors outside Theiler window")
+
+            epsilon[i] = valid_dists[-1]  # distance to k-th valid neighbor
+
+        return epsilon
 
 
 class ScipycKDTreeKnnFinder(TreeKnnFinder):
@@ -86,26 +91,30 @@ class ScipycKDTreeKnnFinder(TreeKnnFinder):
             return_length=True,
             workers=self._num_threads,
         )
-    """    
-    def count_neighbors_theiler(self, x: np.ndarray, r: float, theiler) -> np.ndarray:
-        counts = np.empty(len(x), dtype=int)
-        #### round eps slightly smaller to mimic "strictly within" behavior
-        ###eps_shrunk = r - 1e-12 if r > 0 else eps
-        for i, p in enumerate(x):
-            neighbors = self._tree.query_ball_point(p=p, r=r)
-            if  theiler <= 0:
-                # exclude self if present
-                cnt = len(neighbors) - (1 if i in neighbors else 0)
-            else:
-                # exclude indices j with |i-j| <= theiler, and exclude self
-                cnt = 0
-                low = i - theiler
-                high = i + theiler
-                for j in neighbors:
-                    if j < low or j > high:
-                        if j != i:
-                            cnt += 1
-            counts[i] = cnt
-        return counts
-    """
     
+    def find_neighbors_theiler(self, x: np.ndarray, k: int, theiler_t) -> np.ndarray:
+        
+        epsilon = np.zeros(len(x))
+        for i in range(len(x)):
+            dists, idxs  = self._tree.query(x[i], k=k+20, p=np.inf, workers=self._num_threads)
+
+            dists = np.atleast_1d(dists)
+            idxs = np.atleast_1d(idxs)
+
+            valid_dists = []
+            for d, j in zip(dists, idxs):
+                if j == i:
+                    continue
+                if abs(i - j) < theiler_t:
+                    continue
+                valid_dists.append(d)
+                if len(valid_dists) == k:
+                    break
+
+            if len(valid_dists) < k:
+                # fallback: could re-query with larger k or adapt radius here
+                raise RuntimeError("Not enough neighbors outside Theiler window")
+
+            epsilon[i] = valid_dists[-1]  # distance to k-th valid neighbor
+
+        return epsilon

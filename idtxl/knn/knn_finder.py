@@ -83,6 +83,34 @@ class KnnFinder:
         """
         return self.find_neighbors(x, k)[0][:, k - 1]
     
+    def find_all_dists_to_kth_neighbor_theiler(self, k: int, theiler_t: int) -> np.ndarray: 
+        """Find the distance to the kth nearest neighbor for each point in the data.
+        Does not include the point itself.
+
+        Args:
+            k (int): The kth nearest neighbor to find.
+            
+        Returns:
+            np.ndarray: The distance to the kth neighbor for each point in the data.
+        """
+        return self.find_dist_to_kth_neighbor_theiler(self._data, k , theiler_t)
+    
+    def find_dist_to_kth_neighbor_theiler(self, x: np.ndarray, k: int, theiler_t: int) -> np.ndarray:
+        """Find the distance to the kth nearest neighbor for each point in x.
+
+        May include x itself if it is in the data.
+
+        Default implementation uses find_neighbors and returns the distance to
+        the kth neighbor.
+
+        Args:
+            x : np.ndarray
+                The points to find the kth nearest neighbor for.
+            k : int
+                The kth nearest neighbor to find.
+        """
+        return self.find_neighbors_theiler(self._data, k, theiler_t)
+    
     def count_all_neighbors(self, r: float) -> np.ndarray:
         """Count the number of neighbors strictly within (<) a given radius for each point in the data.
         Does not include the point itself.
@@ -96,20 +124,21 @@ class KnnFinder:
         return self.count_neighbors(self._data, r) - 1
     
     
-    #def count_all_neighbors_theiler(self, r: float, theiler: int) -> np.ndarray:
-    #    """Count the number of neighbors strictly within (<) a given radius for each point in the data.
-    #    Does not include the point itself.
+    def count_all_neighbors_theiler(self, r: int, theiler_t) -> np.ndarray:
+        """Count the number of neighbors strictly within (<) a given radius for each point in the data.
+        Does not include the point itself.
 
-    #    Args:
-    #        r (float): The radius to count neighbors within.
-    #        theiler (int): no. next temporal neighbours ignored in range searches 
+        Args:
+            r (float): The radius to count neighbors within.
+            theiler (int): no. next temporal neighbours ignored in range searches 
             
-    #    Returns:
-    #        np.ndarray: The number of neighbors within the given radius for each point in the data.
-    #    """
-    #    # Use tree.query_ball_point to get neighbors within eps, then count excluding Theiler window and self.
+        Returns:
+            np.ndarray: The number of neighbors within the given radius for each point in the data.
+        """
+        # Use tree.query_ball_point to get neighbors within eps, then count excluding Theiler window and self.
         
-    #    return self.count_neighbors_theiler(self._data, r, theiler) - 1
+        return self.count_neighbors_theiler(self._data, r, theiler_t) - 1
+        #return self.count_neighbors_theiler2(var1, var2, k, theiler)
     
     
     def count_neighbors_within(self, x: np.ndarray, r: float) -> np.ndarray:
