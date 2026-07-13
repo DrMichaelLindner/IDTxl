@@ -619,7 +619,6 @@ class JidtKraskovCTE(JidtKraskov):
 
     def estimate(self, source, target, conditional):
         """Estimate conditional transfer entropy.
-
         Args:
             var1 : numpy array
                 realisations of first variable, either a 2D numpy array where
@@ -636,8 +635,7 @@ class JidtKraskovCTE(JidtKraskov):
                 average CMI over all samples or local CMI for individual
                 samples if 'local_values'=True
         """
-        
-
+      
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
         cond = self._ensure_one_dim_input(conditional)
@@ -650,8 +648,8 @@ class JidtKraskovCTE(JidtKraskov):
                              self.settings['tau_target'],
                              self.settings['history_source'],
                              self.settings['tau_source'],
-                             self.settings['history_conditional'],
                              self.settings['source_target_delay'],
+                             self.settings['history_conditional'],
                              self.settings['tau_conditional'],
                              self.settings['conditional_target_delay'])
         self.calc.setObservations(source, target, cond)
@@ -1145,7 +1143,7 @@ class JidtGaussianCTE(JidtGaussian):
         self._start_jvm()
         CalcClass = (jp.JPackage('infodynamics.measures.continuous.gaussian').
                      ConditionalTransferEntropyCalculatorGaussian)
-        
+
         settings = self._set_te_defaults(settings)
         settings.setdefault('history_conditional', settings['history_target'] )
         settings.setdefault('tau_conditional', 1)
@@ -1182,7 +1180,6 @@ class JidtGaussianCTE(JidtGaussian):
                 samples if 'local_values'=True
         """
         
-
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
         cond = self._ensure_one_dim_input(conditional)
@@ -1195,8 +1192,8 @@ class JidtGaussianCTE(JidtGaussian):
                              self.settings['tau_target'],
                              self.settings['history_source'],
                              self.settings['tau_source'],
-                             self.settings['history_conditional'],
                              self.settings['source_target_delay'],
+                             self.settings['history_conditional'],
                              self.settings['tau_conditional'],
                              self.settings['conditional_target_delay'])
         self.calc.setObservations(source, target, cond)
@@ -1447,6 +1444,7 @@ class JidtDiscreteMI(JidtDiscrete):
             ex.JidtOutOfMemoryError
                 Raised when JIDT object cannot be instantiated due to mem error
         """
+        
         # Check and remember the no. dimensions for each variable before
         # collapsing them into univariate arrays later.
         var1 = self._ensure_two_dim_input(var1)
