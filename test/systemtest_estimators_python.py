@@ -17,7 +17,7 @@ from idtxl.estimators_python import (PythonKraskovMI, PythonKraskovCMI, PythonKr
 
 from idtxl.idtxl_utils import calculate_mi
 import random as rn
-
+import itertools
 from gen_testdata import _get_gauss_data, _get_ar_data, _generate_mute_data, _get_mem_binary_data, _get_freq_data, _get_cte_test_data
 
 
@@ -47,21 +47,1469 @@ def verbose(res_jidt, res_python, values, est, rtol=1e-04, atol=1e-04, local=Fal
 				try:
 					print(f"{values} - {num}/{res_jidt.shape[0]} of{addstring} {est} results are not within tolerance (atol = {atol:.0e}) !!!!!!")
 				except:
-					print(f"{values} - {est} result is not within tolerance (atol = {atol:.0e}) !!!!!!")
+					print(f"{values} - {res_jidt} - {res_python} {est} result is not within tolerance (atol = {atol:.0e}) !!!!!!")
 
 	else:
+		rtol = atol
 		if np.allclose(res_jidt, res_python, rtol=rtol, atol=atol):
 
 			print(f"{values} - all{addstring} {est} results within tolerance (atol = {str(atol)}) +++")
 		else:
 			diff = abs(res_jidt - res_python)
-			num = (diff>1e-03).sum()	
-			print(f"{values} - {num}/{res_jidt.shape[0]} of{addstring} {est} results are not within tolerance (atol = {str(atol)}) !!!!!!")
+			num = (diff>1e-03).sum()
+			try: 	
+				print(f"{values} - {num}/{res_jidt.shape[0]} of{addstring} {est} results are not within tolerance (atol = {str(atol)}) !!!!!!")
+			except:
+				print(f"{values} - {res_jidt} - {res_python} {est} result is not within tolerance (atol = {str(atol)}) !!!!!!")
 
 def testhead(est):
 	print("\n#######################################################################")
 	print(f"\n            Compare {est}:\n")
 	print("#######################################################################")
+
+
+# Test Kraskov estimators
+def test_kraskov_mi():
+	
+	
+	# test 1D data
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
+
+	lvals = [0,1,2,3]
+	kvals = [2,4,6,8]
+
+	
+	
+	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lags_mi {lvals}\n")
+	
+	resj={}
+	resp={}
+	for a in [1,2]:
+	#for a in [2]:
+	
+		print(f"\nKSG-{a}\n")
+		time_jidt_cor = np.empty(np.power(len(kvals),2))
+		mi_jidt_cor = np.empty(np.power(len(kvals),2))
+		time_python_cor = np.empty(np.power(len(kvals),2))
+		mi_python_cor = np.empty(np.power(len(kvals),2))
+		time_jidt_uncor = np.empty(np.power(len(kvals),2))
+		mi_jidt_uncor = np.empty(np.power(len(kvals),2))
+		time_python_uncor = np.empty(np.power(len(kvals),2))
+		mi_python_uncor = np.empty(np.power(len(kvals),2))
+
+		conds = np.empty((np.power(len(kvals),2),2))
+
+		count = 0
+
+		for k in kvals:
+			for l in lvals:
+				conds[count,:] = [k, l]
+				
+				settings_j = {"kraskov_k": k,
+							"noise_level": 0,
+							"num_threads": "USE_ALL",
+							"lag_mi": l,
+							"algorithm_num": a}
+				settings_p = {"kraskov_k": k,
+							"noise_level": 0,
+							"knn_finder": "scipy_ckdtree",
+							"num_threads": "USE_ALL",
+							"lag_mi": l,
+							"algorithm_num": a}
+
+				jidt_estimator = JidtKraskovMI(settings_j)
+				python_estimator = PythonKraskovMI(settings_p)
+
+				itic = time.perf_counter()
+				mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_jidt_cor[count] = itoc - itic
+
+
+				itic = time.perf_counter()
+				mi_python_cor[count] = python_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+
+				itic = time.perf_counter()
+				mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_jidt_uncor[count] = itoc - itic
+
+
+				itic = time.perf_counter()
+				mi_python_uncor[count] = python_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				count += 1
+
+		resj[a] = mi_jidt_cor
+		resp[a] = mi_python_cor
+
+		atol = 1e-03
+		print(f"k,lag\tJidtKraskovMI\t\tPythonKraskovMI\t\tclose {atol}")
+		print("correlated")
+		for i in range(len(mi_python_cor)):
+			print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor[i], atol=atol)}")
+		print("uncorrelated")
+		for i in range(len(mi_python_uncor)):
+			print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}\t{np.isclose(mi_jidt_uncor[i], mi_python_uncor[i], atol=atol)}")
+
+		verbose(mi_jidt_cor, mi_python_cor, f"correlated data", "MI", local=False)
+		verbose(mi_jidt_uncor, mi_python_uncor, f"uncorrelated data", "MI", local=False)
+
+		
+		print("\nmean calculation times:")
+		print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
+		print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
+		print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
+		print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
+	
+	
+	"""
+	# test 2D data
+	data = _generate_mute_data(n_samples=2000, n_replications=4)
+
+	source1 = data[0,:,:]
+	target = data[2,:,:]
+	source2 = data[4,:,:]
+
+	time_jidt_cor = np.empty(np.power(len(kvals),2))
+	mi_jidt_cor = np.empty(np.power(len(kvals),2))
+	time_python_cor = np.empty(np.power(len(kvals),2))
+	mi_python_cor = np.empty(np.power(len(kvals),2))
+	time_jidt_uncor = np.empty(np.power(len(kvals),2))
+	mi_jidt_uncor = np.empty(np.power(len(kvals),2))
+	time_python_uncor = np.empty(np.power(len(kvals),2))
+	mi_python_uncor = np.empty(np.power(len(kvals),2))
+
+	conds = np.empty((np.power(len(kvals),2),2))
+
+	print(f"\n\nTesting average MI using 2D mute data testing settings kraskov k {kvals} and lag_mi {lvals}\n")
+	
+	count = 0
+
+	for k in kvals:
+		for l in lvals:
+			conds[count,:] = [k, l]
+		
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"num_threads": "USE_ALL",
+						"lag_mi": l}
+			settings_p = {"kraskov_k": k,
+						"noise_level": 0,
+						"knn_finder": "scipy_ckdtree",
+						"num_threads": "USE_ALL",
+						"lag_mi": l}
+
+			jidt_estimator = JidtKraskovMI(settings_j)
+			python_estimator = PythonKraskovMI(settings_p)
+
+			itic = time.perf_counter()
+			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+
+
+			itic = time.perf_counter()
+			mi_python_cor[count] = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
+
+
+			itic = time.perf_counter()
+			mi_python_uncor[count] = python_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+	print("k,lag\tJidtKraskovMI\t\tPythonKraskovMI")
+	print("correlated")
+	for i in range(len(mi_python_cor)):
+		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
+	print("uncorrelated")
+	for i in range(len(mi_python_uncor)):
+		print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
+
+	verbose(mi_jidt_cor, mi_python_cor, "correlated data", "MI", local=False)
+	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated data", "MI", local=False)
+
+	print("\nmean calculation times:")
+	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
+	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
+	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
+	
+	# test mixed dimension input
+	d = [1, 2, 3, 5]
+
+	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1 and var2 each")
+	print("Shapes:")
+	data = _generate_mute_data(n_replications=5)
+	source_o = data[0,:,:]
+	target_o = data[2,:,:]
+	
+	settings2 = {"kraskov_k": 4,
+				"noise_level": 0,
+				"normalise": False,
+				"num_threads": "USE_ALL",
+				"local_values": True,
+				"lag_mi": 2}
+	
+	for s in d:
+		for t in d:
+			
+			source1 = source_o[:,:s]
+			target = target_o[:,:t]
+			
+			cond = f"var1: {source1.shape}\tvar2: {target.shape}"
+
+			jidt_estimator = JidtKraskovMI(settings2)
+			python_estimator = PythonKraskovMI(settings2)
+		
+			itic = time.perf_counter()
+			mi_jidt_cor = jidt_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_jidt_cor = itoc - itic
+			
+			itic = time.perf_counter()
+			mi_python_cor = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor = itoc - itic
+
+			#print(mi_jidt_cor)
+			#print(mi_python_cor)
+			
+			verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
+	
+	
+	# test theiler 
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
+
+	tvals = [0,2,4,6]
+	
+	time_jidt_cor = np.empty(np.power(len(kvals),2))
+	mi_jidt_cor = np.empty(np.power(len(kvals),2))
+	time_python_cor1 = np.empty(np.power(len(kvals),2))
+	mi_python_cor1 = np.empty(np.power(len(kvals),2))
+	time_python_cor2 = np.empty(np.power(len(kvals),2))
+	mi_python_cor2 = np.empty(np.power(len(kvals),2))
+	
+	conds = np.empty((np.power(len(kvals),2),2))
+
+	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and theiler t {tvals}\nusing knn_finder scipy_ckdtree and scipy_kdtree\n")
+	
+	count = 0
+
+	knn = ['scipy_kdtree', 'scipy_ckdtree']
+
+	for k in kvals:
+		for t in tvals:
+			conds[count,:] = [k, t]
+		
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"num_threads": "USE_ALL",
+						'theiler_t': t}
+			settings_p1 = {"kraskov_k": k,
+						"noise_level": 0,
+						"knn_finder": "scipy_kdtree",
+						"num_threads": "USE_ALL",
+						"theiler_t": t}
+
+			settings_p2 = {"kraskov_k": k,
+						"noise_level": 0,
+						"knn_finder": "scipy_ckdtree",
+						"num_threads": "USE_ALL",
+						"theiler_t": t}
+
+			jidt_estimator = JidtKraskovMI(settings_j)
+			python_estimator1 = PythonKraskovMI(settings_p1)
+			python_estimator2 = PythonKraskovMI(settings_p2)
+
+			itic = time.perf_counter()
+			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor1[count] = python_estimator1.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor1[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor2[count] = python_estimator2.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor2[count] = itoc - itic
+
+			count += 1
+
+	print("k, t\tJidtKraskovMI\t\tPythonKraskovMI\t\tPythonKraskovMI\t\tclose 1e-03")
+	print("\t\t\t\tscipy_kdtree\t\tscipy_ckdtree")
+	for i in range(len(mi_python_cor1)):
+		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor1[i]}\t{mi_python_cor2[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor1[i], atol=1e-03)}\t{np.isclose(mi_jidt_cor[i], mi_python_cor2[i], atol=1e-03)}")
+	
+	verbose(mi_jidt_cor, mi_python_cor1, "scipy_kdtree", "MI", local=False)
+	verbose(mi_jidt_cor, mi_python_cor2, "scipy_ckdtree", "MI", local=False)
+	
+	print("\nmean calculation times:")
+	print(" JidtKraskovMI: ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovMI (scipy_kdtree): ", np.mean(time_python_cor1) )
+	print(" PythonKraskovMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
+"""	
+
+def test_kraskov_mi_local_values():
+
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+	
+	lvals = [0,1,2,3]
+	kvals = [2,4,6,8]
+
+	
+	print(f"\n\nTesting local MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lag_mi {lvals}\n")
+	
+	for a in [1,2]:
+		print(f"\nKSG-{a}")
+		time_jidt_cor = np.empty(np.power(len(kvals),2))
+		time_python_cor = np.empty(np.power(len(kvals),2))
+		time_jidt_uncor = np.empty(np.power(len(kvals),2))
+		time_python_uncor = np.empty(np.power(len(kvals),2))
+	
+		conds = np.empty((np.power(len(kvals),2),2))
+
+		print(f"k, lag\t\tJidtKraskovMI vs PythonKraskovMI")
+		count = 0
+		for k in kvals:
+			for l in lvals:
+				conds[count,:] = [k, l]
+				settings = {}
+				settings_j = {"kraskov_k": k,
+							"noise_level": 0,
+							"normalise": False,
+							"local_values": True,
+							"num_threads": "USE_ALL",
+							"lag_mi": l,
+							"algorithm_num": a}
+				settings_p = {"kraskov_k": k,
+							"noise_level": 0,
+							"normalise": False,
+							"knn_finder": "scipy_ckdtree",
+							"local_values": True,
+							"num_threads": "USE_ALL",
+							"lag_mi": l,
+							"algorithm_num": a}
+
+				jidt_estimator = JidtKraskovMI(settings_j)
+				python_estimator = PythonKraskovMI(settings_p)
+
+				itic = time.perf_counter()
+				mi_jidt_cor = jidt_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_jidt_cor[count] = itoc - itic
+
+				itic = time.perf_counter()
+				mi_python_cor = python_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+
+				verbose(mi_jidt_cor, mi_python_cor, f"{conds[count,:]} correlated", "MI", local=True)
+
+				itic = time.perf_counter()
+				mi_jidt_uncor = jidt_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_jidt_uncor[count] = itoc - itic
+
+				itic = time.perf_counter()
+				mi_python_uncor = python_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				verbose(mi_jidt_uncor, mi_python_uncor, f"{conds[count,:]} uncorrelated", "MI", local=True)
+				
+				print("jidt ",mi_jidt_cor[:10])
+				print("python ",mi_python_cor[:10])
+
+
+				count += 1
+
+		
+		print("\nmean calculation times:")
+		print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
+		print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
+		print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
+		print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
+
+	"""
+	# test 2D
+	print(f"\n\nTesting local MI using 2D mute data with and without coupling\n")
+	
+	data = _generate_mute_data(n_samples=2000, n_replications=4)
+
+	source1 = data[0,:,:]
+	target = data[2,:,:]
+	source2 = data[4,:,:]
+
+	time_jidt_cor = np.empty(np.power(len(kvals),2))
+	time_python_cor = np.empty(np.power(len(kvals),2))
+	time_jidt_uncor = np.empty(np.power(len(kvals),2))
+	time_python_uncor = np.empty(np.power(len(kvals),2))
+	
+	conds = np.empty((np.power(len(kvals),2),2))
+
+	print(f"\n\nTesting local MI using 2D mute data with and without coupling testing settings kraskov k {kvals} and lag_mi {lvals}\n")
+	
+	print(f"k, lag\t\tJidtKraskovMI vs PythonKraskovMI")
+	count = 0
+	for k in kvals:
+		for l in lvals:
+			conds[count,:] = [k, l]
+			settings = {}
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"local_values": True,
+						"num_threads": "USE_ALL",
+						"lag_mi": l}
+			settings_p = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"knn_finder": "scipy_ckdtree",
+						"local_values": True,
+						"num_threads": "USE_ALL",
+						"lag_mi": l}
+
+			jidt_estimator = JidtKraskovMI(settings_j)
+			python_estimator = PythonKraskovMI(settings_p)
+
+			itic = time.perf_counter()
+			mi_jidt_cor = jidt_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			verbose(mi_jidt_cor, mi_python_cor, f"{conds[count,:]} correlated", "MI", local=True)
+
+			itic = time.perf_counter()
+			mi_jidt_uncor = jidt_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_uncor = python_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			verbose(mi_jidt_uncor, mi_python_uncor, f"{conds[count,:]} uncorrelated", "MI", local=True)
+
+			count += 1
+
+	
+	print("\nmean calculation times:")
+	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
+	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
+	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
+
+
+	# test mixed dimension input
+	d = [1, 2, 3, 5]
+
+	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1 and var2 each")
+	print("Shapes:")
+	data = _generate_mute_data(n_replications=5)
+	source_o = data[0,:,:]
+	target_o = data[2,:,:]
+	
+	settings2 = {"kraskov_k": k,
+				"noise_level": 0,
+				"normalise": False,
+				"local_values": True,
+				"num_threads": "USE_ALL",
+				"lag_mi": 2}
+	
+	for s in d:
+		for t in d:
+			
+			source1 = source_o[:,:s]
+			target = target_o[:,:t]
+			
+			cond = f"var1: {source1.shape}\tvar2: {target.shape}"
+
+			jidt_estimator = JidtKraskovMI(settings2)
+			python_estimator = PythonKraskovMI(settings2)
+		
+			itic = time.perf_counter()
+			mi_jidt_cor = jidt_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_jidt_cor = itoc - itic
+			
+			itic = time.perf_counter()
+			mi_python_cor = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor = itoc - itic
+
+			#print(mi_jidt_cor)
+			#print(mi_python_cor)
+			
+			verbose(mi_jidt_cor, mi_python_cor, cond, "MI", local=True, atol=1e-03)
+	"""
+def test_kraskov_cmi():
+
+	# test 1D data
+	
+	cvals = [0.2, 0.4, 0.6, 0.8]
+	kvals = [2,4,6,8]
+	
+	print(f"\n\nTesting average CMI using 1D gaussian data with covariances {cvals} \ntesting settings kraskov k {kvals} and uncorrelated conditional and uncorrelated source")
+		
+	for a in [1,2]:
+		time_jidt_cor = np.empty(np.power(len(kvals),2))
+		mi_jidt_cor = np.empty(np.power(len(kvals),2))
+		time_python_cor = np.empty(np.power(len(kvals),2))
+		mi_python_cor = np.empty(np.power(len(kvals),2))
+		time_jidt_uncor = np.empty(np.power(len(kvals),2))
+		mi_jidt_uncor = np.empty(np.power(len(kvals),2))
+		time_python_uncor = np.empty(np.power(len(kvals),2))
+		mi_python_uncor = np.empty(np.power(len(kvals),2))
+
+		conds = np.empty((np.power(len(kvals),2),2))
+		
+		print(f"\nKSG-{a}")
+		
+		count = 0
+		for k in kvals:
+			for i in cvals:
+				conds[count,:] = [k,i]
+
+				expected_mi, source1, source2, target = _get_gauss_data(expand=True, covariance=i, seed=SEED)
+				
+				settings_j = {"kraskov_k": k,
+							"noise_level": 0,
+							"normalise": False,
+							"num_threads": "USE_ALL",
+							"algorithm_num": a}
+				settings_p = {"kraskov_k": k,
+							"noise_level": 0,
+							"normalise": False,
+							"knn_finder": "scipy_ckdtree",
+							"num_threads": "USE_ALL",
+							"algorithm_num": a}
+
+				jidt_estimator = JidtKraskovCMI(settings_j)
+				python_estimator = PythonKraskovCMI(settings_p)
+
+				itic = time.perf_counter()
+				mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
+				itoc = time.perf_counter()
+				time_jidt_cor[count] = itoc - itic
+
+				itic = time.perf_counter()
+				mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+
+				itic = time.perf_counter()
+				mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target, source1)
+				itoc = time.perf_counter()
+				time_jidt_uncor[count] = itoc - itic
+
+
+				itic = time.perf_counter()
+				mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				count += 1
+
+		print("k, cov\t\tJidtKraskovCMI\t\tPythonKraskovCMI")
+		print("uncorrelated conditional")
+		for i in range(len(mi_jidt_cor)):
+			print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
+		print("uncorrelated source")
+		for i in range(len(mi_jidt_uncor)):
+			print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
+		
+		verbose(mi_jidt_cor, mi_python_cor, "uncorrelated conditional", "CMI", local=False)
+		verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated source", "CMI", local=False)
+
+		print(f"\nmean calculation times (KSG {a}):")
+		print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
+		print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
+		print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
+		print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
+
+
+	# test 2D data
+	time_jidt_cor = np.empty(4)
+	mi_jidt_cor = np.empty(4)
+	time_python_cor = np.empty(4)
+	mi_python_cor = np.empty(4)
+	time_jidt_uncor = np.empty(4)
+	mi_jidt_uncor = np.empty(4)
+	time_python_uncor = np.empty(4)
+	mi_python_uncor = np.empty(4)
+
+	print(f"\n\nTesting average CMI using 2D mute data \ntesting settings kraskov {kvals} and uncorrelated conditional and uncorrelated source\n")
+
+	count = 0
+	for k in kvals:
+		data = _generate_mute_data(n_samples=2000, n_replications=4)
+
+		source1 = data[0,:,:]
+		target = data[2,:,:]
+		source2 = data[4,:,:]
+
+		settings_j = {"kraskov_k": k,
+					"noise_level": 0,
+					"normalise": False,
+					"num_threads": "USE_ALL"}
+		settings_p = {"kraskov_k": k,
+					"noise_level": 0,
+					"normalise": False,
+					"knn_finder": "scipy_ckdtree",
+					"num_threads": "USE_ALL"}
+
+		jidt_estimator = JidtKraskovCMI(settings_j)
+		python_estimator = PythonKraskovCMI(settings_p)
+
+		itic = time.perf_counter()
+		mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_jidt_cor[count] = itoc - itic
+
+		itic = time.perf_counter()
+		mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_python_cor[count] = itoc - itic
+
+		itic = time.perf_counter()
+		mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_jidt_uncor[count] = itoc - itic
+
+
+		itic = time.perf_counter()
+		mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_python_uncor[count] = itoc - itic
+
+		count += 1
+
+	print("k,cov\tJidtKraskovCMI\t\tPythonKraskovCMI")
+	print("uncorrelated conditional")
+	for i in range(len(mi_jidt_cor)):
+		print(f"{kvals[i]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
+	print("uncorrelated source")
+	for i in range(len(mi_jidt_uncor)):
+		print(f"{kvals[i]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
+	
+	verbose(mi_jidt_cor, mi_python_cor, "uncorrelated conditional", "CMI", local=False)
+	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated source", "CMI", local=False)
+
+	print("\nmean calculation times:")
+	print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
+	print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
+	print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
+	print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
+
+
+	# test mixed dimension input
+	d = [1, 2, 3]
+
+	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1, var2 and cond each\n")
+	print("Shapes:")
+	
+	data = _generate_mute_data()
+
+	source_o = data[0,:,:]
+	target_o = data[2,:,:]
+	cond_o = data[4,:,:]
+	
+	settings = {"kraskov_k": 4,
+				"noise_level": 0,
+				"normalise": False}
+	
+	for s in d:
+		for t in d:
+			for c in d:
+			
+				source1 = source_o[:,:s]
+				target = target_o[:,:t]
+				conditional = cond_o[:,:c]
+				
+				conds = f"var1: {source1.shape[1]} var2: {target.shape[1]} cond: {conditional.shape[1]}"
+
+				jidt_estimator = JidtKraskovCMI(settings)
+				python_estimator = PythonKraskovCMI(settings)
+			
+				itic = time.perf_counter()
+				mi_jidt_cor = jidt_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_jidt_cor = itoc - itic
+				
+				itic = time.perf_counter()
+				mi_python_cor = python_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_python_cor = itoc - itic
+
+				verbose(mi_jidt_cor, mi_python_cor, conds, "CMI", local=False, atol=1e-03)
+		
+	
+	# test theiler 
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+	
+	tvals = [0,1,2,3]
+	
+	time_jidt_cor = np.empty(np.power(len(kvals),2))
+	mi_jidt_cor = np.empty(np.power(len(kvals),2))
+	time_python_cor1 = np.empty(np.power(len(kvals),2))
+	mi_python_cor1 = np.empty(np.power(len(kvals),2))
+	time_python_cor2 = np.empty(np.power(len(kvals),2))
+	mi_python_cor2 = np.empty(np.power(len(kvals),2))
+	
+	conds = np.empty((np.power(len(kvals),2),2))
+
+	print(f"\n\nTesting average CMI using 1D gaussian data with covariance 0.4 \ntesting settings kraskov k {kvals} and theiler t {tvals}\nusing knn_finder scipy_ckdtree and scipy_kdtree\n")
+	
+	count = 0
+
+	knn = ['scipy_kdtree', 'scipy_ckdtree']
+
+	for k in kvals:
+		for t in tvals:
+			conds[count,:] = [k, t]
+		
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"num_threads": "USE_ALL",
+						'theiler_t': t}
+			settings_p1 = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"knn_finder": "scipy_kdtree",
+						"num_threads": "USE_ALL",
+						"theiler_t": t}
+
+			settings_p2 = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"knn_finder": "scipy_ckdtree",
+						"num_threads": "USE_ALL",
+						"theiler_t": t}
+
+			jidt_estimator = JidtKraskovCMI(settings_j)
+			python_estimator1 = PythonKraskovCMI(settings_p1)
+			python_estimator2 = PythonKraskovCMI(settings_p2)
+
+			itic = time.perf_counter()
+			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor1[count] = python_estimator1.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_python_cor1[count] = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor2[count] = python_estimator2.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_python_cor2[count] = itoc - itic
+
+			count += 1
+
+	print("k, t\tJidtKraskovCMI\t\tPythonKraskovCMI\tPythonKraskovCMI\tclose 1e-03")
+	print("\t\t\t\tscipy_kdtree\t\tscipy_ckdtree")
+	for i in range(len(mi_python_cor1)):
+		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor1[i]}\t{mi_python_cor2[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor1[i], atol=1e-03)}\t{np.isclose(mi_jidt_cor[i], mi_python_cor2[i], atol=1e-03)}")
+	
+	verbose(mi_jidt_cor, mi_python_cor1, "scipy_kdtree", "CMI", local=False)
+	verbose(mi_jidt_cor, mi_python_cor2, "scipy_ckdtree", "CMI", local=False)
+	
+	
+	print("\nmean calculation times:")
+	print(" JidtKraskovCMI: ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovCMI (scipy_kdtree): ", np.mean(time_python_cor1) )
+	print(" PythonKraskovCMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
+
+def test_kraskov_cmi_local_values():
+
+	# test 1D	
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+	source1_1D = source1[1:]
+	source2_1D = source2[1:]
+	target_1D = target[:-1]
+
+	data = _generate_mute_data(n_samples=2000, n_replications=4)
+
+	source1_2D = data[0,:,:]
+	target_2D = data[2,:,:]
+	source2_2D = data[4,:,:]
+
+	vals = [2,4,6,8]
+	
+	knn_list = ['scipy_kdtree', 'scipy_ckdtree', 'sklearn_kdtree', 'sklearn_balltree']
+	
+	print(f"\n\nTesting local CMI using 1D gaussian data with covariances 0.4 and lag 1\ntesting settings kraskov {vals} and uncorrelated conditional and uncorrelated source\n")
+	
+	kcount = 0
+	for knn in knn_list:
+		print(f"\nKNN finder: {knn}\n")
+
+		time_jidt_cor = np.zeros(4)
+		time_python_cor = np.zeros(4)
+		time_jidt_uncor = np.zeros(4)
+		time_python_uncor = np.zeros(4)
+		
+		print("kraskov k")
+		count = 0
+		for k in vals:
+
+			settings = {}
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"local_values": True,
+						"num_threads": "USE_ALL"}
+			settings_p = {"kraskov_k": k,
+						"noise_level": 0,
+						"knn_finder": "scipy_ckdtree",
+						"local_values": True,
+						"num_threads": "USE_ALL",
+						"knn_finder": knn}
+
+			jidt_estimator = JidtKraskovCMI(settings_j)
+			python_estimator = PythonKraskovCMI(settings_p)
+
+			itic = time.perf_counter()
+			cmi_jidt_cor = jidt_estimator.estimate(source1_1D, target_1D, source2_1D)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+			
+			itic = time.perf_counter()
+			cmi_python_cor = python_estimator.estimate(source1_1D, target_1D, source2_1D)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+			
+			verbose(cmi_jidt_cor, cmi_python_cor, f"{k} uncorrelated conditional", "CMI", local=True, atol=1e-03)
+
+			itic = time.perf_counter()
+			cmi_jidt_uncor = jidt_estimator.estimate(source1_1D, target_1D, source2_1D)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			cmi_python_uncor = python_estimator.estimate(source1_1D, target_1D, source2_1D)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source", "CMI", local=True, atol=1e-03)
+
+		print("\nmean calculation times:")
+		print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
+		print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
+		print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
+		print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
+
+	# test 2D
+	print(f"\n\nTesting local CMI using 2D mute data\ntesting settings kraskov {vals} and uncorrelated conditional and uncorrelated source\n")
+		
+	kcount = 0
+	for knn in knn_list:
+		print(f"\nKNN finder: {knn}\n")
+		
+		time_jidt_cor = np.zeros(4)
+		time_python_cor = np.zeros(4)
+		time_jidt_uncor = np.zeros(4)
+		time_python_uncor = np.zeros(4)
+
+		count = 0
+		for k in vals:
+
+			settings = {}
+			settings_j = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"local_values": True,
+						"num_threads": "USE_ALL"}
+			settings_p = {"kraskov_k": k,
+						"noise_level": 0,
+						"normalise": False,
+						"knn_finder": "scipy_ckdtree",
+						"local_values": True,
+						"num_threads": "USE_ALL",
+						"knn_finder": knn}
+
+			jidt_estimator = JidtKraskovCMI(settings_j)
+			python_estimator = PythonKraskovCMI(settings_p)
+
+			itic = time.perf_counter()
+			cmi_jidt_cor = jidt_estimator.estimate(source1_2D, target_2D, source2_2D)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			cmi_python_cor = python_estimator.estimate(source1_2D, target_2D, source2_2D)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			verbose(cmi_jidt_cor, cmi_python_cor, f"{k} uncorrelated conditional", "CMI", local=True, atol=1e-03)
+
+			itic = time.perf_counter()
+			cmi_jidt_uncor = jidt_estimator.estimate(source1_2D, target_2D, source2_2D)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			cmi_python_uncor = python_estimator.estimate(source1_2D, target_2D, source2_2D)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source", "CMI", local=True, atol=1e-03)
+
+		print("\nmean calculation times:")
+		print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
+		print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
+		print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
+		print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
+
+	# test mixed dimension input
+	d = [1, 2, 3, 5]
+
+	
+	print(f"\n\nTesting local MI using mixed dimensions\ntesting dimensions {d} for var1, var2 and conditional each - (default k=4)")
+	print("Shapes[1]:")
+	data = _generate_mute_data(n_replications=5)
+	source_o = data[0,:,:]
+	target_o = data[2,:,:]
+	cond_o = data[4,:,:]
+	
+	settings2 = {"kraskov_k": 4,
+				"normalise": False,
+				"noise_level": 0,
+				"num_threads": "USE_ALL"}
+	
+	for s in d:
+		for t in d:
+			for c in d:
+				source1 = source_o[:,:s]
+				target = target_o[:,:t]
+				conditional = cond_o[:,:t]
+				
+				cond = f"var1: {source1.shape[1]} - var2: {target.shape[1]} - cond: {conditional.shape[1]}"
+
+				jidt_estimator = JidtKraskovCMI(settings2)
+				python_estimator = PythonKraskovCMI(settings2)
+			
+				itic = time.perf_counter()
+				mi_jidt_cor = jidt_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_jidt_cor = itoc - itic
+				
+				itic = time.perf_counter()
+				mi_python_cor = python_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_python_cor = itoc - itic
+
+				#print(mi_jidt_cor)
+				#print(mi_python_cor)
+				
+				verbose(mi_jidt_cor, mi_python_cor, cond, "CMI")
+	
+def test_kraskov_ais():
+
+	vals = [1,2,3]
+	kvals = [2,4,8]
+	print(f"\n\nTesting average AIS using 1D AR data with history and pure noise\ntesting settings, kraskov k {kvals}, history {vals} and tau {vals}")
+	
+	source1, source2 = _get_ar_data(seed=SEED)
+
+	time_jidt_cor = np.zeros(np.power(len(vals),3))
+	res_jidt_cor = np.zeros(np.power(len(vals),3))
+	time_python_cor = np.zeros(np.power(len(vals),3))
+	res_python_cor = np.zeros(np.power(len(vals),3))
+	time_jidt_uncor = np.zeros(np.power(len(vals),3))
+	res_jidt_uncor = np.zeros(np.power(len(vals),3))
+	time_python_uncor = np.zeros(np.power(len(vals),3))
+	res_python_uncor = np.zeros(np.power(len(vals),3))
+	conds = np.zeros([np.power(len(vals),3),3])
+	
+	count = 0
+	for k in kvals:
+		for h in vals:
+			for t in vals:
+				conds[count,:] = [k, h, t]
+				settings_j = {'kraskov_k': k,'history': h, 'tau': t}
+
+				settings_p = {'kraskov_k': k,'history': h, 'tau': t}
+		
+				jidt_estimator = JidtKraskovAIS(settings=settings_j)
+				python_estimator = PythonKraskovAIS(settings=settings_p)
+
+				itic = time.perf_counter()
+				res_jidt_cor[count] = jidt_estimator.estimate(source1)
+				itoc = time.perf_counter()
+				time_jidt_cor[count] = itoc - itic
+		
+				itic = time.perf_counter()
+				res_jidt_uncor[count] = jidt_estimator.estimate(source2)
+				itoc = time.perf_counter()
+				time_jidt_uncor[count] = itoc - itic
+				
+				itic = time.perf_counter()
+				res_python_cor[count] = python_estimator.estimate(source1)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+				
+				itic = time.perf_counter()
+				res_python_uncor[count] = python_estimator.estimate(source2)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				count += 1
+
+	print("k, hist, tau\tJidtKraskovAIS\t\tPythonKraskovAIS")
+	print("with history")
+	for i in range(len(res_jidt_cor)):
+		print(f"{conds[i]}\t{res_jidt_cor[i]}\t{res_python_cor[i]}")
+	
+	verbose(res_jidt_cor, res_python_cor, "with history", "AIS", local=False)
+
+	
+	print("noise")
+	for i in range(len(res_jidt_uncor)):
+		print(f"{conds[i]}\t{res_jidt_uncor[i]}\t{res_python_uncor[i]}")
+
+	verbose(res_jidt_uncor, res_python_uncor, "noise", "AIS", local=False)
+
+	
+	print("\nmean calculation times:")
+	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
+	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
+	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
+
+def test_kraskov_ais_local_values():
+
+	vals = [1,2,3]
+	kvals = [2,4,8]
+	print(f"\n\nTesting local AIS using 1D AR data with history and pure noise\ntesting settings, kraskov k {kvals}, history {vals} and tau {vals}\t")
+	
+	source1, source2 = _get_ar_data(seed=SEED)
+
+	time_jidt_cor = np.zeros(np.power(len(vals),3))
+	time_python_cor = np.zeros(np.power(len(vals),3))
+	time_jidt_uncor = np.zeros(np.power(len(vals),3))
+	time_python_uncor = np.zeros(np.power(len(vals),3))
+	conds = np.zeros([np.power(len(vals),3),3])
+	
+	print("k, hist, tau\tJidtKraskovAIS vs PythonKraskovAIS")
+	count = 0
+	for k in kvals:
+		for h in vals:
+			for t in vals:
+				conds[count,:] = [k, h, t]
+				settings_j = {'kraskov_k': k,'history': h, 'tau': t, 'noise_level': 0, 'local_values': True}
+
+				settings_p = {'kraskov_k': k,'history': h, 'tau': t, 'noise_level': 0, 'local_values': True}
+		
+				jidt_estimator = JidtKraskovAIS(settings=settings_j)
+				python_estimator = PythonKraskovAIS(settings=settings_p)
+
+				itic = time.perf_counter()
+				res_jidt_cor = jidt_estimator.estimate(source1)
+				itoc = time.perf_counter()
+				time_jidt_cor[count] = itoc - itic
+		
+				itic = time.perf_counter()
+				res_jidt_uncor = jidt_estimator.estimate(source2)
+				itoc = time.perf_counter()
+				time_jidt_uncor[count] = itoc - itic
+				
+				
+				itic = time.perf_counter()
+				res_python_cor = python_estimator.estimate(source1)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+				
+				itic = time.perf_counter()
+				res_python_uncor = python_estimator.estimate(source2)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist ", "AIS", local=True, atol=1e-03)
+				verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise\t", "AIS", local=True, atol=1e-03)
+
+				count += 1
+	
+	print("\nmean calculation times:")
+	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
+	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
+	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
+	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
+		
+def test_kraskov_te():
+
+	vals = [1,2,3]
+
+	print(f"\n\nTesting average TE using 1D gaussian data with covariance 0.4 and lag 1\n")
+	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each.\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
+	# add delay of one sample
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
+
+	vals = [1,2,3]
+	
+	time_jidt = np.empty(np.power(len(vals),5))
+	res_jidt = np.empty(np.power(len(vals),5))
+	time_python = np.empty(np.power(len(vals),5))
+	res_python = np.empty(np.power(len(vals),5))
+
+	conds = np.empty((np.power(len(vals),5),5))
+	
+	print("std,ht,tt,hs,ts\t\tJidtKraskovTE\t\tPythonKraskovTE\t\tclose 1e-04")
+
+	count = 0
+	for hst in vals:
+
+		for ht in vals:
+			for hs in vals:
+				for tt in vals:
+					for ts in vals:
+					
+						conds[count,:] = [hst, ht, tt, hs, ts]
+
+						settings_j = {"kraskov_k": 4, 
+							"history_target": ht,
+							"history_source": hs,
+							"tau_target": tt,
+							"tau_source": ts,
+							"source_target_delay": hst,
+							"noise_level": 0, 
+							"num_threads": 1}
+						settings_p = {"kraskov_k": 4, 
+							"history_target": ht,
+							"history_source": hs,
+							"tau_target": tt,
+							"tau_source": ts,
+							"source_target_delay": hst,
+							"noise_level": 0, 
+							"num_threads": 1}
+
+						jidt_estimator = JidtKraskovTE(settings_j)
+						python_estimator = PythonKraskovTE(settings_p)
+						
+						itic = time.perf_counter()
+						te_jidt = jidt_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
+						time_jidt[count] = itoc-itic
+						res_jidt[count] = te_jidt
+
+						itic = time.perf_counter()
+						te_python = python_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
+						time_python[count] = itoc-itic
+						res_python[count] = te_python
+
+						count += 1
+
+						print(f"{[hst, ht, tt, hs, ts]}\t\t{te_jidt}\t{te_python}\t{np.isclose(te_jidt, te_python, rtol=1e-04, atol=1e-04)}")
+
+	verbose(res_jidt, res_python, "", "TE", local=False)
+
+	print("\nmean calculation times:")
+	print(" JidtKraskovTE: ", np.mean(time_jidt) )
+	print(" PythonKraskovTE: ", np.mean(time_python) )
+
+def test_kraskov_te_local_values():
+
+	
+	vals = [1,2]
+	kraskov_k = 4
+	knn_list = ['scipy_kdtree', 'scipy_ckdtree', 'sklearn_kdtree', 'sklearn_balltree']
+	
+	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
+
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
+	
+	print(f"\n\nTesting average TE using 1D gaussian data with covariance 0.4 and lag 1\n")
+	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each \nand kraskov k = {kraskov_k}.")
+	print(f"for the implemented knn finder: {knn_list}\n")
+
+	kcount = 0
+	for knn in knn_list:
+		print(f"\nKNN finder: {knn}\n")
+		time_jidt = np.empty(np.power(len(vals),5))
+		res_jidt = np.empty((np.power(len(vals),5), 4, len(source1)))
+		time_python = np.empty(np.power(len(vals),5))
+		res_python = np.empty((np.power(len(vals),5), 4, len(source1)))
+		
+		conds = np.empty((np.power(len(vals),5),5))
+
+		print("hst,ht,tt,hs,ts\t- avg close 1e-04 - \t local values JidtKraskovTE vs PythonKraskovTE")
+
+		count = 0
+		for hst in vals:
+
+			for ht in vals:
+				for tt in vals:
+					for hs in vals:
+						for ts in vals:
+
+							conds[count,:] = [hst, ht, tt, hs, ts]
+							settings_j = {"history_target": ht,
+										"history_source": hs,
+										"tau_target": tt,
+										"tau_source": ts,
+										"source_target_delay": hst,
+										"local_values": True,
+										"noise_level": 0,
+										"kraskov_k": kraskov_k}
+
+							settings_p = {"history_target": ht,
+										"history_source": hs,
+										"tau_target": tt,
+										"tau_source": ts,
+										"source_target_delay": hst,
+										"local_values": True,
+										"knn_finder": knn,
+										"noise_level": 0,
+										"kraskov_k": kraskov_k}
+							
+							jidt_estimator = JidtKraskovTE(settings_j)
+							python_estimator = PythonKraskovTE(settings_p)
+							
+							itic = time.perf_counter()
+							te_jidt = jidt_estimator.estimate(source=source1, target=target)
+							itoc = time.perf_counter()
+							time_jidt[count] = itoc-itic
+							
+							res_jidt[count,kcount,:] = te_jidt
+
+							itic = time.perf_counter()
+							te_python = python_estimator.estimate(source=source1, target=target)
+							itoc = time.perf_counter()
+							time_python[count] = itoc-itic
+							
+							res_python[count,kcount,:] = te_python
+
+							count += 1
+
+							verbose(te_jidt, te_python, f"{[hst, ht, tt, hs, ts]}  -\t {np.allclose(te_jidt.mean(), te_python.mean() ,atol=1e-04)}\t", "TE", atol=1e-03, local=True)
+
+		kcount += 1
+
+		print("\nmean calculation times:")
+		print(" JidtKraskovTE: ", np.mean(time_jidt) )
+		print(" PythonKraskovTE: ", np.mean(time_python) )
+	
+def test_Kraskov_cte():
+
+	vals = [1,3]
+	
+	print(f"\n\nTesting average CTE using 1D mute data - with coupling and no coupling (default k=4)\n")
+	print(f"testing settings history_source, tau_source, history_target, tau_target, history_conditional")
+	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}\n")
+	
+	#i = 0.4
+	#expected_mi, source1, source2, target = _get_gauss_data(expand=True, covariance=i, seed=SEED)
+
+	data = _generate_mute_data(n_replications=1)
+	source1 = data[0,:]
+	target = data[4,:]
+	cond = data[3,:]
+	nocond = data[5,:]
+
+	#vals = [1]
+
+	time_jidt_cond = np.empty(np.power(len(vals),8))
+	res_jidt_cond = np.empty(np.power(len(vals),8))
+	time_jidt_nocond = np.empty(np.power(len(vals),8))
+	res_jidt_nocond = np.empty(np.power(len(vals),8))
+	
+	time_python_cond = np.empty(np.power(len(vals),8))
+	res_python_cond = np.empty(np.power(len(vals),8))
+	time_python_nocond = np.empty(np.power(len(vals),8))
+	res_python_nocond = np.empty(np.power(len(vals),8))
+	
+
+	conds = np.empty((np.power(len(vals),5),8))
+
+	atol = 1e-03
+
+	print(f"\t\t\t\tJidtKraskovCTE\t\tPythonKraskovCTE\tclose {atol}")
+	print("hst,cst,ht,tt,hs,ts,hc,tc\tcte cond \t\tcte cond\t\tuncor cond\tuncor source")
+
+	count = 0
+	for hst in vals:
+		for cst in vals:
+			for ht in vals:
+				for tt in vals:
+					for hs in vals:
+						for ts in vals:
+							for hc in vals:
+								for tc in vals:
+
+									settings = {"history_target": ht,
+										"history_source": hs,
+										"history_conditional": hc,
+										"tau_target": tt,
+										"tau_source": ts,
+										"tau_conditional": tc,
+										"source_target_delay": hst,
+										"conditional_target_delay": cst,
+										'noise_level': 0,
+										"normalise": False,
+									}
+									
+									
+									jidt_estimator = JidtKraskovCTE(settings)
+									
+									itic = time.perf_counter()
+									cte_jidt_cond = jidt_estimator.estimate(source1, target, cond)
+									itoc = time.perf_counter()
+									res_jidt_cond[0] = cte_jidt_cond
+									time_jidt_cond[count] = itoc - itic
+									
+									itic = time.perf_counter()
+									cte_jidt_nocond = jidt_estimator.estimate(source1, target, nocond)
+									itoc = time.perf_counter()
+									res_jidt_nocond[0] = cte_jidt_nocond
+									time_jidt_nocond[count] = itoc - itic
+									
+									python_estimator = PythonKraskovCTE(settings)
+									
+									itic = time.perf_counter()
+									cte_python_cond = python_estimator.estimate(source1, target, cond)
+									itoc = time.perf_counter()
+									res_python_cond[0] = cte_python_cond
+									time_python_cond[count] = itoc - itic
+									
+									itic = time.perf_counter()
+									cte_python_nocond = python_estimator.estimate(source1, target, nocond)
+									itoc = time.perf_counter()
+									res_python_nocond[0] = cte_python_nocond
+									time_python_nocond[count] = itoc - itic
+									
+									#verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc}", "CTE", local=True, atol=atol) 
+									print(f"{hst,cst,ht,tt,hs,ts,hc,tc}\t{cte_jidt_cond}\t{cte_python_cond}\t\t{np.isclose(cte_jidt_cond, cte_python_cond, rtol=atol, atol=atol)}\t{np.isclose(cte_jidt_nocond, cte_python_nocond, rtol=atol, atol=atol)}")
+
+									count += 1
+
+	verbose(res_jidt_cond, res_python_cond, "", "CTE cond", atol=atol)
+	verbose(res_jidt_nocond, res_python_nocond, "", "CTE nocond", atol=atol)
+
+	print("\nmean calculation times:")
+	print(" JidtGaussianCTE (cond): ", np.mean(time_jidt_cond) )
+	print(" PythonGaussianCTE (cond): ", np.mean(time_python_cond) )
+	print(" JidtGaussianCTE (nocond): ", np.mean(time_jidt_nocond) )
+	print(" PythonGaussianCTE (nocond): ", np.mean(time_python_nocond) )
+
+def test_kraskov_cte_local_values():
+	
+	vals = [1,2]
+
+	print(f"\n\nTesting local CTE using 1D mute data - correlated and uncorrelated conditional (default k=4)")
+	print(f"testing settings history_source, tau_source, history_target, tau_target, history_conditional")
+	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}\n")
+	
+	data = _generate_mute_data(n_replications=1)
+	source1 = data[0,:]
+	target = data[4,:]
+	cond = data[3,:]
+	nocond = data[5,:]
+
+	time_jidt_cond = np.empty(np.power(len(vals),8))
+	time_jidt_nocond = np.empty(np.power(len(vals),8))
+	
+	time_python_cond = np.empty(np.power(len(vals),8))
+	time_python_nocond = np.empty(np.power(len(vals),8))
+	
+	atol = 1e-03
+
+	print(f"std,ctd,ht,tt,hs,ts,hc,tc\tavg close {atol}\t\tJidtKraskovCTE vs PythonKraskovCTE")
+
+	count = 0
+	for hst in vals:
+		for cst in vals:
+			for ht in vals:
+				for tt in vals:
+					for hs in vals:
+						for ts in vals:
+							for hc in vals:
+								for tc in vals:
+
+									settings = {"history_target": ht,
+										"history_source": hs,
+										"history_conditional": hc,
+										"tau_target": tt,
+										"tau_source": ts,
+										"tau_conditional": tc,
+										"source_target_delay": hst,
+										"conditional_target_delay": cst,
+										'noise_level': 0,
+										'normalise': False,
+										"local_values": True}
+																		
+									jidt_estimator = JidtKraskovCTE(settings)
+									
+									itic = time.perf_counter()
+									cte_jidt_cond = jidt_estimator.estimate(source1, target, cond)
+									itoc = time.perf_counter()
+									time_jidt_cond[count] = itoc - itic
+									
+									itic = time.perf_counter()
+									cte_jidt_nocond = jidt_estimator.estimate(source1, target, nocond)
+									itoc = time.perf_counter()
+									time_jidt_nocond[count] = itoc - itic
+									
+									python_estimator = PythonKraskovCTE(settings)
+									
+									itic = time.perf_counter()
+									cte_python_cond = python_estimator.estimate(source1, target, cond)
+									itoc = time.perf_counter()
+									time_python_cond[count] = itoc - itic
+									
+									itic = time.perf_counter()
+									cte_python_nocond = python_estimator.estimate(source1, target, nocond)
+									itoc = time.perf_counter()
+									time_python_nocond[count] = itoc - itic
+									
+									#print(cte_jidt_cond[:10])
+									#print(cte_python_cond[:10])
+
+									verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc} corr cond   - {np.isclose(np.mean(cte_jidt_cond), np.mean(cte_python_cond), atol=atol)}", "CTE", local=True, atol=atol) 
+									verbose(cte_jidt_nocond, cte_python_nocond, f"{hst,cst,ht,tt,hs,ts,hc,tc} uncorr cond - {np.isclose(np.mean(cte_jidt_cond), np.mean(cte_python_cond), atol=atol)}", "CTE", local=True, atol=atol) 
+
+									count += 1
+	print("\nmean calculation times:")
+	print(" JidtKraskovCTE (correlated conditional): ", np.mean(time_jidt_cond) )
+	print(" PythonKraskovCTE (correlated conditional): ", np.mean(time_python_cond) )
+	print(" JidtKraskovCTE (uncorrelated conditional): ", np.mean(time_jidt_nocond) )
+	print(" PythonKraskovCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
 
 
@@ -245,7 +1693,6 @@ def test_gaussian_mi():
 
 			
 			verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
-			
 
 def test_gaussian_mi_local_values():
 	
@@ -853,14 +2300,13 @@ def test_gaussian_te_local_values():
 	print(" JidtGaussianTE: ", np.mean(time_jidt) )
 	print(" PythonGaussianTE: ", np.mean(time_python) )
 
-
 def test_gaussian_cte():
 
 	vals = [1,2,3]
 
 	print(f"\n\nTesting average CTE using 1D mute data - correlated and uncorrelated conditional\n")
 	print(f"testing settings history_source, tau_source, history_target, tau_target, history_conditional")
-	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}")
+	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}\n")
 	
 	data = _generate_mute_data(n_replications=1)
 	source1 = data[0,:]
@@ -913,13 +2359,13 @@ def test_gaussian_cte():
 									cte_jidt_cond = jidt_estimator.estimate(source1, target, cond)
 									itoc = time.perf_counter()
 									res_jidt_cond[0] = cte_jidt_cond
-									time_jidt_cond += itoc - itic
+									time_jidt_cond[count] = itoc - itic
 									
 									itic = time.perf_counter()
 									cte_jidt_nocond = jidt_estimator.estimate(source1, target, nocond)
 									itoc = time.perf_counter()
 									res_jidt_nocond[0] = cte_jidt_nocond
-									time_jidt_nocond += itoc - itic
+									time_jidt_nocond[count] = itoc - itic
 									
 									python_estimator = PythonGaussianCTE(settings)
 									
@@ -927,16 +2373,18 @@ def test_gaussian_cte():
 									cte_python_cond = python_estimator.estimate(source1, target, cond)
 									itoc = time.perf_counter()
 									res_python_cond[0] = cte_python_cond
-									time_python_cond += itoc - itic
+									time_python_cond[count] = itoc - itic
 									
 									itic = time.perf_counter()
 									cte_python_nocond = python_estimator.estimate(source1, target, nocond)
 									itoc = time.perf_counter()
 									res_python_nocond[0] = cte_python_nocond
-									time_python_nocond += itoc - itic
+									time_python_nocond[count] = itoc - itic
 									
 									#verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc}", "CTE", local=True, atol=atol) 
 									print(f"{hst,cst,ht,tt,hs,ts,hc,tc}\t{cte_jidt_cond}\t{cte_python_cond}\t\t{np.isclose(cte_jidt_cond, cte_python_cond, rtol=atol, atol=atol)}\t\t{np.isclose(cte_jidt_nocond, cte_python_nocond, rtol=atol, atol=atol)}")
+
+									count += 1 
 
 	verbose(res_jidt_cond, res_python_cond, "correlated conditional", "CTE", atol=1e-04)
 	verbose(res_jidt_nocond, res_python_nocond, "uncorrelated conditional" , "CTE", atol=1e-04)
@@ -947,15 +2395,13 @@ def test_gaussian_cte():
 	print(" JidtGaussianCTE (uncorrelated conditional): ", np.mean(time_jidt_nocond) )
 	print(" PythonGaussianCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
-
-# =??????????????????????????????????????????????????????????
 def test_gaussian_cte_local_values():
 	
-	vals = [1,3]
+	vals = [1,2,3]
 
-	print(f"\n\nTesting local CTE using 1D mute data - correlated and uncorrelated conditional\n")
+	print(f"\n\nTesting local CTE using 1D mute data - correlated and uncorrelated conditional")
 	print(f"testing settings history_source, tau_source, history_target, tau_target, history_conditional")
-	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}")
+	print(f"tau_conditional, source_target_delay and conditional_target_delay with {vals}\n")
 	
 	data = _generate_mute_data(n_replications=1)
 	source1 = data[0,:]
@@ -971,7 +2417,7 @@ def test_gaussian_cte_local_values():
 	
 	atol = 1e-03
 
-	print("hst,ht,tt,hs,ts\t\tJidtGaussianCTE vs PythonGaussianCTE")
+	print("std,ctd,ht,tt,hs,ts,hc,tc\t\t\tJidtGaussianCTE vs PythonGaussianCTE")
 
 	count = 0
 	for hst in vals:
@@ -991,6 +2437,8 @@ def test_gaussian_cte_local_values():
 										"tau_conditional": tc,
 										"source_target_delay": hst,
 										"conditional_target_delay": cst,
+										'noise_level': 0,
+										'normalise': True,
 										"local_values": True}
 																		
 									jidt_estimator = JidtGaussianCTE(settings)
@@ -998,1233 +2446,38 @@ def test_gaussian_cte_local_values():
 									itic = time.perf_counter()
 									cte_jidt_cond = jidt_estimator.estimate(source1, target, cond)
 									itoc = time.perf_counter()
-									time_jidt_cond += itoc - itic
+									time_jidt_cond[count] = itoc - itic
 									
 									itic = time.perf_counter()
 									cte_jidt_nocond = jidt_estimator.estimate(source1, target, nocond)
 									itoc = time.perf_counter()
-									time_jidt_nocond += itoc - itic
+									time_jidt_nocond[count] = itoc - itic
 									
 									python_estimator = PythonGaussianCTE(settings)
 									
 									itic = time.perf_counter()
 									cte_python_cond = python_estimator.estimate(source1, target, cond)
 									itoc = time.perf_counter()
-									time_python_cond += itoc - itic
+									time_python_cond[count] = itoc - itic
 									
 									itic = time.perf_counter()
 									cte_python_nocond = python_estimator.estimate(source1, target, nocond)
 									itoc = time.perf_counter()
-									time_python_nocond += itoc - itic
+									time_python_nocond[count] = itoc - itic
 									
 									#print(cte_jidt_cond[:10])
 									#print(cte_python_cond[:10])
 
-									verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc} correlated conditional", "CTE", local=True, atol=atol) 
-									verbose(cte_jidt_nocond, cte_python_nocond, f"{hst,cst,ht,tt,hs,ts,hc,tc} uncorrelated conditional", "CTE", local=True, atol=atol) 
+									verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc} corr conditional", "CTE", local=True, atol=atol) 
+									verbose(cte_jidt_nocond, cte_python_nocond, f"{hst,cst,ht,tt,hs,ts,hc,tc} uncorr conditional", "CTE", local=True, atol=atol) 
 
-
+									count += 1
 	print("\nmean calculation times:")
 	print(" JidtGaussianCTE (correlated conditional): ", np.mean(time_jidt_cond) )
 	print(" PythonGaussianCTE (correlated conditional): ", np.mean(time_python_cond) )
 	print(" JidtGaussianCTE (uncorrelated conditional): ", np.mean(time_jidt_nocond) )
 	print(" PythonGaussianCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
-
-	
-# Test Kraskov estimators
-def test_kraskov_mi():
-
-	# test 1D data
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-	source1 = source1[1:]
-	source2 = source2[1:]
-	target = target[:-1]
-
-	lvals = [0,1,2,3]
-	kvals = [2,4,6,8]
-
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	mi_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor = np.empty(np.power(len(kvals),2))
-	mi_python_cor = np.empty(np.power(len(kvals),2))
-	time_jidt_uncor = np.empty(np.power(len(kvals),2))
-	mi_jidt_uncor = np.empty(np.power(len(kvals),2))
-	time_python_uncor = np.empty(np.power(len(kvals),2))
-	mi_python_uncor = np.empty(np.power(len(kvals),2))
-
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lags_mi {lvals}\n")
-	
-	count = 0
-
-	for k in kvals:
-		for l in lvals:
-			conds[count,:] = [k, l]
-			
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-			settings_p = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-
-			jidt_estimator = JidtKraskovMI(settings_j)
-			python_estimator = PythonKraskovMI(settings_p)
-
-			itic = time.perf_counter()
-			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-
-			itic = time.perf_counter()
-			mi_python_cor[count] = python_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-
-
-			itic = time.perf_counter()
-			mi_python_uncor[count] = python_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
-
-			count += 1
-
-	print("k,lag\tJidtKraskovMI\t\tPythonKraskovMI")
-	print("correlated")
-	for i in range(len(mi_python_cor)):
-		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
-	print("uncorrelated")
-	for i in range(len(mi_python_uncor)):
-		print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
-
-	verbose(mi_jidt_cor, mi_python_cor, "correlated data", "MI", local=False)
-	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated data", "MI", local=False)
-
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
-	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
-
-	# test 2D data
-	data = _generate_mute_data(n_samples=2000, n_replications=4)
-
-	source1 = data[0,:,:]
-	target = data[2,:,:]
-	source2 = data[4,:,:]
-
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	mi_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor = np.empty(np.power(len(kvals),2))
-	mi_python_cor = np.empty(np.power(len(kvals),2))
-	time_jidt_uncor = np.empty(np.power(len(kvals),2))
-	mi_jidt_uncor = np.empty(np.power(len(kvals),2))
-	time_python_uncor = np.empty(np.power(len(kvals),2))
-	mi_python_uncor = np.empty(np.power(len(kvals),2))
-
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting average MI using 2D mute data testing settings kraskov k {kvals} and lag_mi {lvals}\n")
-	
-	count = 0
-
-	for k in kvals:
-		for l in lvals:
-			conds[count,:] = [k, l]
-		
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-			settings_p = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-
-			jidt_estimator = JidtKraskovMI(settings_j)
-			python_estimator = PythonKraskovMI(settings_p)
-
-			itic = time.perf_counter()
-			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-
-			itic = time.perf_counter()
-			mi_python_cor[count] = python_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-
-
-			itic = time.perf_counter()
-			mi_python_uncor[count] = python_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
-
-			count += 1
-
-	print("k,lag\tJidtKraskovMI\t\tPythonKraskovMI")
-	print("correlated")
-	for i in range(len(mi_python_cor)):
-		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
-	print("uncorrelated")
-	for i in range(len(mi_python_uncor)):
-		print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
-
-	verbose(mi_jidt_cor, mi_python_cor, "correlated data", "MI", local=False)
-	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated data", "MI", local=False)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
-	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
-
-	# test mixed dimension input
-	d = [1, 2, 3, 5]
-
-	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1 and var2 each")
-	print("Shapes:")
-	data = _generate_mute_data(n_replications=5)
-	source_o = data[0,:,:]
-	target_o = data[2,:,:]
-	
-	settings2 = {"kraskov_k": k,
-				"noise_level": 0,
-				"num_threads": "USE_ALL",
-				"lag_mi": 2}
-	
-	for s in d:
-		for t in d:
-			
-			source1 = source_o[:,:s]
-			target = target_o[:,:t]
-			
-			cond = f"var1: {source1.shape}\tvar2: {target.shape}"
-
-			jidt_estimator = JidtKraskovMI(settings2)
-			python_estimator = PythonKraskovMI(settings2)
-		
-			itic = time.perf_counter()
-			mi_jidt_cor = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor = itoc - itic
-			
-			itic = time.perf_counter()
-			mi_python_cor = python_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor = itoc - itic
-
-			#print(mi_jidt_cor)
-			#print(mi_python_cor)
-			
-			verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
-	
-
-	# test theiler 
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-	source1 = source1[1:]
-	source2 = source2[1:]
-	target = target[:-1]
-
-	tvals = [0,1,2,3]
-	
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	mi_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor1 = np.empty(np.power(len(kvals),2))
-	mi_python_cor1 = np.empty(np.power(len(kvals),2))
-	time_python_cor2 = np.empty(np.power(len(kvals),2))
-	mi_python_cor2 = np.empty(np.power(len(kvals),2))
-	
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and theiler t {tvals}\nusing knn_finder scipy_ckdtree and scipy_kdtree\n")
-	
-	count = 0
-
-	knn = ['scipy_kdtree', 'scipy_ckdtree']
-
-	for k in kvals:
-		for t in tvals:
-			conds[count,:] = [k, t]
-		
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"num_threads": "USE_ALL",
-						'theiler_t': t}
-			settings_p1 = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_kdtree",
-						"num_threads": "USE_ALL",
-						"theiler_t": t}
-
-			settings_p2 = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"num_threads": "USE_ALL",
-						"theiler_t": t}
-
-			jidt_estimator = JidtKraskovMI(settings_j)
-			python_estimator1 = PythonKraskovMI(settings_p1)
-			python_estimator2 = PythonKraskovMI(settings_p2)
-
-			itic = time.perf_counter()
-			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor1[count] = python_estimator1.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor1[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor2[count] = python_estimator2.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor2[count] = itoc - itic
-
-			count += 1
-
-	print("k, t\tJidtKraskovMI\t\tPythonKraskovMI\t\tPythonKraskovMI\t\tclose 1e-03")
-	print("\t\t\t\tscipy_kdtree\t\tscipy_ckdtree")
-	for i in range(len(mi_python_cor1)):
-		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor1[i]}\t{mi_python_cor2[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor1[i], atol=1e-03)}\t{np.isclose(mi_jidt_cor[i], mi_python_cor2[i], atol=1e-03)}")
-	
-	verbose(mi_jidt_cor, mi_python_cor1, "scipy_kdtree", "MI", local=False)
-	verbose(mi_jidt_cor, mi_python_cor2, "scipy_ckdtree", "MI", local=False)
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovMI: ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovMI (scipy_kdtree): ", np.mean(time_python_cor1) )
-	print(" PythonKraskovMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
-	
-
-def test_kraskov_mi_local_values():
-
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-	
-	lvals = [0,1,2,3]
-	kvals = [2,4,6,8]
-
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor = np.empty(np.power(len(kvals),2))
-	time_jidt_uncor = np.empty(np.power(len(kvals),2))
-	time_python_uncor = np.empty(np.power(len(kvals),2))
-	
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting local MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lag_mi {lvals}\n")
-	
-	print(f"k, lag\t\tJidtKraskovMI vs PythonKraskovMI")
-	count = 0
-	for k in kvals:
-		for l in lvals:
-			conds[count,:] = [k, l]
-			settings = {}
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"local_values": True,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-			settings_p = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"local_values": True,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-
-			jidt_estimator = JidtKraskovMI(settings_j)
-			python_estimator = PythonKraskovMI(settings_p)
-
-			itic = time.perf_counter()
-			mi_jidt_cor = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor = python_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-
-			verbose(mi_jidt_cor, mi_python_cor, f"{conds[count,:]} correlated", "MI", local=True)
-
-			itic = time.perf_counter()
-			mi_jidt_uncor = jidt_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_uncor = python_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
-
-			verbose(mi_jidt_uncor, mi_python_uncor, f"{conds[count,:]} uncorrelated", "MI", local=True)
-			
-			count += 1
-
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
-	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
-
-
-	# test 2D
-	print(f"\n\nTesting local MI using 2D mute data with and without coupling\n")
-	
-	data = _generate_mute_data(n_samples=2000, n_replications=4)
-
-	source1 = data[0,:,:]
-	target = data[2,:,:]
-	source2 = data[4,:,:]
-
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor = np.empty(np.power(len(kvals),2))
-	time_jidt_uncor = np.empty(np.power(len(kvals),2))
-	time_python_uncor = np.empty(np.power(len(kvals),2))
-	
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting local MI using 2D mute data with and without coupling testing settings kraskov k {kvals} and lag_mi {lvals}\n")
-	
-	print(f"k, lag\t\tJidtKraskovMI vs PythonKraskovMI")
-	count = 0
-	for k in kvals:
-		for l in lvals:
-			conds[count,:] = [k, l]
-			settings = {}
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"local_values": True,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-			settings_p = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"local_values": True,
-						"num_threads": "USE_ALL",
-						"lag_mi": l}
-
-			jidt_estimator = JidtKraskovMI(settings_j)
-			python_estimator = PythonKraskovMI(settings_p)
-
-			itic = time.perf_counter()
-			mi_jidt_cor = jidt_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor = python_estimator.estimate(source1, target)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-
-			verbose(mi_jidt_cor, mi_python_cor, f"{conds[count,:]} correlated", "MI", local=True)
-
-			itic = time.perf_counter()
-			mi_jidt_uncor = jidt_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_uncor = python_estimator.estimate(source2, target)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
-
-			verbose(mi_jidt_uncor, mi_python_uncor, f"{conds[count,:]} uncorrelated", "MI", local=True)
-
-			count += 1
-
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovMI (cor): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovMI (cor): ", np.mean(time_python_cor) )
-	print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
-
-def test_kraskov_cmi():
-
-	# test 1D data
-	
-	cvals = [0.2, 0.4, 0.6, 0.8]
-	kvals = [2,4,6,8]
-	
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	mi_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor = np.empty(np.power(len(kvals),2))
-	mi_python_cor = np.empty(np.power(len(kvals),2))
-	time_jidt_uncor = np.empty(np.power(len(kvals),2))
-	mi_jidt_uncor = np.empty(np.power(len(kvals),2))
-	time_python_uncor = np.empty(np.power(len(kvals),2))
-	mi_python_uncor = np.empty(np.power(len(kvals),2))
-
-	conds = np.empty((np.power(len(kvals),2),2))
-	
-	print(f"\n\nTesting average CMI using 1D gaussian data with covariances {cvals} \ntesting settings kraskov k {kvals} and uncorrelated conditional and uncorrelated source\n")
-	
-	count = 0
-	for k in kvals:
-		for i in cvals:
-			conds[count,:] = [k,i]
-			expected_mi, source1, source2, target = _get_gauss_data(expand=True, covariance=i, seed=SEED)
-			
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"num_threads": "USE_ALL"}
-			settings_p = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"num_threads": "USE_ALL"}
-
-			jidt_estimator = JidtKraskovCMI(settings_j)
-			python_estimator = PythonKraskovCMI(settings_p)
-
-			itic = time.perf_counter()
-			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
-			itoc = time.perf_counter()
-			time_python_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target, source1)
-			itoc = time.perf_counter()
-			time_jidt_uncor[count] = itoc - itic
-
-
-			itic = time.perf_counter()
-			mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
-			itoc = time.perf_counter()
-			time_python_uncor[count] = itoc - itic
-
-			count += 1
-
-	print("k,cov\tJidtKraskovCMI\t\tPythonKraskovCMI")
-	print("uncorrelated conditional")
-	for i in range(len(mi_jidt_cor)):
-		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
-	print("uncorrelated source")
-	for i in range(len(mi_jidt_uncor)):
-		print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
-	
-	verbose(mi_jidt_cor, mi_python_cor, "uncorrelated conditional", "CMI", local=False)
-	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated source", "CMI", local=False)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
-	print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
-	print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
-
-
-	# test 2D data
-	time_jidt_cor = np.empty(4)
-	mi_jidt_cor = np.empty(4)
-	time_python_cor = np.empty(4)
-	mi_python_cor = np.empty(4)
-	time_jidt_uncor = np.empty(4)
-	mi_jidt_uncor = np.empty(4)
-	time_python_uncor = np.empty(4)
-	mi_python_uncor = np.empty(4)
-
-	print(f"\n\nTesting average CMI using 2D mute data \ntesting settings kraskov {kvals} and uncorrelated conditional and uncorrelated source\n")
-
-	count = 0
-	for k in kvals:
-		data = _generate_mute_data(n_samples=2000, n_replications=4)
-
-		source1 = data[0,:,:]
-		target = data[2,:,:]
-		source2 = data[4,:,:]
-
-		settings_j = {"kraskov_k": k,
-					"noise_level": 0,
-					"num_threads": "USE_ALL"}
-		settings_p = {"kraskov_k": k,
-					"noise_level": 0,
-					"knn_finder": "scipy_ckdtree",
-					"num_threads": "USE_ALL"}
-
-		jidt_estimator = JidtKraskovCMI(settings_j)
-		python_estimator = PythonKraskovCMI(settings_p)
-
-		itic = time.perf_counter()
-		mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_jidt_cor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_python_cor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		mi_jidt_uncor[count] = jidt_estimator.estimate(source2, target, source1)
-		itoc = time.perf_counter()
-		time_jidt_uncor[count] = itoc - itic
-
-
-		itic = time.perf_counter()
-		mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
-		itoc = time.perf_counter()
-		time_python_uncor[count] = itoc - itic
-
-		count += 1
-
-	print("k,cov\tJidtKraskovCMI\t\tPythonKraskovCMI")
-	print("uncorrelated conditional")
-	for i in range(len(mi_jidt_cor)):
-		print(f"{kvals[i]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
-	print("uncorrelated source")
-	for i in range(len(mi_jidt_uncor)):
-		print(f"{kvals[i]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
-	
-	verbose(mi_jidt_cor, mi_python_cor, "uncorrelated conditional", "CMI", local=False)
-	verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated source", "CMI", local=False)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
-	print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
-	print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
-
-
-	# test mixed dimension input
-	d = [1, 2, 3]
-
-	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1, var2 and cond each\n")
-	print("Shapes:")
-	
-	data = _generate_mute_data()
-
-	source_o = data[0,:,:]
-	target_o = data[2,:,:]
-	cond_o = data[4,:,:]
-	
-	settings = {}
-	
-	for s in d:
-		for t in d:
-			for c in d:
-			
-				source1 = source_o[:,:s]
-				target = target_o[:,:t]
-				conditional = cond_o[:,:c]
-				
-				cond = f"var1: {source1.shape} var2: {target.shape} cond: {conditional.shape}"
-
-				jidt_estimator = JidtKraskovCMI(settings)
-				python_estimator = PythonKraskovCMI(settings)
-			
-				itic = time.perf_counter()
-				mi_jidt_cor = jidt_estimator.estimate(source1, target, conditional)
-				itoc = time.perf_counter()
-				time_jidt_cor = itoc - itic
-				
-				itic = time.perf_counter()
-				mi_python_cor = python_estimator.estimate(source1, target, conditional)
-				itoc = time.perf_counter()
-				time_python_cor = itoc - itic
-
-				
-				verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
-		
-	
-	# test theiler 
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-	
-	tvals = [0,1,2,3]
-	
-	time_jidt_cor = np.empty(np.power(len(kvals),2))
-	mi_jidt_cor = np.empty(np.power(len(kvals),2))
-	time_python_cor1 = np.empty(np.power(len(kvals),2))
-	mi_python_cor1 = np.empty(np.power(len(kvals),2))
-	time_python_cor2 = np.empty(np.power(len(kvals),2))
-	mi_python_cor2 = np.empty(np.power(len(kvals),2))
-	
-	conds = np.empty((np.power(len(kvals),2),2))
-
-	print(f"\n\nTesting average CMI using 1D gaussian data with covariance 0.4 \ntesting settings kraskov k {kvals} and theiler t {tvals}\nusing knn_finder scipy_ckdtree and scipy_kdtree\n")
-	
-	count = 0
-
-	knn = ['scipy_kdtree', 'scipy_ckdtree']
-
-	for k in kvals:
-		for t in tvals:
-			conds[count,:] = [k, t]
-		
-			settings_j = {"kraskov_k": k,
-						"noise_level": 0,
-						"num_threads": "USE_ALL",
-						'theiler_t': t}
-			settings_p1 = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_kdtree",
-						"num_threads": "USE_ALL",
-						"theiler_t": t}
-
-			settings_p2 = {"kraskov_k": k,
-						"noise_level": 0,
-						"knn_finder": "scipy_ckdtree",
-						"num_threads": "USE_ALL",
-						"theiler_t": t}
-
-			jidt_estimator = JidtKraskovCMI(settings_j)
-			python_estimator1 = PythonKraskovCMI(settings_p1)
-			python_estimator2 = PythonKraskovCMI(settings_p2)
-
-			itic = time.perf_counter()
-			mi_jidt_cor[count] = jidt_estimator.estimate(source1, target, source2)
-			itoc = time.perf_counter()
-			time_jidt_cor[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor1[count] = python_estimator1.estimate(source1, target, source2)
-			itoc = time.perf_counter()
-			time_python_cor1[count] = itoc - itic
-
-			itic = time.perf_counter()
-			mi_python_cor2[count] = python_estimator2.estimate(source1, target, source2)
-			itoc = time.perf_counter()
-			time_python_cor2[count] = itoc - itic
-
-			count += 1
-
-	print("k, t\tJidtKraskovCMI\t\tPythonKraskovCMI\tPythonKraskovCMI\tclose 1e-03")
-	print("\t\t\t\tscipy_kdtree\t\tscipy_ckdtree")
-	for i in range(len(mi_python_cor1)):
-		print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor1[i]}\t{mi_python_cor2[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor1[i], atol=1e-03)}\t{np.isclose(mi_jidt_cor[i], mi_python_cor2[i], atol=1e-03)}")
-	
-	verbose(mi_jidt_cor, mi_python_cor1, "scipy_kdtree", "MI", local=False)
-	verbose(mi_jidt_cor, mi_python_cor2, "scipy_ckdtree", "MI", local=False)
-	
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovCMI: ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovCMI (scipy_kdtree): ", np.mean(time_python_cor1) )
-	print(" PythonKraskovCMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
-	
-
-def test_kraskov_cmi_local_values():
-
-	# test 1D	
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-
-	vals = [2,4,6,8]
-	
-	time_jidt_cor = np.zeros(4)
-	time_python_cor = np.zeros(4)
-	time_jidt_uncor = np.zeros(4)
-	time_python_uncor = np.zeros(4)
-
-	print(f"\n\nTesting local CMI using 1D gaussian data with covariances 0.4 \ntesting settings kraskov {vals} and uncorrelated conditional and uncorrelated source\n")
-	
-	print("kraskov k")
-	count = 0
-	for k in vals:
-
-		settings = {}
-		settings_j = {"kraskov_k": k,
-					"noise_level": 0,
-					"local_values": True,
-					"num_threads": "USE_ALL"}
-		settings_p = {"kraskov_k": k,
-					"noise_level": 0,
-					"knn_finder": "scipy_ckdtree",
-					"local_values": True,
-					"num_threads": "USE_ALL"}
-
-		jidt_estimator = JidtKraskovCMI(settings_j)
-		python_estimator = PythonKraskovCMI(settings_p)
-
-		itic = time.perf_counter()
-		cmi_jidt_cor = jidt_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_jidt_cor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		cmi_python_cor = python_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_python_cor[count] = itoc - itic
-		
-		verbose(cmi_jidt_cor, cmi_python_cor, f"{k} uncorrelated conditional", "CMI", local=True, atol=1e-03)
-
-		itic = time.perf_counter()
-		cmi_jidt_uncor = jidt_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_jidt_uncor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		cmi_python_uncor = python_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_python_uncor[count] = itoc - itic
-
-		verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source", "CMI", local=True, atol=1e-03)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
-	print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
-	print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
-
-	# test 2D
-	
-	print(f"\n\nTesting local CMI using 2D mute data\ntesting settings kraskov {vals} and uncorrelated conditional and uncorrelated source\n")
-	
-	data = _generate_mute_data(n_samples=2000, n_replications=4)
-
-	source1 = data[0,:,:]
-	target = data[2,:,:]
-	source2 = data[4,:,:]
-
-	time_jidt_cor = np.zeros(4)
-	time_python_cor = np.zeros(4)
-	time_jidt_uncor = np.zeros(4)
-	time_python_uncor = np.zeros(4)
-
-
-	count = 0
-	for k in vals:
-
-		settings = {}
-		settings_j = {"kraskov_k": k,
-					"noise_level": 0,
-					"local_values": True,
-					"num_threads": "USE_ALL"}
-		settings_p = {"kraskov_k": k,
-					"noise_level": 0,
-					"knn_finder": "scipy_ckdtree",
-					"local_values": True,
-					"num_threads": "USE_ALL"}
-
-		jidt_estimator = JidtKraskovCMI(settings_j)
-		python_estimator = PythonKraskovCMI(settings_p)
-
-		itic = time.perf_counter()
-		cmi_jidt_cor = jidt_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_jidt_cor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		cmi_python_cor = python_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_python_cor[count] = itoc - itic
-		
-		verbose(cmi_jidt_cor, cmi_python_cor, f"{k} uncorrelated conditional", "CMI", local=True, atol=1e-03)
-
-		itic = time.perf_counter()
-		cmi_jidt_uncor = jidt_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_jidt_uncor[count] = itoc - itic
-
-		itic = time.perf_counter()
-		cmi_python_uncor = python_estimator.estimate(source1, target, source2)
-		itoc = time.perf_counter()
-		time_python_uncor[count] = itoc - itic
-
-		verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source", "CMI", local=True, atol=1e-03)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
-	print(" PythonKraskovCMI: (uncorrelated conditional)", np.mean(time_python_cor) )
-	print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
-
-def test_kraskov_ais():
-
-	vals = [1,2,3]
-	kvals = [2,4,8]
-	print(f"\n\nTesting average AIS using 1D AR data with history and pure noise\ntesting settings, kraskov k {kvals}, history {vals} and tau {vals}")
-	
-	source1, source2 = _get_ar_data(seed=SEED)
-
-	time_jidt_cor = np.zeros(np.power(len(vals),3))
-	res_jidt_cor = np.zeros(np.power(len(vals),3))
-	time_python_cor = np.zeros(np.power(len(vals),3))
-	res_python_cor = np.zeros(np.power(len(vals),3))
-	time_jidt_uncor = np.zeros(np.power(len(vals),3))
-	res_jidt_uncor = np.zeros(np.power(len(vals),3))
-	time_python_uncor = np.zeros(np.power(len(vals),3))
-	res_python_uncor = np.zeros(np.power(len(vals),3))
-	conds = np.zeros([np.power(len(vals),3),3])
-	
-	count = 0
-	for k in kvals:
-		for h in vals:
-			for t in vals:
-				conds[count,:] = [k, h, t]
-				settings_j = {'kraskov_k': k,'history': h, 'tau': t}
-
-				settings_p = {'kraskov_k': k,'history': h, 'tau': t}
-		
-				jidt_estimator = JidtKraskovAIS(settings=settings_j)
-				python_estimator = PythonKraskovAIS(settings=settings_p)
-
-				itic = time.perf_counter()
-				res_jidt_cor[count] = jidt_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_jidt_cor[count] = itoc - itic
-		
-				itic = time.perf_counter()
-				res_jidt_uncor[count] = jidt_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_jidt_uncor[count] = itoc - itic
-				
-				itic = time.perf_counter()
-				res_python_cor[count] = python_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_python_cor[count] = itoc - itic
-				
-				itic = time.perf_counter()
-				res_python_uncor[count] = python_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_python_uncor[count] = itoc - itic
-
-				count += 1
-
-	print("k, hist, tau\tJidtKraskovAIS\t\tPythonKraskovAIS")
-	print("with history")
-	for i in range(len(res_jidt_cor)):
-		print(f"{conds[i]}\t{res_jidt_cor[i]}\t{res_python_cor[i]}")
-	
-	verbose(res_jidt_cor, res_python_cor, "with history", "AIS", local=False)
-
-	
-	print("noise")
-	for i in range(len(res_jidt_uncor)):
-		print(f"{conds[i]}\t{res_jidt_uncor[i]}\t{res_python_uncor[i]}")
-
-	verbose(res_jidt_uncor, res_python_uncor, "noise", "AIS", local=False)
-
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
-	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
-
-def test_kraskov_ais_local_values():
-
-	vals = [1,2,3]
-	kvals = [2,4,8]
-	print(f"\n\nTesting local AIS using 1D AR data with history and pure noise\ntesting settings, kraskov k {kvals}, history {vals} and tau {vals}\t")
-	
-	source1, source2 = _get_ar_data(seed=SEED)
-
-	time_jidt_cor = np.zeros(np.power(len(vals),3))
-	time_python_cor = np.zeros(np.power(len(vals),3))
-	time_jidt_uncor = np.zeros(np.power(len(vals),3))
-	time_python_uncor = np.zeros(np.power(len(vals),3))
-	conds = np.zeros([np.power(len(vals),3),3])
-	
-	print("k, hist, tau\tJidtKraskovAIS vs PythonKraskovAIS")
-	count = 0
-	for k in kvals:
-		for h in vals:
-			for t in vals:
-				conds[count,:] = [k, h, t]
-				settings_j = {'kraskov_k': k,'history': h, 'tau': t, 'local_values': True}
-
-				settings_p = {'kraskov_k': k,'history': h, 'tau': t, 'local_values': True}
-		
-				jidt_estimator = JidtKraskovAIS(settings=settings_j)
-				python_estimator = PythonKraskovAIS(settings=settings_p)
-
-				itic = time.perf_counter()
-				res_jidt_cor = jidt_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_jidt_cor[count] = itoc - itic
-		
-				itic = time.perf_counter()
-				res_jidt_uncor = jidt_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_jidt_uncor[count] = itoc - itic
-				
-				
-				itic = time.perf_counter()
-				res_python_cor = python_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_python_cor[count] = itoc - itic
-				
-				itic = time.perf_counter()
-				res_python_uncor = python_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_python_uncor[count] = itoc - itic
-
-				verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist ", "AIS", local=True, atol=1e-03)
-				verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise\t", "AIS", local=True, atol=1e-03)
-
-				count += 1
-	
-	print("\nmean calculation times:")
-	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
-	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
-		
-def test_kraskov_te():
-
-	vals = [1,2,3]
-
-	print(f"\n\nTesting average TE using 1D gaussian data with covariance 0.4 and lag 1\n")
-	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each.\n")
-
-	expected_mi, source1, source2, target = _get_gauss_data(expand=False, seed=SEED)
-	# add delay of one sample
-	source1 = source1[1:]
-	source2 = source2[1:]
-	target = target[:-1]
-
-	vals = [1,2,3]
-	
-	time_jidt = np.empty(np.power(len(vals),5))
-	res_jidt = np.empty(np.power(len(vals),5))
-	time_python = np.empty(np.power(len(vals),5))
-	res_python = np.empty(np.power(len(vals),5))
-
-	conds = np.empty((np.power(len(vals),5),5))
-	
-	print("std,ht,tt,hs,ts\t\tJidtKraskovTE\t\tPythonKraskovTE\t\tclose 1e-04")
-
-	count = 0
-	for hst in vals:
-
-		for ht in vals:
-			for hs in vals:
-				for tt in vals:
-					for ts in vals:
-					
-						conds[count,:] = [hst, ht, tt, hs, ts]
-
-						settings_j = {"kraskov_k": 4, 
-							"history_target": ht,
-							"history_source": hs,
-							"tau_target": tt,
-							"tau_source": ts,
-							"source_target_delay": hst,
-							"noise_level": 0, 
-							"num_threads": 1}
-						settings_p = {"kraskov_k": 4, 
-							"history_target": ht,
-							"history_source": hs,
-							"tau_target": tt,
-							"tau_source": ts,
-							"source_target_delay": hst,
-							"noise_level": 0, 
-							"num_threads": 1}
-
-						jidt_estimator = JidtKraskovTE(settings_j)
-						python_estimator = PythonKraskovTE(settings_p)
-						
-						itic = time.perf_counter()
-						te_jidt = jidt_estimator.estimate(source=source1, target=target)
-						itoc = time.perf_counter()
-						time_jidt[count] = itoc-itic
-						res_jidt[count] = te_jidt
-
-						itic = time.perf_counter()
-						te_python = python_estimator.estimate(source=source1, target=target)
-						itoc = time.perf_counter()
-						time_python[count] = itoc-itic
-						res_python[count] = te_python
-
-						count += 1
-
-						print(f"{[hst, ht, tt, hs, ts]}\t\t{te_jidt}\t{te_python}\t{np.isclose(te_jidt, te_python, rtol=1e-04, atol=1e-04)}")
-
-	verbose(res_jidt, res_python, "", "TE", local=False)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovTE: ", np.mean(time_jidt) )
-	print(" PythonKraskovTE: ", np.mean(time_python) )
-
-def test_kraskov_te_local_values():
-
-	vals = [1,2]
-	
-	print(f"\n\nTesting average TE using 1D gaussian data with covariance 0.4 and lag 1\n")
-	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each.\n")
-
-	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
-
-	source1 = source1[1:]
-	source2 = source2[1:]
-	target = target[:-1]
-
-	time_jidt = np.empty(np.power(len(vals),5))
-	res_jidt = np.empty(np.power(len(vals),5))
-	time_python = np.empty(np.power(len(vals),5))
-	res_python = np.empty(np.power(len(vals),5))
-	
-	conds = np.empty((np.power(len(vals),5),5))
-
-	print("hst,ht,tt,hs,ts\t\tJidtKraskovTE vs PythonKraskovTE")
-
-	count = 0
-	for hst in vals:
-
-		for ht in vals:
-			for tt in vals:
-				for hs in vals:
-					for ts in vals:
-
-						conds[count,:] = [hst, ht, tt, hs, ts]
-						settings_j = {"history_target": ht,
-									"history_source": hs,
-									"tau_target": tt,
-									"tau_source": ts,
-									"source_target_delay": hst,
-									"local_values": True}
-
-						settings_p = {"history_target": ht,
-									"history_source": hs,
-									"tau_target": tt,
-									"tau_source": ts,
-									"source_target_delay": hst,
-									"local_values": True}
-
-						jidt_estimator = JidtKraskovTE(settings_j)
-						python_estimator = PythonKraskovTE(settings_p)
-						
-						itic = time.perf_counter()
-						te_jidt = jidt_estimator.estimate(source=source1, target=target)
-						itoc = time.perf_counter()
-						time_jidt[count] = itoc-itic
-						
-						itic = time.perf_counter()
-						te_python = python_estimator.estimate(source=source1, target=target)
-						itoc = time.perf_counter()
-						time_python[count] = itoc-itic
-						
-						count += 1
-						
-						verbose(te_jidt, te_python, [hst, ht, tt, hs, ts], "TE", atol=1e-03, local=True)
-
-	print("\nmean calculation times:")
-	print(" JidtKraskovTE: ", np.mean(time_jidt) )
-	print(" PythonKraskovTE: ", np.mean(time_python) )
-
-
-
-def test_Kraskov_cte():
-
-	print(f"\n\nTesting average CTE using 1D mute data - with coupling and no coupling\n")
-
-	#i = 0.4
-	#expected_mi, source1, source2, target = _get_gauss_data(expand=True, covariance=i, seed=SEED)
-
-	data = _generate_mute_data(n_replications=1)
-	source1 = data[0,:]
-	target = data[4,:]
-	cond = data[3,:]
-	nocond = data[5,:]
-
-	vals = [1,2,3]
-	#vals = [1]
-
-	time_jidt_cond = np.empty(np.power(len(vals),8))
-	res_jidt_cond = np.empty(np.power(len(vals),8))
-	time_jidt_nocond = np.empty(np.power(len(vals),8))
-	res_jidt_nocond = np.empty(np.power(len(vals),8))
-	
-	time_python_cond = np.empty(np.power(len(vals),8))
-	res_python_cond = np.empty(np.power(len(vals),8))
-	time_python_nocond = np.empty(np.power(len(vals),8))
-	res_python_nocond = np.empty(np.power(len(vals),8))
-	
-
-	conds = np.empty((np.power(len(vals),5),8))
-
-	atol = 1e-03
-
-	print(f"\t\t\t\tJidtKraskovCTE\t\tPythonKraskovCTE\tclose {atol}")
-	print("hst,cst,ht,tt,hs,ts,hc,tc\tcte cond \t\tcte cond\t\tuncor cond\tuncor source")
-
-	count = 0
-	for hst in vals:
-		for cst in vals:
-			for ht in vals:
-				for tt in vals:
-					for hs in vals:
-						for ts in vals:
-							for hc in vals:
-								for tc in vals:
-
-									settings = {"history_target": ht,
-										"history_source": hs,
-										"history_conditional": hc,
-										"tau_target": tt,
-										"tau_source": ts,
-										"tau_conditional": tc,
-										"source_target_delay": hst,
-										"conditional_target_delay": cst}
-									
-									
-									jidt_estimator = JidtKraskovCTE(settings)
-									
-									itic = time.perf_counter()
-									cte_jidt_cond = jidt_estimator.estimate(source1, target, cond)
-									itoc = time.perf_counter()
-									res_jidt_cond[0] = cte_jidt_cond
-									time_jidt_cond += itoc - itic
-									
-									itic = time.perf_counter()
-									cte_jidt_nocond = jidt_estimator.estimate(source1, target, nocond)
-									itoc = time.perf_counter()
-									res_jidt_nocond[0] = cte_jidt_nocond
-									time_jidt_nocond += itoc - itic
-									
-									python_estimator = PythonKraskovCTE(settings)
-									
-									itic = time.perf_counter()
-									cte_python_cond = python_estimator.estimate(source1, target, cond)
-									itoc = time.perf_counter()
-									res_python_cond[0] = cte_python_cond
-									time_python_cond += itoc - itic
-									
-									itic = time.perf_counter()
-									cte_python_nocond = python_estimator.estimate(source1, target, nocond)
-									itoc = time.perf_counter()
-									res_python_nocond[0] = cte_python_nocond
-									time_python_nocond += itoc - itic
-									
-									#verbose(cte_jidt_cond, cte_python_cond, f"{hst,cst,ht,tt,hs,ts,hc,tc}", "CTE", local=True, atol=atol) 
-									print(f"{hst,cst,ht,tt,hs,ts,hc,tc}\t{cte_jidt_cond}\t{cte_python_cond}\t\t{np.isclose(cte_jidt_cond, cte_python_cond, rtol=atol, atol=atol)}\t{np.isclose(cte_jidt_nocond, cte_python_nocond, rtol=atol, atol=atol)}")
-
-	verbose(res_jidt_cond, res_python_cond, "", "CTE cond", atol=atol)
-	verbose(res_jidt_nocond, res_python_nocond, "", "CTE nocond", atol=atol)
-
-	print("\nmean calculation times:")
-	print(" JidtGaussianCTE (cond): ", np.mean(time_jidt_cond) )
-	print(" PythonGaussianCTE (cond): ", np.mean(time_python_cond) )
-	print(" JidtGaussianCTE (nocond): ", np.mean(time_jidt_nocond) )
-	print(" PythonGaussianCTE (nocond): ", np.mean(time_python_nocond) )
-
-
-
-############################################################# TODO CTE local
 
 
 # Test Discrete estimators
@@ -2442,18 +2695,14 @@ def test_discrete_mi():
 
 			
 			verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
-			
-
-
-
 
 def test_discrete_mi_local_values():
 
-	atol = 0.05
+	atol = 1e-03
 
 	vals = [0,1,2,3]
 	print(f"\n\nTesting local MI using 1D gaussian data with covariance 0.4 - correlated and uncorrelated")
-	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent")
+	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent\n")
 	
 	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
 
@@ -2488,7 +2737,7 @@ def test_discrete_mi_local_values():
 		itoc = time.perf_counter()
 		python_time += itoc - itic
 		
-		verbose(mi_jidt, mi_python, lags, "MI (correlated)", local=True, atol=atol)
+		verbose(mi_jidt, mi_python, f"{lags}", "MI (correlated)  ", local=True, atol=atol)
 
 		jidt_estimator = JidtDiscreteMI(settings)
 		itic = time.perf_counter()
@@ -2501,8 +2750,8 @@ def test_discrete_mi_local_values():
 		mi_python = python_estimator.estimate(source2, target)
 		itoc = time.perf_counter()
 		python_time += itoc - itic
-
-		verbose(mi_jidt, mi_python, lags, "MI (uncorrelated)", local=True, atol=atol)
+		
+		verbose(mi_jidt, mi_python, f"{lags}", "MI (uncorrelated)", local=True, atol=atol)
 	
 	print("\nmean calculation times:")
 	print(" JidtDiscreteMI: ", np.mean(jidt_time) )
@@ -2514,7 +2763,7 @@ def test_discrete_mi_local_values():
 	vals = [0,1,2,3]
 
 	print(f"\n\nTesting local MI using 2D mute data - correlated and uncorrelated")
-	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent")
+	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent\n")
 	
 	data = _generate_mute_data()
 
@@ -2549,10 +2798,10 @@ def test_discrete_mi_local_values():
 		itoc = time.perf_counter()
 		time_python_cor[lags] = itoc - itic
 
-		print(mi_jidt_cor[:10])
-		print(mi_python_cor[:10])
+		#print(mi_jidt_cor[:10])
+		#print(mi_python_cor[:10])
 
-		verbose(mi_jidt_cor[:-100], mi_python_cor[:-100], lags, "MI (correlated) 2D input", local=True, atol=atol)
+		verbose(mi_jidt_cor, mi_python_cor, lags, "MI (correlated)   2D input", local=True, atol=atol)
 
 		# uncor
 		jidt_estimator = JidtDiscreteMI(settings)
@@ -2601,7 +2850,9 @@ def test_discrete_cmi():
 		count = 0
 		for i in vals:
 			settings = {'discretise_method': m,
-						'n_discrete_bins': i}
+						'n_discrete_bins': i,
+						'noise_level': 0,
+						'normalise': False,}
 			
 			jidt_estimator = JidtDiscreteCMI(settings=settings)
 			itic = time.perf_counter()
@@ -2789,10 +3040,6 @@ def test_discrete_cmi():
 
 				
 				verbose(mi_jidt_cor, mi_python_cor, cond, "MI")
-		
-
-
-
 
 def test_discrete_cmi_local_values():
 
@@ -2800,7 +3047,7 @@ def test_discrete_cmi_local_values():
 	vals = [2,4,10]
 
 	print(f"\n\nTesting local CMI using 1D gaussian data with covariance 0.4 - uncorrelated \nconditional and uncorrelated source")
-	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal\n")
 	
 	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
 	
@@ -2842,7 +3089,7 @@ def test_discrete_cmi_local_values():
 		itoc = time.perf_counter()
 		time_python_uncor += itoc - itic
 		
-		verbose(mi_jidt, mi_python, i, "CMI (uncorrelated source)", local=True, atol=1e-03)
+		verbose(mi_jidt, mi_python, i, "CMI (uncorrelated source)     ", local=True, atol=1e-03)
 		
 		
 	print("\nmean calculation times:")
@@ -2851,7 +3098,7 @@ def test_discrete_cmi_local_values():
 
 
 	print(f"\n\nTesting local CMI using 2D mute data  - uncorrelated \nconditional and uncorrelated source")
-	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal\n")
 	
 	print("\nTest n_discrete_bins using 2D data input:")
 	data = _generate_mute_data(n_replications=2)
@@ -2870,7 +3117,7 @@ def test_discrete_cmi_local_values():
 		settings = {}
 		settings = {'local_values': True,
 					'discretise_method': 'max_ent',
-					'n_discrete_bins': 2}
+					'n_discrete_bins': 2,}
 			
 		jidt_estimator = JidtDiscreteCMI(settings)
 		itic = time.perf_counter()
@@ -2884,9 +3131,6 @@ def test_discrete_cmi_local_values():
 		itoc = time.perf_counter()
 		time_python_cor += itoc - itic
 		
-		print(mi_jidt[:10])
-		print(mi_python[:10])
-
 		verbose(mi_jidt, mi_python, i, "CMI (uncorrelated conditional)", local=True)
 
 		jidt_estimator = JidtDiscreteCMI(settings)
@@ -2901,7 +3145,7 @@ def test_discrete_cmi_local_values():
 		itoc = time.perf_counter()
 		time_python_uncor += itoc - itic
 		
-		verbose(mi_jidt, mi_python, i, "CMI (uncorrelated source)", local=True)
+		verbose(mi_jidt, mi_python, i, "CMI (uncorrelated source)     ", local=True)
 		
 		
 	print("\nmean calculation times:")
@@ -2910,85 +3154,81 @@ def test_discrete_cmi_local_values():
 
 def test_discrete_ais():
 	
-
+	atol = 1e-03
 	hvals = [1,2,3]
 	nvals = [2,4,8]
-	tvals = [1,2,3]
 	
 	print(f"\n\nTesting average AIS using 1D AR with history and noise")
-	print(f"testing settings history {hvals},  and tau {tvals}, n_discrete_bins {nvals} and discrete_method max_ent\n")
+	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent\n")
 	
 	source1, source2 = _get_ar_data(seed=SEED)
 
-	time_jidt_cor = np.zeros(np.power(len(nvals),3))
-	res_jidt_cor = np.zeros(np.power(len(nvals),3))
-	time_python_cor = np.zeros(np.power(len(nvals),3))
-	res_python_cor = np.zeros(np.power(len(nvals),3))
-	time_jidt_uncor = np.zeros(np.power(len(nvals),3))
-	res_jidt_uncor = np.zeros(np.power(len(nvals),3))
-	time_python_uncor = np.zeros(np.power(len(nvals),3))
-	res_python_uncor = np.zeros(np.power(len(nvals),3))
-	conds = np.empty((np.power(len(nvals),3),3))
+	time_jidt_cor = np.zeros(np.power(len(nvals),2))
+	res_jidt_cor = np.zeros(np.power(len(nvals),2))
+	time_python_cor = np.zeros(np.power(len(nvals),2))
+	res_python_cor = np.zeros(np.power(len(nvals),2))
+	time_jidt_uncor = np.zeros(np.power(len(nvals),2))
+	res_jidt_uncor = np.zeros(np.power(len(nvals),2))
+	time_python_uncor = np.zeros(np.power(len(nvals),2))
+	res_python_uncor = np.zeros(np.power(len(nvals),2))
+	conds = np.empty((np.power(len(nvals),3),2))
 
 	count = 0
 	for h in hvals:
-		for t in tvals:
-			for i in nvals:
+		for i in nvals:
+		
+			conds[count,:] = [h, i]
+
+			settings_j = {'history': h,
+						'discretise_method': 'max_ent',
+						'n_discrete_bins': i}
+
+			settings_p = {'history': h, 
+						'discretise_method': 'max_ent',
+						'n_discrete_bins': i}
+	
+			jidt_estimator = JidtDiscreteAIS(settings=settings_j)
+			python_estimator = PythonDiscreteAIS(settings=settings_p)
+
+			itic = time.perf_counter()
+			res_jidt_cor[count] = jidt_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+	
+			itic = time.perf_counter()
+			res_jidt_uncor[count] = jidt_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
 			
-					conds[count,:] = [h, t, i]
-
-					settings_j = {'history': h,
-								'tau': t,
-								'discretise_method': 'max_ent',
-								'n_discrete_bins': i}
-
-					settings_p = {'history': h, 
-								'tau': t,
-								'discretise_method': 'max_ent',
-								'n_discrete_bins': i}
+			itic = time.perf_counter()
+			res_python_cor[count] = python_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
 			
-					jidt_estimator = JidtDiscreteAIS(settings=settings_j)
-					python_estimator = PythonDiscreteAIS(settings=settings_p)
+			itic = time.perf_counter()
+			res_python_uncor[count] = python_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
 
-					itic = time.perf_counter()
-					res_jidt_cor[count] = jidt_estimator.estimate(source1)
-					itoc = time.perf_counter()
-					time_jidt_cor[count] = itoc - itic
-			
-					itic = time.perf_counter()
-					res_jidt_uncor[count] = jidt_estimator.estimate(source2)
-					itoc = time.perf_counter()
-					time_jidt_uncor[count] = itoc - itic
-					
-					itic = time.perf_counter()
-					res_python_cor[count] = python_estimator.estimate(source1)
-					itoc = time.perf_counter()
-					time_python_cor[count] = itoc - itic
-					
-					itic = time.perf_counter()
-					res_python_uncor[count] = python_estimator.estimate(source2)
-					itoc = time.perf_counter()
-					time_python_uncor[count] = itoc - itic
-
-					count += 1
+			count += 1
 	
 	print(f"Summary Jidt vs Python DiscreteAIS discretised 1D gaussian data using max_ent:")
 
-	print("hist, tau, bins\tJidtDiscreteAIS\t\tPythonDiscreteAIS\t close 0.01")
+	print(f"hist, bins\tJidtDiscreteAIS\t\tPythonDiscreteAIS\tclose {atol}")
 	print("correlated")
 	count = 0
 	for i in range(len(res_jidt_cor)):
-		print(f"{conds[i,:]}\t{res_jidt_cor[i]}\t{res_python_cor[i]}\t{np.isclose(res_jidt_cor[i], res_python_cor[i] ,atol=0.01)}")
+		print(f"{conds[i,:]}\t\t{res_jidt_cor[i]}\t{res_python_cor[i]}\t{np.isclose(res_jidt_cor[i], res_python_cor[i] ,atol=atol)}")
 		count += 1
 	
 	print("uncorrelated")
 	count = 0
 	for i in range(len(res_jidt_uncor)):
-		print(f"{conds[i,:]}\t{res_jidt_uncor[i]}\t{res_python_uncor[i]}\t{np.isclose(res_jidt_uncor[i], res_python_uncor[i] ,atol=0.01)}")
+		print(f"{conds[i,:]}\t\t{res_jidt_uncor[i]}\t{res_python_uncor[i]}\t{np.isclose(res_jidt_uncor[i], res_python_uncor[i] ,atol=atol)}")
 		count += 1
 
-	verbose(res_jidt_cor, res_python_cor, "with history", "AIS", atol=5e-03)
-	verbose(res_jidt_uncor, res_python_uncor, "noise", "AIS", atol=5e-03)
+	verbose(res_jidt_cor, res_python_cor, "with history", "AIS", atol=atol)
+	verbose(res_jidt_uncor, res_python_uncor, "noise", "AIS", atol=atol)
 
 	print("\nmean calculation times:")
 	print(" JidtDiscreteAIS (with history): ", np.mean(time_jidt_cor) )
@@ -2996,20 +3236,15 @@ def test_discrete_ais():
 	print(" JidtDiscreteAIS (noise): ", np.mean(time_jidt_uncor) )
 	print(" PythonDiscreteAIS (noise): ", np.mean(time_python_uncor) )
 
-
-
-
-
 def test_discrete_ais_local_values():
 	
-	atol = 0.08
+	atol = 1e-03
 
 	hvals = [1,2,3]
 	nvals = [2,4,6]
-	tvals = [1,2,3]
 	
 	print(f"\n\nTesting local AIS using 1D AR with history and noise")
-	print(f"testing settings history {hvals},  and tau {tvals}, n_discrete_bins {nvals} and discrete_method max_ent\n")
+	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent\n")
 	
 	source1, source2 = _get_ar_data(seed=SEED+1)
 	
@@ -3021,68 +3256,65 @@ def test_discrete_ais_local_values():
 	print(min_len)
 
 
-	time_jidt_cor = np.zeros(np.power(len(nvals),3))
-	res_jidt_cor = np.zeros(np.power(len(nvals),3))
-	time_python_cor = np.zeros(np.power(len(nvals),3))
-	res_python_cor = np.zeros(np.power(len(nvals),3))
-	time_jidt_uncor = np.zeros(np.power(len(nvals),3))
-	res_jidt_uncor = np.zeros(np.power(len(nvals),3))
-	time_python_uncor = np.zeros(np.power(len(nvals),3))
-	res_python_uncor = np.zeros(np.power(len(nvals),3))
-	conds = np.empty((np.power(len(nvals),3),3))
+	time_jidt_cor = np.zeros(np.power(len(nvals),2))
+	res_jidt_cor = np.zeros(np.power(len(nvals),2))
+	time_python_cor = np.zeros(np.power(len(nvals),2))
+	res_python_cor = np.zeros(np.power(len(nvals),2))
+	time_jidt_uncor = np.zeros(np.power(len(nvals),2))
+	res_jidt_uncor = np.zeros(np.power(len(nvals),2))
+	time_python_uncor = np.zeros(np.power(len(nvals),2))
+	res_python_uncor = np.zeros(np.power(len(nvals),2))
+	conds = np.empty((np.power(len(nvals),3),2))
 
-	print("hist, tau, bins\tJidtDiscreteAIS vs PythonDiscreteAIS")
+	print("hist, bins\tJidtDiscreteAIS vs PythonDiscreteAIS")
 	count = 0
 	for h in hvals:
-		for t in tvals:
-			for i in nvals:
+		for i in nvals:
+		
+			conds[count,:] = [h, i]
+			settings = {}
+			settings_j = {'history': h,
+						'discretise_method': 'max_ent',
+						'n_discrete_bins': i,
+						'local_values': True}
+			settings_p = {'history': h, 
+						'discretise_method': 'max_ent',
+						'n_discrete_bins': i,
+						'local_values': True}
+
+			jidt_estimator = JidtDiscreteAIS(settings=settings_j)
+			python_estimator = PythonDiscreteAIS(settings=settings_p)
+	
+			itic = time.perf_counter()
+			res_jidt_cor = jidt_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_jidt_cor[count] = itoc - itic
+	
+			itic = time.perf_counter()
+			res_jidt_uncor = jidt_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_jidt_uncor[count] = itoc - itic
 			
-				conds[count,:] = [h, t, i]
-				settings = {}
-				settings_j = {'history': h,
-							'tau': t,
-							'discretise_method': 'max_ent',
-							'n_discrete_bins': i,
-							'local_values': True}
-				settings_p = {'history': h, 
-							'tau': t,
-							'discretise_method': 'max_ent',
-							'n_discrete_bins': i,
-							'local_values': True}
+			
+			itic = time.perf_counter()
+			res_python_cor = python_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+			
+			itic = time.perf_counter()
+			res_python_uncor = python_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+			
+			#print(res_jidt_cor[:20])
+			#print(res_python_cor[:20])
 
-				jidt_estimator = JidtDiscreteAIS(settings=settings_j)
-				python_estimator = PythonDiscreteAIS(settings=settings_p)
-		
-				itic = time.perf_counter()
-				res_jidt_cor = jidt_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_jidt_cor[count] = itoc - itic
-		
-				itic = time.perf_counter()
-				res_jidt_uncor = jidt_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_jidt_uncor[count] = itoc - itic
-				
-				
-				itic = time.perf_counter()
-				res_python_cor = python_estimator.estimate(source1)
-				itoc = time.perf_counter()
-				time_python_cor[count] = itoc - itic
-				
-				itic = time.perf_counter()
-				res_python_uncor = python_estimator.estimate(source2)
-				itoc = time.perf_counter()
-				time_python_uncor[count] = itoc - itic
-				
-				#print(res_jidt_cor[:20])
-				#print(res_python_cor[:20])
+			min_len=min(len(res_jidt_cor), len(res_python_cor))
+			
+			verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist", "AIS", local=True, atol=atol)
+			verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise    ", "AIS", local=True, atol=atol)
 
-				min_len=min(len(res_jidt_cor), len(res_python_cor))
-				
-				verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist ", "AIS", local=True, atol=atol)
-				verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise\t", "AIS", local=True, atol=atol)
-
-				count += 1
+			count += 1
 		
 	print("\nmean calculation times:")
 	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
@@ -3215,6 +3447,7 @@ def test_discrete_te_local_values():
 									"tau_source": ts,
 									"source_target_delay": hst,
 									"local_values": True,
+									'noise_level': 0,
 									#'discretise_method': 'max_ent',
 									'n_discrete_bins': 2}
 
@@ -3233,7 +3466,7 @@ def test_discrete_te_local_values():
 									"tau_source": ts,
 									"source_target_delay": hst,
 									"local_values": True,
-									'opt_source_hist_tau': False,
+									'noise_level': 0,
 									#'discretise_method': 'max_ent',
 									'n_discrete_bins': 2}
 
@@ -3264,15 +3497,17 @@ def test_spectral_mi():
 	lag = 30
 	noise = 0.2
 
-	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
-		
-	# test different estimator settings
-	print(f"\nTest different estimator types of SpectralMI on {Hz} Hz freq data with noise {noise} and lag {lag}")
-	
 	estimators = ['kraskov','discrete','gaussian','none']
 	
 	vals = [0,10,20,30,40,50,60,70]
 
+	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
+		
+	# test different estimator settings
+	print(f"\nTest average SpectralMI on {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
+	
+	
 	expected_best = vals.index(lag)
 	
 	mi_python_cor = np.zeros([len(estimators),len(vals)])
@@ -3309,7 +3544,7 @@ def test_spectral_mi():
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian\tnone")
+	print("lag\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}\t{mi_python_cor[3,i]}")
 	
@@ -3319,8 +3554,8 @@ def test_spectral_mi():
 	print(f"found expected lag:\t{test[0]}\t\t{test[1]}\t\t\t{test[2]}\t\t\t{test[3]}")
 
 
-	print(f"\nuncorrelated data {Hz*0.7} Hz:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian\tnone")
+	print(f"\nuncorrelated data var2 ={Hz*0.7} Hz:")
+	print("lag\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}\t{mi_python_uncor[3,i]}")
 	
@@ -3339,8 +3574,9 @@ def test_spectral_mi():
 
 
 
-	print("\n\nTest Spectral vs standard MI estimators with orig data")
-
+	print(f"\n\nTest Spectral vs standard MI estimators with orig data {Hz} Hz freq data \nwith noise {noise} and lag {lag}")
+	print(f"different estimator setting {estimators} and lag_mi {vals}\n")
+	
 	# kraskov
 	mi_jidt = np.zeros(len(vals))
 	time_jidt = np.zeros(len(vals))
@@ -3349,6 +3585,7 @@ def test_spectral_mi():
 	mi_python2 = np.zeros(len(vals))
 	time_python2 = np.zeros(len(vals))
 	
+	print("- MI estimator: kraskov")
 	lcount=0
 	for lags in vals:
 		settings = {"estimator": 'kraskov',
@@ -3375,11 +3612,11 @@ def test_spectral_mi():
 
 		lcount += 1
 
-	print(f"\n\nSummary PythonSpectralMI kraskov vs JidtKraskovMI vs PythonKraskovMI:")
+	print(f"\n\nSummary PythonSpectralMI 'kraskov' vs JidtKraskovMI vs PythonKraskovMI:")
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\tPythonSpectralMI\t\tJidtKraskovMI\tPythonKraskovMI")
+	print("lag\tPythonSpectralMI\tJidtKraskovMI\t\tPythonKraskovMI")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python[i]}\t{mi_jidt[i]}\t{mi_python2[i]}")
 
@@ -3389,6 +3626,8 @@ def test_spectral_mi():
 	print(" PythonSpectralMI kraskov: ", np.mean(time_python) )
 	print(" JidtKraskovMI: ", np.mean(time_jidt) )
 	print(" PythonKraskovlMI: ", np.mean(time_python2) )
+	
+	print("\n\n- MI estimator: discrete")
 	
 	# discrete
 	mi_jidt = np.zeros(len(vals))
@@ -3429,7 +3668,7 @@ def test_spectral_mi():
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\tPythonSpectralMI\t\tJidtDiscreteMI\tPythonDiscreteMI")
+	print("lag\tPythonSpectralMI\tJidtDiscreteMI\t\tPythonDiscreteMI")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python[i]}\t{mi_jidt[i]}\t{mi_python2[i]}")
 	
@@ -3439,6 +3678,7 @@ def test_spectral_mi():
 	print(" JidtDiscreteMI: ", np.mean(time_jidt) )
 	print(" PythonDiscreteMI: ", np.mean(time_python2) )
 	
+	print("\n\n- MI estimator: gaussian")
 	# gaussian
 	mi_jidt = np.zeros(len(vals))
 	time_jidt = np.zeros(len(vals))
@@ -3478,7 +3718,7 @@ def test_spectral_mi():
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\tPythonSpectralMI\t\tJidtGaussianMI\tPythonGaussianMI")
+	print("lag\tPythonSpectralMI\tJidtGaussianMI\t\tPythonGaussianMI")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python[i]}\t{mi_jidt[i]}\t{mi_python2[i]}")
 	print(f"found expected lag:\t{expected_best==np.argmax(mi_python)}\t\t{expected_best==np.argmax(mi_jidt)}\t\t\t{expected_best==np.argmax(mi_python2)}")
@@ -3490,7 +3730,7 @@ def test_spectral_mi():
 
 
 	# test 2D input
-	print("\ntest 2D data input (n,2)")
+	print("\ntest 2D data input (10000,2) - {Hz} Hz freq data with noise {noise} and lag {lag} \n")
 	
 	source1x, targetx, source2x = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED+1)
 	
@@ -3533,7 +3773,7 @@ def test_spectral_mi():
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian\tnone")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}\t{mi_python_cor[3,i]}")
 	
@@ -3544,7 +3784,7 @@ def test_spectral_mi():
 
 
 	print(f"\nuncorrelated data {Hz*0.7} Hz:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian\tnone")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}\t{mi_python_uncor[3,i]}")
 	
@@ -3564,16 +3804,18 @@ def test_spectral_mi_local_values():
 	Hz = 40
 	lag = 30
 	noise = 0.2
-
-	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
-		
-	# test different estimator settings
-	print(f"\nTest different estimator types of SpectralMI (mean of local values) on {Hz} Hz freq data with noise {noise} and lag {lag}")
 	
 	estimators = ['kraskov','discrete','gaussian']
 	
 	vals = [0,10,20,30,40,50,60,70]
 
+	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
+		
+	# test different estimator settings
+	print(f"\nTest SpectralMI (mean of local values) on {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
+	
+	
 	expected_best = vals.index(lag)
 	
 	mi_python_cor = np.zeros([len(estimators),len(vals)])
@@ -3581,6 +3823,9 @@ def test_spectral_mi_local_values():
 	time_python_cor = np.zeros([len(estimators),len(vals)])
 	time_python_uncor = np.zeros([len(estimators),len(vals)])
 
+	mi_close_cor = np.zeros([len(estimators),len(vals)])
+	mi_close_uncor = np.zeros([len(estimators),len(vals)])
+	
 	ecount = 0
 	for e in estimators:
 
@@ -3611,7 +3856,7 @@ def test_spectral_mi_local_values():
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}")
 	
@@ -3621,8 +3866,8 @@ def test_spectral_mi_local_values():
 	print(f"found expected lag:\t{test[0]}\t\t{test[1]}\t\t\t{test[2]}")
 
 
-	print(f"\nuncorrelated data {Hz*0.7} Hz:")
-	print("lag\t\tkraskov\t\tdiscrete\tgaussian")
+	print(f"\nuncorrelated data var2 = {Hz*0.7} Hz:")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}")
 	
@@ -3636,8 +3881,6 @@ def test_spectral_mi_local_values():
 	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2,:]) )
 
 def test_spectral_cmi():
-	# test different estimator settings for PythonSpectralCMI
-	print(f"\nTest different estimator types of SpectralCMI on 40 Hz freq data \nwith noise 0.2 and no lag")
 	
 	Hz = 40
 	lag = 0
@@ -3703,131 +3946,125 @@ def test_spectral_cmi():
 if __name__ == '__main__':
 
 	################################ TODO:
-	# AIS und TE optimization weg
 	# get_dist nur gaussian testen für gaussian estimator? 
 	# 			multivariate gaussian mit flag is_tested dann Analytic für Gaussian zulassen.
 	# 
-    
-    # Gaussian
-	"""
-	testhead("GaussianMI")
-	test_gaussian_mi()
-	
-	testhead("GaussianMI local values") 
-	test_gaussian_mi_local_values()
-	
-	testhead("GaussianCMI")
-	test_gaussian_cmi()
-	
-	testhead("GaussianCMI local values")
-	test_gaussian_cmi_local_values()
-	
-	testhead("GaussianAIS")
-	test_gaussian_ais()
+	# get_analytic_distribution
 
-	testhead("GaussianAIS local values")
-	test_gaussian_ais_local_values()
+    ##												check theiler_T and kraskov string instead int
+	## 															check theiler _T >3
 	
-	testhead("GaussianTE")
-	test_gaussian_te()
-	
-	# test opt_source  ################################################## TODO
-	
-	testhead("GaussianTE local values")
-	test_gaussian_te_local_values()
-	"""
-	#testhead("GaussianCTE")
-	#test_gaussian_cte()
-	
-	#testhead("GaussianCTE local values") ################################################## TODO
-	#test_gaussian_cte_local_values()
-	
+	############ Kraskov
 
-	##																	check theiler_T and kraskov string instead int
-	## 																	check theiler _T >3
-	"""	
-	testhead("KraskovMI") ########################################## TODO mixed dim
-	test_kraskov_mi()
+	########################################## TODO KSG 2
+	#testhead("KraskovMI") ########################################## TODO and KSG2, theiler
+	#test_kraskov_mi()
 	
-	testhead("KraskovMI local values")
-	test_kraskov_mi_local_values()
+	#testhead("KraskovMI local values")
+	#test_kraskov_mi_local_values()
 	
-	testhead("KraskovCMI") ########################################## TODO mixed dim
-	test_kraskov_cmi()
+	########################################## TODO KSG 2
+	#testhead("KraskovCMI") ########################################## TODO  KSG2, Theiler
+	#test_kraskov_cmi()
 	
-	testhead("KraskovCMI local values")
-	test_kraskov_cmi_local_values()
+	#testhead("KraskovCMI local values")
+	#test_kraskov_cmi_local_values()
 	
-	testhead("KraskovAIS")
-	test_kraskov_ais()
+	#testhead("KraskovAIS")
+	#test_kraskov_ais()
 	
-	testhead("KraskovAIS local values") ################################################## TODO
-	test_kraskov_ais_local_values()
+	#testhead("KraskovAIS local values")
+	#test_kraskov_ais_local_values()
 	
-	testhead("KraskovTE")
-	test_kraskov_te()
+	#testhead("KraskovTE")
+	#test_kraskov_te()
 	
-	# test opt_source  ################################################## TODO
-
-	testhead("KraskovTE local values")
-	test_kraskov_te_local_values()
-	"""
+	#testhead("KraskovTE local values")
+	#test_kraskov_te_local_values()
 	
 	#testhead("KraskovCTE")
 	#test_Kraskov_cte()
 	
-	#testhead("GaussianCTE local values") ################################################## TODO
+	#testhead("KraskovCTE local values")
+	#test_kraskov_cte_local_values()
+	
+
+    ############ Gaussian 
+	
+	#testhead("GaussianMI")
+	#test_gaussian_mi()
+	
+	#testhead("GaussianMI local values") 
+	#test_gaussian_mi_local_values()
+	
+	#testhead("GaussianCMI")
+	#test_gaussian_cmi()
+	
+	#testhead("GaussianCMI local values")
+	#test_gaussian_cmi_local_values()
+	
+	#testhead("GaussianAIS")
+	#test_gaussian_ais()
+
+	#testhead("GaussianAIS local values")
+	#test_gaussian_ais_local_values()
+	
+	#testhead("GaussianTE")
+	#test_gaussian_te()
+	
+	#testhead("GaussianTE local values")
+	#test_gaussian_te_local_values()
+	
+	#testhead("GaussianCTE")
+	#test_gaussian_cte()
+	
+	#testhead("GaussianCTE local values")
 	#test_gaussian_cte_local_values()
 	
+
 	
-	# Discrete
 	
-	################################################################ TODO return_calc for all
+	############ Discrete
+	
+	################################################################ TODO return_calc for all ????
 
 	#testhead("DiscreteMI")
 	#test_discrete_mi()
 
-	#testhead("DiscreteMI local values") ################################################## TODO 2D data
+	#testhead("DiscreteMI local values")
 	#test_discrete_mi_local_values()
 
 	#testhead("DiscreteCMI")
 	#test_discrete_cmi()
 
-	#testhead("DiscreteCMI local values") ################################################## TODO 2D data
+	#testhead("DiscreteCMI local values")
 	#test_discrete_cmi_local_values()
 	
 	#testhead("DiscreteAIS")
 	#test_discrete_ais()
 
-	#testhead("DiscreteAIS local values") ############################################## TODO
+	#testhead("DiscreteAIS local values")
 	#test_discrete_ais_local_values()
 
 	#testhead("DiscreteTE")
 	#test_discrete_te()
 
-	# test opt source ############################################## TODO
-
-	#testhead("DiscreteTE local values") ############################################## TODO
+	#testhead("DiscreteTE local values")
 	#test_discrete_te_local_values()
 	
 
+	############ Spectral
 
-
-
-
-
-
-
-	#testhead("SpectralMI")
-	#test_spectral_mi()
+	testhead("SpectralMI")
+	test_spectral_mi()
 	############################################ TODO 2D performence dest data with or without lags new data 
 
 
-	#testhead("SpectralMI local values")
-	#test_spectral_mi_local_values()
+	testhead("SpectralMI local values")
+	test_spectral_mi_local_values()
 
-	#testhead("SpectralCMI")
-	#test_spectral_cmi()
+	testhead("SpectralCMI")
+	test_spectral_cmi()
 	############################################ TODO 2D performence dest data with or without lags new data 
 
 
