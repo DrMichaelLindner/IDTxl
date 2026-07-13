@@ -938,6 +938,45 @@ class OpenCLGaussianMI(OpenCLGaussian):
         super().__init__(settings)
         self.settings.setdefault('lag_mi', 0)
 
+
+    def gpu_covariance(Z, ctx=None, queue=None):
+        """
+        Estimate covariance matrix of Z on GPU.
+        Z: np.ndarray, shape (T, D), dtype float32.
+        Returns: cov matrix, shape (D, D), dtype float32.
+        """
+        Z = np.asarray(Z, dtype=np.float32)
+        T, D = Z.shape
+        
+        if ctx is None:
+            ctx = cl.create_some_context()
+        if queue is None:
+            queue = cl.CommandQueue(ctx)
+        
+        # Load / build kernel
+        kernel_src = open("gpuCovKernel.cl").read()
+        prg = cl.Program(ctx, kernel_src).build()
+        
+        mf = cl.mem_flags
+        Z_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=Z)
+        C_buf = cl.Buffer(ctx, mf.WRITE_ONLY, Z.nbytes)  # D*D float32
+        
+        # Launch kernel
+        global_size = (D, D)
+        prg.cov_mat(
+            queue, global_size, None,
+            Z_buf,
+            np.int32(T),
+            np.int32(D),
+            C_buf
+        )
+        
+        C = np.empty((D, D), dtype=np.float32)
+        cl.enqueue_copy(queue, C, C_buf).wait()
+        return C
+
+
+
     def estimate(self, var1, var2, n_chunks=1):
         """Estimate mutual information.
 
@@ -968,13 +1007,43 @@ class OpenCLGaussianMI(OpenCLGaussian):
         assert var1.shape[0] == var2.shape[0]
         assert var1.shape[0] % n_chunks == 0
         
+        self._check_number_of_points(var1.shape[0])
+        
+        # Normalise data
+        if self.settings['normalise']:
+            var1 = self._normalise_data(var1)
+            var2 = self._normalise_data(var2)
+
+        # Add noise to avoid duplicate points
+        # Do not add noise inplace, because it would change the input data
+        if self.settings['noise_level'] > 0:
+            var1 = var1 + self._rng.normal(0, self._noise_level, var1.shape)
+            var2 = var2 + self._rng.normal(0, self._noise_level, var2.shape)
+
         # Shift variables to calculate a lagged MI.
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
         
-        self._check_number_of_points(var1.shape[0])
+        var1 = np.asarray(var1, dtype=np.float32)
+        var2 = np.asarray(var2, dtype=np.float32)
+
+        ############################################################################## TODO maybe not?
+        cov = gpu_covariance(np.concatenate([var1, var2], axis=1))
         
+
+        d1 = var1.shape[1]
+        #d2 = Y.shape[1]
+        cov_xx = cov[:d1, :d1]
+        cov_yy = cov[d1:, d1:]
+        
+        logdet_xx = _logdet_cholesky(cov_xx)
+        logdet_yy = _logdet_cholesky(cov_yy)
+        logdet_joint = _logdet_cholesky(cov)
+        
+        mi_nats = 0.5 * (logdet_xx + logdet_yy - logdet_joint)
+        return mi_nats / np.log(base)
+        """
         signallength = var1.shape[0]
         chunklength = signallength // n_chunks
         var1dim = var1.shape[1]
@@ -999,9 +1068,57 @@ class OpenCLGaussianMI(OpenCLGaussian):
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
 
+        
 
-        # Calc
-       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        mi_array = np.array([])
+        
+        for r in range(0, n_chunks, chunks_per_run):
+            startidx = r*chunklength
+            stopidx = min(r+chunks_per_run, n_chunks)*chunklength
+            subset1 = var1[startidx:stopidx, :]
+            subset2 = var2[startidx:stopidx, :]
+            n_chunks_current_run = subset1.shape[0] // chunklength
+            results = self._estimate_single_run(subset1, subset2,
+                                                n_chunks_current_run)
+            #if self.settings['debug']:
+            #    mi_array = np.concatenate((mi_array,   results[0]))
+            #    distances = np.concatenate((distances,  results[1]))
+            #    count_var1 = np.concatenate((count_var1, results[2]))
+            #    count_var2 = np.concatenate((count_var2, results[3]))
+            #else:
+            
+            mi_array = np.concatenate((mi_array, results))
+
+        #if self.settings['return_counts']:
+        #    return mi_array, distances, count_var1, count_var2
+        #else:
+        return mi_array
+
+       """
 
 
 
@@ -1028,3 +1145,44 @@ class OpenCLGaussianMI(OpenCLGaussian):
                 average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        assert var1.shape[0] == var2.shape[0]
+        assert var1.shape[0] % n_chunks == 0
+        self._check_number_of_points(var1.shape[0])
+        signallength = var1.shape[0]
+        chunklength = signallength // n_chunks
+        assert signallength % n_chunks == 0
+        var1dim = var1.shape[1]
+        var2dim = var2.shape[1]
+        pointdim = var1dim + var2dim
+
+        # prepare for the padding
+        signallength_orig = signallength  # used for clarity at present
+
+        if self.settings['padding']:
+            # Pad time series to make GPU memory regions a multiple of 1024
+            # This value of 1024 should be replaced by
+            #  self.devices[self.settings['gpuid']].CL_DEVICE_MEM_BASE_ADDR_ALIGN
+            # or something similar, as professional cards are known to have
+            # base adress alignment of 4096 sometimes
+            pad_target = 4096
+            pad_size = (int(np.ceil(signallength/pad_target)) * pad_target -
+                        signallength)
+            pad_var1 = np.vstack(
+                [var1, 999999 + 0.1 * np.random.rand(pad_size, var1dim)])
+            pad_var2 = np.vstack(
+                [var2, 999999 + 0.1 * np.random.rand(pad_size, var2dim)])
+            pointset = np.hstack((pad_var1, pad_var2)).T.copy()
+            signallength_padded = signallength + pad_size
+        else:
+            pad_size = 0
+            pointset = np.hstack((var1, var2)).T.copy()
+            signallength_padded = signallength
+
+        if not pointset.dtype == np.float32:
+            pointset = pointset.astype(np.float32)
+        if self.settings['noise_level'] > 0:
+            pointset += np.random.normal(
+                scale=self.settings['noise_level'],
+                size=pointset.shape).astype(np.float32)
