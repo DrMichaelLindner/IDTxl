@@ -615,9 +615,9 @@ class JidtKraskovCTE(JidtKraskov):
             'Conditional-target delay must be >= 0')
         
         super().__init__(CalcClass, settings)
-        self.est_mi = None
+        #self.est_mi = None
 
-    def estimate(self, source, target, conditional):
+    def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy.
         Args:
             var1 : numpy array
@@ -635,11 +635,21 @@ class JidtKraskovCTE(JidtKraskov):
                 average CMI over all samples or local CMI for individual
                 samples if 'local_values'=True
         """
-      
+        # Return TE if no conditioning variable was provided.
+        if conditional is None:
+            self.est_mi = JidtKraskovTE(self.settings)
+            return self.est_mi.estimate(source, target)
+        else:
+            assert(conditional.size != 0), 'Conditional Array is empty.'
+
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
         cond = self._ensure_one_dim_input(conditional)
-
+        
+        # Check if number of points is sufficient for estimation.
+        self._check_number_of_points(source.shape[0] -
+                                     self.settings['source_target_delay'])
+        
         assert(source.shape[0] == target.shape[0] == cond.shape[0]), (
             'Unequal number of observations (source: {0}, target: {1}), cond: {2}.'.format(
                 var1.shape[0], var2.shape[0], cond.shape[0]))
@@ -1160,7 +1170,7 @@ class JidtGaussianCTE(JidtGaussian):
         super().__init__(CalcClass, settings)
         self.est_mi = None
 
-    def estimate(self, source, target, conditional):
+    def estimate(self, source: np.array, target: np.array, conditional=None):
         """Estimate conditional transfer entropy.
 
         Args:
@@ -1179,7 +1189,13 @@ class JidtGaussianCTE(JidtGaussian):
                 average CMI over all samples or local CMI for individual
                 samples if 'local_values'=True
         """
-        
+        # Return TE if no conditioning variable was provided.
+        if conditional is None:
+            self.est_mi = JidtGaussianTE(self.settings)
+            return self.est_mi.estimate(source, target)
+        else:
+            assert(conditional.size != 0), 'Conditional Array is empty.'
+
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
         cond = self._ensure_one_dim_input(conditional)
