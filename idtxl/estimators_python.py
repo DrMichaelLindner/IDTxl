@@ -212,6 +212,7 @@ class PythonEstimator(Estimator):
         """Set defaults for conditional transfer entropy estimation."""
 
         settings.setdefault('history_conditional', settings['history_target'])
+        settings.setdefault('tau_conditional', 1)
         settings.setdefault('conditional_target_delay', 1)
         
         assert type(settings['history_conditional']) is int, (
@@ -260,6 +261,9 @@ class PythonKraskov(PythonEstimator):
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
               available threads on the current machine)
+            - knn_finder : str [optional] - knn algorithm to use, can be
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
             
@@ -273,7 +277,7 @@ class PythonKraskov(PythonEstimator):
         settings.setdefault('base', np.e)
         settings.setdefault('noise_level', 1e-8)
         settings.setdefault('num_threads', 'USE_ALL')
-        settings.setdefault('knn_finder', 'scipy_kdtree')
+        settings.setdefault('knn_finder', 'scipy_ckdtree')
         settings.setdefault('lag_mi', 0)
         settings.setdefault('local_values', False)
         settings.setdefault('algorithm_num', 1)
@@ -285,8 +289,8 @@ class PythonKraskov(PythonEstimator):
         self.settings['theiler_t'] = int(self.settings['theiler_t'])
 
         if self.settings['theiler_t'] > 0:
-            if settings['knn_finder'] not in ['scipy_kdtree', 'scipy_ckdtree']:
-                raise ValueError('Theiler_t correction is supported only using knn_finder scipy_kdtree or scipy_ckdtree.')
+            if settings['knn_finder'] == 'numba_brute':
+                raise ValueError('Theiler_t correction is not supproted for knn_finder numba_brute.')
 
         
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
@@ -302,10 +306,44 @@ class PythonKraskov(PythonEstimator):
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
 
 
-    def _compute_epsilon(self, data: np.ndarray, k: int):
+    def _compute_epsilon(self, data: np.ndarray, k: int, return_index=False):
         """Compute the distance to the kth nearest neighbor for each point in x."""
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.find_all_dists_to_kth_neighbor(k)
+        return knn_finder.find_kth_neighbor(k, return_index)
+
+    def _compute_all_epsilon_idx(self, data: np.ndarray, k: int, return_index=False):
+        """Compute the distance to the kth nearest neighbor for each point in x."""
+        #self._knn_finder_settings['metric'] = 'euclidean'
+        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
+        return knn_finder.find_all_neighbors(k, return_index)
+    
+    def _compute_n(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
+        """Count the number of neighbors strictly within a given radius r for each point in x.
+        Returns the number of neighbors plus one, because the point itself is included in the data.
+        """
+        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
+        return knn_finder.count_all_neighbors(r, self.settings['theiler_t'], alg)
+    
+    def _compute_n_within(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
+        """Count the number of neighbors within a given radius <= r for each point in x.
+        Returns the number of neighbors plus one, because the point itself is included in the data.
+        """
+        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
+        return knn_finder.count_all_neighbors_within(r, self.settings['theiler_t'], alg)
+    
+    def _compute_n_theiler(self, data: np.ndarray, r: np.ndarray):
+        """Count the number of neighbors strictly within a given radius r for each point in x.
+        Returns the number of neighbors plus one, because the point itself is included in the data.
+        """
+        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
+        return knn_finder.count_all_neighbors_theiler(r, self.settings['theiler_t'])
+
+
+    ############################################################################ TODO remove
+    #def _compute_epsilon_old(self, data: np.ndarray, k: int):
+    #    """Compute the distance to the kth nearest neighbor for each point in x."""
+    #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
+    #    return knn_finder.find_all_dists_to_kth_neighbor(k)
 
     #def _compute_idx(self, data: np.ndarray, k: int):
     #    """Compute the distance to the kth nearest neighbor for each point in x."""
@@ -318,19 +356,6 @@ class PythonKraskov(PythonEstimator):
     #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
     #    return knn_finder.find_all_dists_to_kth_neighbor_theiler(k, self.settings['theiler_t'])
     
-    def _compute_n(self, data: np.ndarray, r: np.ndarray):
-        """Count the number of neighbors strictly within a given radius r for each point in x.
-        Returns the number of neighbors plus one, because the point itself is included in the data.
-        """
-        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors(r)
-    
-    def _compute_n_within(self, data: np.ndarray, r: np.ndarray):
-        """Count the number of neighbors within a given radius <= r for each point in x.
-        Returns the number of neighbors plus one, because the point itself is included in the data.
-        """
-        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors_within(r)
     
     #def _compute_n_n(self, data: np.ndarray, r: np.ndarray):
     #    """Count the number of neighbors strictly within a given radius r for each point in x.
@@ -339,41 +364,58 @@ class PythonKraskov(PythonEstimator):
     #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
     #    return knn_finder.count_all_neighbors_n(r)
     
-    def _compute_n_theiler(self, var1: np.ndarray, var2: np.ndarray):
-        """Count the number of neighbors strictly within a given radius r for each point in x.
-        Returns the number of neighbors plus one, because the point itself is included in the data.
-        """
-        self._knn_finder_settings['metric'] = 'chebyshev'
-        knn_finder = self._knn_finder_class(var1, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors_theiler(var1, var2, self.settings['kraskov_k'], self.settings['theiler_t'])
-
+    
         
     def getCountsMI(self, var1, var2):
         """get all Counts for Kraskov MI calculation"""
 
-        # Compute distances to kth nearest neighbors in the joint space
-        if int(self.settings['theiler_t']) > 0:
-            #epsilon = self._compute_epsilon_theiler(
-            #    np.concatenate((var1, var2), axis=1), self.settings['kraskov_k'], self.settings['theiler_t']
-            #)    
+        if self.settings['algorithm_num'] == 1: 
 
-            n_c_var1, n_c_var2 = self._compute_n_theiler(var1, var1)
-        else:
+            # Compute distances to kth nearest neighbors in the joint space
             epsilon = self._compute_epsilon(
                 np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
             )
-            n_c_var1 = self._compute_n(var1, epsilon)
-            n_c_var2 = self._compute_n(var2, epsilon)
-
-
-        # Count neighbors within eps in marginal spaces X and Y
-        #if int(self.settings['theiler_t']) > 0:
-        #    n_c_var1 = self._compute_n_theiler(var1, epsilon)
-        #    n_c_var2 = self._compute_n_theiler(var2, epsilon)
-        #else:
+            
+            # Count neighbors stricly within eps in marginal spaces X, Y 
+            n_c_var1 = self._compute_n_within(var1, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c_var2 = self._compute_n_within(var2, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
         
-        #if int(self.settings['theiler_t']) > 0:
+        else:
+            # Compute distances to kth nearest neighbors in the joint space
+            idxs = self._compute_all_epsilon_idx(
+                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k'], return_index=True
+            )
 
+
+            print(type(idxs))
+            print(idxs.shape)
+            print(idxs[0].shape)
+            print(idxs[0])
+
+            #print(type(var1))
+            #print(var1.shape)
+            
+            idx = idxs[:, 1:]
+            print(idxs.shape)
+            print(idxs[0].shape)
+            print(idxs[0])
+
+
+            n_c_var1 = self._compute_n_within(var1, idxs, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c_var2 = self._compute_n_within(var2, idxs, self.settings['theiler_t'], self.settings['algorithm_num'])
+            
+
+        # Compute distances to kth nearest neighbors in the joint space
+        #if int(self.settings['theiler_t']) > 0:      
+        #    n_c_var1 = self._compute_n_theiler(var1, epsilon, self.settings['theiler_t'])
+        #    n_c_var2 = self._compute_n_theiler(var2, epsilon, self.settings['theiler_t'])
+        #else:
+        #if self.settings['algorithm_num'] == 1: 
+        
+        
+        #else:
+        #    n_c_var1 = self._compute_n(var1, epsilon, self.settings['theiler_t'])
+        #    n_c_var2 = self._compute_n(var2, epsilon, self.settings['theiler_t'])
 
         return n_c_var1, n_c_var2
 
@@ -387,8 +429,8 @@ class PythonKraskov(PythonEstimator):
         if self.settings['algorithm_num'] == 1:
             epsilon = np.nextafter(epsilon, 0)
 
-        n_c_var1 = self._compute_n_within(var1, epsilon)
-        n_c_var2 = self._compute_n_within(var2, epsilon)
+        n_c_var1 = self._compute_n(var1, epsilon)
+        n_c_var2 = self._compute_n(var2, epsilon)
 
         return n_c_var1, n_c_var2
 
@@ -418,47 +460,7 @@ class PythonKraskov(PythonEstimator):
         return n_c_var1, n_c_var2
 
 
-    ##################################################################### TODO remove
-    def getCountsMI3(self, var1, var2):
-        """get all Counts for Kraskov MI calculation"""
-
-        epsilon1 = self._compute_epsilon(var1, self.settings['kraskov_k'])
-        epsilon2 = self._compute_epsilon(var2, self.settings['kraskov_k'])
-
-        eps = np.maximum(epsilon1, epsilon2)
-
-        n_xy = self._compute_n(np.concatenate((var1, var2), axis=1), eps)
-        
-        return n_xy
-
-        """p = np.inf
-
-        xy = np.concatenate((var1, var2), axis=1)
-        tree_z = cKDTree(xy, leafsize=40)
-
-        distances, indices = tree_z.query(xy, k=self.settings['kraskov_k']+1, p=p)
-        # remove self neighbor
-        neighbors = indices[:, 1:] 
-
-
-        tree_x = cKDTree(var1, leafsize=40)
-        tree_y = cKDTree(var2, leafsize=40)
-
-        n = var1.shape[0]
-        n_c_var1 = np.empty(n, dtype=int)
-        n_c_var2 = np.empty(n, dtype=int)
-
-        for i in range(n):
-            d1_i = np.linalg.norm(var1[neighbors[i]] - var1[i], axis=1)
-            d2_i = np.linalg.norm(var2[neighbors[i]] - var2[i], axis=1)
-            eps_1 = d1_i.max()
-            eps_2 = d2_i.max()
-
-            n_c_var1[i] = len(tree_x.query_ball_point(var1[i], r=eps_1, p=p)) - 1
-            n_c_var2[i] = len(tree_x.query_ball_point(var2[i], r=eps_2, p=p)) - 1
-        
-        return n_c_var1, n_c_var2
-        """
+    
     ##################################################################### TODO remove
     def getCountsMI2(self, var1, var2):
         """get all Counts for Kraskov MI calculation"""
@@ -498,19 +500,19 @@ class PythonKraskov(PythonEstimator):
         """get digamma values for CMI estimation"""
         
         # Compute distances to kth nearest neighbors in the joint space
-        if int(self.settings['theiler_t']) > 0:
-            epsilon = self._compute_epsilon_theiler(
-                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k'], self.settings['theiler_t']
-            )
-        else:
-            epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-            )
+        epsilon = self._compute_epsilon(
+            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
+        )
 
         # Count neighbors within eps in marginal spaces X, Y and Z    
-        n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon)
-        n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon)
-        n_c = self._compute_n(conditional, epsilon)
+        if self.settings['algorithm_num'] == 1: 
+            n_c_var1 = self._compute_n_within(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
+            n_c_var2 = self._compute_n_within(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
+            n_c = self._compute_n_within(conditional, epsilon, self.settings['theiler_t'])
+        else:
+            n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
+            n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
+            n_c = self._compute_n(conditional, epsilon, self.settings['theiler_t'])
 
         return n_c_var1, n_c_var2, n_c
 
@@ -535,8 +537,7 @@ class PythonKraskov(PythonEstimator):
 
     #    return n_c_var1, n_c_var2, n_c
 
-
-
+    
     def is_analytic_null_estimator(self):
         return False
 
@@ -567,13 +568,19 @@ class PythonKraskovMI(PythonKraskov):
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
             - knn_finder : str [optional] - knn algorithm to use, can be
-              'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn_balltree'
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
 
+            ########################################################################################################## TODO algorithm number
+            - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
+              to use (default=1)
+            
+
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         super().__init__(settings)
@@ -603,18 +610,18 @@ class PythonKraskovMI(PythonKraskov):
         else:
             ####################################################################### TODO KSG 2
             
-            mi = (digamma(self.settings['kraskov_k']) 
-                    + digamma(len(var1))
-                    - digamma(n_c_var1)
-                    - digamma(n_c_var2)
-                ) / np.log(self.settings['base'])
-
             #mi = (digamma(self.settings['kraskov_k']) 
-            #        - 1.0 / self.settings['kraskov_k']
             #        + digamma(len(var1))
             #        - digamma(n_c_var1)
             #        - digamma(n_c_var2)
             #    ) / np.log(self.settings['base'])
+
+            mi = (digamma(self.settings['kraskov_k']) 
+                    - 1.0 / self.settings['kraskov_k']
+                    + digamma(len(var1))
+                    - digamma(n_c_var1)
+                    - digamma(n_c_var2)
+                ) / np.log(self.settings['base'])
 
         return mi
     
@@ -632,16 +639,16 @@ class PythonKraskovMI(PythonKraskov):
             ################################################################### TODO KSG 2
             
             
-            #mi = (digamma(self.settings['kraskov_k']) 
-            #        + digamma(len(var1))
-            #        - np.mean(digamma(n_c_var1) + digamma(n_c_var2))
-            #    ) / np.log(self.settings['base'])
-            
             mi = (digamma(self.settings['kraskov_k']) 
-                    - 1.0 / self.settings['kraskov_k']
                     + digamma(len(var1))
-                    - np.mean( digamma(n_c_var1) + digamma(n_c_var2))
+                    - np.mean(digamma(n_c_var1) + digamma(n_c_var2))
                 ) / np.log(self.settings['base'])
+            
+            #mi = (digamma(self.settings['kraskov_k']) 
+            #        - 1.0 / self.settings['kraskov_k']
+            #        + digamma(len(var1))
+            #        - np.mean( digamma(n_c_var1) + digamma(n_c_var2))
+            #    ) / np.log(self.settings['base'])
             
         return mi
 
@@ -670,16 +677,14 @@ class PythonKraskovMI(PythonKraskov):
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         
+        # Check if number of points is sufficient for estimation.
+        self._check_number_of_points(var1.shape[0])
+
         assert (
             var1.shape[0] == var2.shape[0]
         ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]})"
 
-        # Check if number of points is sufficient for estimation.
-        if var1.shape[0] - 1 < self.settings['kraskov_k']:
-            raise ValueError(
-                f"Not enough observations for Kraskov estimator (need at least {self.settings['kraskov_k'] + 1}, got {var1.shape[0]})."
-            )
-
+        
         # Normalise data
         if self.settings['normalise']:
             var1 = self._normalise_data(var1)
@@ -728,18 +733,20 @@ class PythonKraskovCMI(PythonKraskov):
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
               available threads on the current machine)
-
-
-              ####################################################################### TODO
             - knn_finder : str [optional] - knn algorithm to use, can be
-              'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn_balltree'
-
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
 
+            ########################################################################################################## TODO algorithm number
+            - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
+              to use (default=1)
+            
+
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         super().__init__(settings)
@@ -804,17 +811,26 @@ class PythonKraskovCMI(PythonKraskov):
                 ) / np.log(self.settings['base'])
         else:
             ################################################## TODO KSG 2
-            n_c  = np.maximum(n_c, 1)
-            n_c_var1 = np.maximum(n_c_var1, 1)
-            n_c_var2 = np.maximum(n_c_var2, 1)
+
+
             cmi = (
                 digamma(self.settings['kraskov_k'])
-                #- (1.0/self.settings['kraskov_k'])
-                + np.mean(digamma(n_c)
-                - digamma(n_c_var1)
-                - digamma(n_c_var2))
+                + np.mean(digamma(n_c))
+                - np.mean(digamma(n_c_var1))
+                - np.mean(digamma(n_c_var2))
                 ) / np.log(self.settings['base'])
-
+            
+            #n_c  = np.maximum(n_c, 1)
+            #n_c_var1 = np.maximum(n_c_var1, 1)
+            #n_c_var2 = np.maximum(n_c_var2, 1)
+            #cmi = (
+            #    digamma(self.settings['kraskov_k'])
+            #    - (1.0/self.settings['kraskov_k'])
+            #    + np.mean(digamma(n_c))
+            #    - np.mean(digamma(n_c_var1))
+            #    - np.mean(digamma(n_c_var2))
+            #    ) / np.log(self.settings['base'])
+            
         return cmi
     
 
@@ -842,8 +858,8 @@ class PythonKraskovCMI(PythonKraskov):
 
         # Return MI if no conditioning variable was provided.
         if conditional is None:
-            if (self.est_mi is None):
-                self.est_mi = PythonKraskovMI(self.settings)
+            #if (self.est_mi is None):
+            self.est_mi = PythonKraskovMI(self.settings)
             return self.est_mi.estimate(var1, var2)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
@@ -852,7 +868,10 @@ class PythonKraskovCMI(PythonKraskov):
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
-
+        
+        # Check if number of points is sufficient for estimation.
+        self._check_number_of_points(var1.shape[0])
+        
         assert (
             var1.shape[0] == var2.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]}, conditional: {conditional.shape[0]})"
@@ -921,10 +940,14 @@ class PythonKraskovAIS(PythonKraskov):
               available threads on the current machine)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
+            - knn_finder : str [optional] - knn algorithm to use, can be
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
             
             ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
+            
             
     """
 
@@ -1022,7 +1045,10 @@ class PythonKraskovTE(PythonKraskov):
               average TE (default=False)
             - theiler_t : int [optional] - no. next temporal neighbours ignored
               in KNN and range searches (default=0)
-
+            - knn_finder : str [optional] - knn algorithm to use, can be
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
+            
             ###################################################################### TODO 
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
@@ -1054,16 +1080,8 @@ class PythonKraskovTE(PythonKraskov):
         # Get KNN finder class
         self._knn_finder_name = settings.get("knn_finder", "scipy_kdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
-
         
-    def check_number_of_points(self, n_points):
-        """Sanity check for number of points going into the estimator."""
-        if (n_points - 1) <= int(self.settings["kraskov_k"]):
-            raise RuntimeError(
-                f"Insufficient number of points ({n_points}) for the requested number of nearest neighbours "
-                f"(kraskov_k: {self.settings['kraskov_k']})."
-            )
-
+    
     def estimate(self, source: np.ndarray, target: np.ndarray):
         """Estimate transfer entropy from a source to a target variable.
 
@@ -1091,7 +1109,7 @@ class PythonKraskovTE(PythonKraskov):
         target = self._ensure_one_dim_input(target)
 
         # Check if number of points is sufficient for estimation.
-        self.check_number_of_points(source.shape[0] -
+        self._check_number_of_points(source.shape[0] -
                                      self.settings['source_target_delay'])
 
         assert (
@@ -1231,7 +1249,14 @@ class PythonKraskovCTE(PythonKraskov):
               between conditional and target (default=1)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
-
+            - knn_finder : str [optional] - knn algorithm to use, can be
+              'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
+              'sklearn_balltree'
+            
+            ########################################################################################################## TODO algorithm number
+            - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
+              to use (default=1)
+            
 
     """
     def __init__(self, settings):
@@ -1246,7 +1271,7 @@ class PythonKraskovCTE(PythonKraskov):
         #if settings.get('algorithm_num', 1) != 1:
         #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
-    def estimate(self, source: np.ndarray, target: np.ndarray, conditional: np.ndarray):
+    def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy from a source to a target variable
         conditioned on another.
 
@@ -1264,10 +1289,20 @@ class PythonKraskovCTE(PythonKraskov):
         
         """
 
+        # Return TE if no conditioning variable was provided.
+        if conditional is None:
+            self.est_mi = PythonKraskovTE(self.settings)
+            return self.est_mi.estimate(source, target)
+        else:
+            assert(conditional.size != 0), 'Conditional Array is empty.'
+
         source = self._ensure_two_dim_input(source)
         target = self._ensure_two_dim_input(target)
         conditional = self._ensure_two_dim_input(conditional)
 
+        # Check if number of points is sufficient for estimation.
+        self._check_number_of_points(source.shape[0] -
+                                     self.settings['source_target_delay'])
         assert (
             source.shape[0] == target.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {conditional.shape[0]}, target: {conditional.shape[0]})"
@@ -1450,12 +1485,12 @@ class PythonGaussianMI(PythonGaussian):
             
 
     """
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
-        settings.setdefault('lag_mi', int(0))
         super().__init__(settings)
-
+        self.settings.setdefault('lag_mi', int(0))
+        
 
     def calculateAverageMI(self, var1, var2):
         """calculate avarage mutual information for gaussian data"""
@@ -1572,7 +1607,7 @@ class PythonGaussianCMI(PythonGaussian):
 
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         super().__init__(settings)
@@ -1668,8 +1703,8 @@ class PythonGaussianCMI(PythonGaussian):
 
         # Return MI if no conditioning variable was provided.
         if conditional is None:
-            if (self.est_mi is None):
-                self.est_mi = PythonGaussianMI(self.settings)
+            #if (self.est_mi is None):
+            self.est_mi = PythonGaussianMI(self.settings)
             return self.est_mi.estimate(var1, var2)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
@@ -1989,7 +2024,7 @@ class PythonGaussianCTE(PythonGaussian):
         #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
     
-    def estimate(self, source: np.ndarray, target: np.ndarray, conditional: np.ndarray):
+    def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy from a source to a target variable
         conditioned on another.
 
@@ -2006,6 +2041,13 @@ class PythonGaussianCTE(PythonGaussian):
                 average TE over all samples
         
         """
+
+        # Return TE if no conditioning variable was provided.
+        if conditional is None:
+            est = PythonGaussianTE(self.settings)
+            return est.estimate(source, target)
+        else:
+            assert(conditional.size != 0), 'Conditional Array is empty.'
         
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
@@ -2716,8 +2758,8 @@ class PythonDiscreteCMI(PythonDiscrete):
 
         # Return MI if no conditioning variable was provided.
         if conditional is None:
-            if (self.est_mi is None):
-                self.est_mi = PythonDiscreteMI(self.settings)
+            #if (self.est_mi is None):
+            self.est_mi = PythonDiscreteMI(self.settings)
             return self.est_mi.estimate(var1, var2)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
@@ -3375,8 +3417,8 @@ class PythonSpectralCMI(PythonSpectral):
 
         # Return MI if no conditioning variable was provided.
         if conditional is None:
-            if (self.est_mi is None):
-                self.est_mi = PythonSpektralMI(self.settings)
+            #if (self.est_mi is None):
+            self.est_mi = PythonSpektralMI(self.settings)
             return self.est_mi.estimate(var1, var2)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
