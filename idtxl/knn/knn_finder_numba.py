@@ -22,6 +22,9 @@ class NumbaBruteForceKNNFinder(KnnFinder):
     def count_all_neighbors(self, r: float) -> np.ndarray:
         return _count_all_neighbors(self._data, r)
 
+    def count_all_neighbors_within(self, r: float) -> np.ndarray:
+        return _count_all_neighbors_within(self._data, r)
+
 @njit
 def _find_all_dists_to_kth_neighbor(data: np.ndarray, k: int) -> np.ndarray:
 
@@ -97,6 +100,24 @@ def _count_all_neighbors(data: np.ndarray, r: np.ndarray) -> np.ndarray:
                 continue
 
             counts[i] += _is_inside(data, i, data, j, threshold=r[i])
+
+    return counts
+
+@njit
+def _count_all_neighbors_within(data: np.ndarray, r: np.ndarray) -> np.ndarray:
+    
+    counts = np.zeros(data.shape[0], dtype=np.int64)
+
+    # loop over query points
+    for i in range(data.shape[0]):
+
+        # loop over data points
+        for j in range(data.shape[0]):
+
+            if i == j:
+                continue
+
+            counts[i] += _is_inside(data, i, data, j, threshold=np.nextafter(r[i], 0))
 
     return counts
 

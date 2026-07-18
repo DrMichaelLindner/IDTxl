@@ -22,8 +22,11 @@ class _SklearnTreeKnnFinder(TreeKnnFinder):
     def find_neighbors_within(self, x: np.array, r: float) -> np.ndarray:
         return self._tree.query_radius(x, np.nextafter(r, 0))
 
-    def count_neighbors(self, x: np.ndarray, r: float) -> np.ndarray:
-        return self._tree.query_radius(x, np.nextafter(r, 0), count_only=True)
+    def count_neighbors(self, x: np.ndarray, r: float, return_length=True) -> np.ndarray:
+        return self._tree.query_radius(x, r, count_only=return_length)
+
+    def count_neighbors_within(self, x: np.ndarray, r: float, return_length=True) -> np.ndarray:
+        return self._tree.query_radius(x, np.nextafter(r, 0), count_only=return_length)
 
     def _get_tree(self, data: np.ndarray):
         raise NotImplementedError
