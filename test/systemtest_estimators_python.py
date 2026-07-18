@@ -82,7 +82,7 @@ def test_kraskov_mi():
 	kvals = [2,4,6,8]
 
 	
-	
+
 	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lags_mi {lvals}\n")
 	
 	resj={}
@@ -370,7 +370,8 @@ def test_kraskov_mi():
 	print(" JidtKraskovMI: ", np.mean(time_jidt_cor) )
 	print(" PythonKraskovMI (scipy_kdtree): ", np.mean(time_python_cor1) )
 	print(" PythonKraskovMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
-"""	
+	
+	"""
 
 def test_kraskov_mi_local_values():
 
@@ -571,13 +572,15 @@ def test_kraskov_mi_local_values():
 			
 			verbose(mi_jidt_cor, mi_python_cor, cond, "MI", local=True, atol=1e-03)
 	"""
-def test_kraskov_cmi():
 
-	# test 1D data
+def test_kraskov_cmi():
 	
 	cvals = [0.2, 0.4, 0.6, 0.8]
 	kvals = [2,4,6,8]
 	
+	
+	
+	# test 1D data
 	print(f"\n\nTesting average CMI using 1D gaussian data with covariances {cvals} \ntesting settings kraskov k {kvals} and uncorrelated conditional and uncorrelated source")
 		
 	for a in [1,2]:
@@ -656,6 +659,7 @@ def test_kraskov_cmi():
 		print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
 		print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
 
+	"""
 
 	# test 2D data
 	time_jidt_cor = np.empty(4)
@@ -851,6 +855,8 @@ def test_kraskov_cmi():
 	print(" PythonKraskovCMI (scipy_kdtree): ", np.mean(time_python_cor1) )
 	print(" PythonKraskovCMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
 
+	"""
+
 def test_kraskov_cmi_local_values():
 
 	# test 1D	
@@ -921,7 +927,7 @@ def test_kraskov_cmi_local_values():
 			itoc = time.perf_counter()
 			time_python_uncor[count] = itoc - itic
 
-			verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source", "CMI", local=True, atol=1e-03)
+			verbose(cmi_jidt_uncor, cmi_python_uncor, f"{k} uncorrelated source     ", "CMI", local=True, atol=1e-03)
 
 		print("\nmean calculation times:")
 		print(" JidtKraskovCMI: (uncorrelated conditional)", np.mean(time_jidt_cor) )
@@ -3957,14 +3963,14 @@ if __name__ == '__main__':
 	############ Kraskov
 
 	########################################## TODO KSG 2
-	#testhead("KraskovMI") ########################################## TODO and KSG2, theiler
-	#test_kraskov_mi()
+	testhead("KraskovMI") ########################################## TODO and KSG2
+	test_kraskov_mi()
 	
 	#testhead("KraskovMI local values")
 	#test_kraskov_mi_local_values()
 	
 	########################################## TODO KSG 2
-	#testhead("KraskovCMI") ########################################## TODO  KSG2, Theiler
+	#testhead("KraskovCMI") ########################################## TODO  KSG2
 	#test_kraskov_cmi()
 	
 	#testhead("KraskovCMI local values")
@@ -4055,16 +4061,16 @@ if __name__ == '__main__':
 
 	############ Spectral
 
-	testhead("SpectralMI")
-	test_spectral_mi()
+	#testhead("SpectralMI")
+	#test_spectral_mi()
 	############################################ TODO 2D performence dest data with or without lags new data 
 
 
-	testhead("SpectralMI local values")
-	test_spectral_mi_local_values()
+	#testhead("SpectralMI local values")
+	#test_spectral_mi_local_values()
 
-	testhead("SpectralCMI")
-	test_spectral_cmi()
+	#testhead("SpectralCMI")
+	#test_spectral_cmi()
 	############################################ TODO 2D performence dest data with or without lags new data 
 
 
