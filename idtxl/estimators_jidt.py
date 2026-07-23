@@ -1713,6 +1713,8 @@ class JidtDiscreteCMI(JidtDiscrete):
         """
         # Make one estimate to prepare the calculator:
         (est, jidt_calc) = self.estimate(var1, var2, conditional, True)
+        print("est ", est)
+        print("cS ", jidt_calc.computeSignificance())
         return jidt_calc.computeSignificance()
 
 
@@ -2067,12 +2069,27 @@ def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
     # Compute the statistical significance of the estimate to get an
     #  AnalyticMeasurementDistribution object:
     analytic_distribution = estimator.get_analytic_distribution(**data)
+
+    ################################################################ TODO remove
+    print("###############################################")
+    print(estimator)
+    #print(data)
+    #print(analytic_distribution)
+    #print(type(analytic_distribution))
+    print(analytic_distribution.computeEstimateForGivenPValue(0.1))
+    print(analytic_distribution.computePValueForGivenEstimate(0.0000123))
+    print("###############################################")
+    #print("###############################################")
+
     # Then compute surrogates at n_perm random p-values
     surrogate_estimates = np.empty(n_perm)
     for perm in range(n_perm):
         surrogate_estimates[perm] = \
             analytic_distribution.computeEstimateForGivenPValue(
                 np.random.random())
+
+    print(surrogate_estimates)
+    
     return surrogate_estimates
 
 

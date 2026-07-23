@@ -19,7 +19,7 @@ from scipy.linalg import cholesky, solve_triangular, cho_solve
 
 from idtxl.measurement_distributions_python import EmpiricalMeasurementDistribution, AnalyticalMeasurementDistribution, ChiSquareMeasurementDistribution
 
-from idtxl.get_distribution_likelihood import get_distribution_likelihood
+#from idtxl.get_distribution_likelihood import get_distribution_likelihood
 
 import multiprocessing
 
@@ -85,7 +85,7 @@ class PythonEstimator(Estimator):
 
         return embedded_vector
 
-
+    """
     ##################################################################### TODO move ???????    
     def computeSignificanceEmpirical(self):
 
@@ -130,7 +130,7 @@ class PythonEstimator(Estimator):
 
 
     ##################################################################### TODO move ???????
-    def computeSignificanceAnalystic(self):
+    def computeSignificanceAnalytic(self):
 
         average = self.TEopt_estimator.calculateAverageCMI(self.TEopt_var1, self.TEopt_var2, self.TEopt_conditional)
 
@@ -173,7 +173,7 @@ class PythonEstimator(Estimator):
         del self.TEopt_lastAverage
 
         return meanOfDist
-
+    """
 
     ################################################################ TODO e.g. kraskov and theiler str to int
 
@@ -227,9 +227,9 @@ class PythonEstimator(Estimator):
         return settings
         
 
-
-    def is_analytic_null_estimator(self):
-        return False
+    ####################################################################### TODO remove
+    #def is_analytic_null_estimator(self):
+    #    return False
 
     def is_parallel(self):
         return False
@@ -318,14 +318,14 @@ class PythonKraskov(PythonEstimator):
         return knn_finder.find_all_neighbors(k, return_index)
     
     def _compute_n(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
-        """Count the number of neighbors strictly within a given radius r for each point in x.
+        """Count the number of neighbors within a given radius r for each point in x.
         Returns the number of neighbors plus one, because the point itself is included in the data.
         """
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
         return knn_finder.count_all_neighbors(r, self.settings['theiler_t'], alg)
     
     def _compute_n_within(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
-        """Count the number of neighbors within a given radius <= r for each point in x.
+        """Count the number of neighbors strictly within a given radius <= r for each point in x.
         Returns the number of neighbors plus one, because the point itself is included in the data.
         """
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
@@ -337,207 +337,78 @@ class PythonKraskov(PythonEstimator):
         """
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
         return knn_finder.count_all_neighbors_theiler(r, self.settings['theiler_t'])
-
-
-    ############################################################################ TODO remove
-    #def _compute_epsilon_old(self, data: np.ndarray, k: int):
-    #    """Compute the distance to the kth nearest neighbor for each point in x."""
-    #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-    #    return knn_finder.find_all_dists_to_kth_neighbor(k)
-
-    #def _compute_idx(self, data: np.ndarray, k: int):
-    #    """Compute the distance to the kth nearest neighbor for each point in x."""
-    #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-    #    return knn_finder.find_all_idx_to_kth_neighbor(k)
-
-    #def _compute_epsilon_theiler(self, data: np.ndarray, k: int, theiler: int):
-    #    """Compute the distance to the kth nearest neighbor for each point in x."""
-    #    self._knn_finder_settings['metric'] = 'euclidean'
-    #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-    #    return knn_finder.find_all_dists_to_kth_neighbor_theiler(k, self.settings['theiler_t'])
-    
-    
-    #def _compute_n_n(self, data: np.ndarray, r: np.ndarray):
-    #    """Count the number of neighbors strictly within a given radius r for each point in x.
-    #    Returns the number of neighbors plus one, because the point itself is included in the data.
-    #    """
-    #    knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-    #    return knn_finder.count_all_neighbors_n(r)
-    
     
         
     def getCountsMI(self, var1, var2):
         """get all Counts for Kraskov MI calculation"""
-
+            
         if self.settings['algorithm_num'] == 1: 
-
+            
             # Compute distances to kth nearest neighbors in the joint space
             epsilon = self._compute_epsilon(
                 np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
             )
-            
+        
             # Count neighbors stricly within eps in marginal spaces X, Y 
             n_c_var1 = self._compute_n_within(var1, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
             n_c_var2 = self._compute_n_within(var2, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
         
         else:
+            # Compute indices to all neighbors in the joint space
+            #idxs = self._compute_all_epsilon_idx(
+            #    np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
+            #)
+
+            # Count neighbors within eps in marginal spaces X, Y 
+            #n_c_var1 = self._compute_n(var1, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
+            #n_c_var2 = self._compute_n(var2, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
+            
             # Compute distances to kth nearest neighbors in the joint space
-            idxs = self._compute_all_epsilon_idx(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k'], return_index=True
+            epsilon = self._compute_epsilon(
+                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
             )
-
-
-            print(type(idxs))
-            print(idxs.shape)
-            print(idxs[0].shape)
-            print(idxs[0])
-
-            #print(type(var1))
-            #print(var1.shape)
-            
-            idx = idxs[:, 1:]
-            print(idxs.shape)
-            print(idxs[0].shape)
-            print(idxs[0])
-
-
-            n_c_var1 = self._compute_n_within(var1, idxs, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c_var2 = self._compute_n_within(var2, idxs, self.settings['theiler_t'], self.settings['algorithm_num'])
+        
+            # Count neighbors within eps in marginal spaces X, Y 
+            n_c_var1 = self._compute_n(var1, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c_var2 = self._compute_n(var2, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
             
 
-        # Compute distances to kth nearest neighbors in the joint space
-        #if int(self.settings['theiler_t']) > 0:      
-        #    n_c_var1 = self._compute_n_theiler(var1, epsilon, self.settings['theiler_t'])
-        #    n_c_var2 = self._compute_n_theiler(var2, epsilon, self.settings['theiler_t'])
-        #else:
-        #if self.settings['algorithm_num'] == 1: 
-        
-        
-        #else:
-        #    n_c_var1 = self._compute_n(var1, epsilon, self.settings['theiler_t'])
-        #    n_c_var2 = self._compute_n(var2, epsilon, self.settings['theiler_t'])
-
         return n_c_var1, n_c_var2
-
-    ##################################################################### TODO remove
-    def getCountsMI5(self, var1, var2):
-        """get all Counts for Kraskov MI calculation"""
-        epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            )
-
-        if self.settings['algorithm_num'] == 1:
-            epsilon = np.nextafter(epsilon, 0)
-
-        n_c_var1 = self._compute_n(var1, epsilon)
-        n_c_var2 = self._compute_n(var2, epsilon)
-
-        return n_c_var1, n_c_var2
-
-
-
-
-    ##################################################################### TODO remove
-    def getCountsMI4(self, var1, var2):
-        """get all Counts for Kraskov MI calculation"""
-
-        epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            )
-        idx = self._compute_idx(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            )
-        
-        print(type(epsilon))
-        print(type(idx))
-        print(epsilon.shape)
-        print(idx.shape)
-
-
-        n_c_var1 = self._compute_n_n(var1, epsilon)
-        n_c_var2 = self._compute_n_n(var2, epsilon)
-
-        return n_c_var1, n_c_var2
-
-
-    
-    ##################################################################### TODO remove
-    def getCountsMI2(self, var1, var2):
-        """get all Counts for Kraskov MI calculation"""
-
-        p = np.inf
-
-        xy = np.concatenate((var1, var2), axis=1)
-        tree_z = cKDTree(xy, leafsize=40)
-
-        distances, indices = tree_z.query(xy, k=self.settings['kraskov_k']+1, p=p)
-        # remove self neighbor
-        neighbors = indices[:, 1:]
-
-
-        tree_x = cKDTree(var1, leafsize=40)
-        tree_y = cKDTree(var2, leafsize=40)
-
-        n = var1.shape[0]
-        n_c_var1 = np.empty(n, dtype=int)
-        n_c_var2 = np.empty(n, dtype=int)
-
-        for i in range(n):
-            d1_i = np.linalg.norm(var1[neighbors[i]] - var1[i], axis=1)
-            d2_i = np.linalg.norm(var2[neighbors[i]] - var2[i], axis=1)
-            eps_1 = d1_i.max()# - 1e-12
-            eps_2 = d2_i.max()# - 1e-12
-
-            n_c_var1[i] = len(tree_x.query_ball_point(var1[i], r=eps_1, p=p)) - 1
-            n_c_var2[i] = len(tree_x.query_ball_point(var2[i], r=eps_2, p=p)) - 1
-        
-        return n_c_var1, n_c_var2
-
-
 
 
     def getCountsCMI(self, var1, var2, conditional):
         """get digamma values for CMI estimation"""
         
-        # Compute distances to kth nearest neighbors in the joint space
-        epsilon = self._compute_epsilon(
-            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-        )
-
-        # Count neighbors within eps in marginal spaces X, Y and Z    
+        
         if self.settings['algorithm_num'] == 1: 
-            n_c_var1 = self._compute_n_within(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
-            n_c_var2 = self._compute_n_within(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
-            n_c = self._compute_n_within(conditional, epsilon, self.settings['theiler_t'])
+            # Compute distances to kth nearest neighbors in the joint space
+            epsilon = self._compute_epsilon(
+                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
+            )
+            # Count neighbors strictly within eps in marginal spaces X, Y and Z    
+            n_c_var1 = self._compute_n_within(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c_var2 = self._compute_n_within(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c = self._compute_n_within(conditional, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
         else:
-            n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'])
-            n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'])
-            n_c = self._compute_n(conditional, epsilon, self.settings['theiler_t'])
+            ## Compute distances to kth nearest neighbors in the joint space
+            #idxs = self._compute_all_epsilon_idx(
+            #    np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
+            #)
+            #n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
+            #n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
+            #n_c = self._compute_n(conditional, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
 
+            # Compute distances to kth nearest neighbors in the joint space
+            epsilon = self._compute_epsilon(
+                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
+            )
+            # Count neighbors within eps in marginal spaces X, Y and Z    
+            n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+            n_c = self._compute_n(conditional, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
         return n_c_var1, n_c_var2, n_c
 
 
-    #def getCountsCMI2(self, var1, var2, conditional):
-    #    """get digamma values for CMI estimation"""
-    #    
-    #    # Compute distances to kth nearest neighbors in the joint space
-    #    if int(self.settings['theiler_t']) > 0:
-    #        epsilon = self._compute_epsilon_theiler(
-    #            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k'], self.settings['theiler_t']
-    #        )
-    #    else:
-    #        epsilon = self._compute_epsilon(
-    #            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-    #        )
-
-    #    # Count neighbors within eps in marginal spaces X, Y and Z    
-    #    n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon)
-    #    n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon)
-    #    n_c = self._compute_n(conditional, epsilon)
-
-    #    return n_c_var1, n_c_var2, n_c
-
-    
     def is_analytic_null_estimator(self):
         return False
 
@@ -610,18 +481,18 @@ class PythonKraskovMI(PythonKraskov):
         else:
             ####################################################################### TODO KSG 2
             
-            #mi = (digamma(self.settings['kraskov_k']) 
-            #        + digamma(len(var1))
-            #        - digamma(n_c_var1)
-            #        - digamma(n_c_var2)
-            #    ) / np.log(self.settings['base'])
-
             mi = (digamma(self.settings['kraskov_k']) 
-                    - 1.0 / self.settings['kraskov_k']
                     + digamma(len(var1))
                     - digamma(n_c_var1)
                     - digamma(n_c_var2)
                 ) / np.log(self.settings['base'])
+
+            #mi = (digamma(self.settings['kraskov_k']) 
+            #        - 1.0 / self.settings['kraskov_k']
+            #        + digamma(len(var1))
+            #        - digamma(n_c_var1)
+            #        - digamma(n_c_var2)
+            #    ) / np.log(self.settings['base'])
 
         return mi
     
@@ -787,12 +658,20 @@ class PythonKraskovCMI(PythonKraskov):
 
         else:
             ################################################## TODO KSG 2
-            cmi = (digamma(self.settings['kraskov_k'])
-                - (1.0/self.settings['kraskov_k'])
-                + digamma(n_c)
-                - digamma(n_c_var1)
-                - digamma(n_c_var2)
+
+            cmi = (
+                digamma(self.settings['kraskov_k'])
+                + digamma(n_c + 1)
+                - digamma(n_c_var1 + 1)
+                - digamma(n_c_var2 + 1)
                 ) / np.log(self.settings['base'])
+
+            #cmi = (digamma(self.settings['kraskov_k'])
+            #    - (1.0/self.settings['kraskov_k'])
+            #    + digamma(n_c)
+            #    - digamma(n_c_var1)
+            #    - digamma(n_c_var2)
+            #    ) / np.log(self.settings['base'])
 
         return cmi
     
@@ -1095,15 +974,10 @@ class PythonKraskovTE(PythonKraskov):
 
         Returns:
             float | numpy array
-                average TE over all samples 
-
-                ################################################ ???????????????????????????????????????????????????? local values ??????
-                or local TE for individual
+                average TE over all samples or local TE for individual
                 samples if 'local_values'=True
 
         """
-        ##################################################################################################### TODO
-
 
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
@@ -1307,44 +1181,6 @@ class PythonKraskovCTE(PythonKraskov):
             source.shape[0] == target.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {conditional.shape[0]}, target: {conditional.shape[0]})"
 
-        """
-        # delay embedding
-        startTimeBasedOnTargetPast = (self.settings['history_target'] - 1) * self.settings['tau_target']
-        startTimeBasedOnSourcePast = (self.settings['history_source'] - 1) * self.settings['tau_source'] + self.settings['source_target_delay'] - 1
-        
-        startTimeBasedOnConditionalPast = 0
-        dimOfConditionals = 0
-        for i in range(self.settings['conditional_target_delay']):
-            st = (self.settings['history_conditional'] - 1) * self.settings['tau_conditional'] + self.settings['conditional_target_delay'] - 1
-            if st > startTimeBasedOnConditionalPast:
-                startTimeBasedOnConditionalPast = st
-        startFirstPoint = max(startTimeBasedOnTargetPast, max(startTimeBasedOnSourcePast, startTimeBasedOnConditionalPast))
-
-        target_past = self.makeDelayEmbeddingVector(target, 
-            self.settings['history_target'], 
-            self.settings['tau_target'], 
-            startFirstPoint, 
-            target.shape[0] - startFirstPoint - 1)
-        target_current = self.makeDelayEmbeddingVectorCurrent(target,
-            1,
-            startFirstPoint + 1,
-            target.shape[0] - startFirstPoint - 1)
-        source_past = self.makeDelayEmbeddingVector(source,
-            self.settings['history_source'],
-            self.settings['tau_source'],
-            startFirstPoint + 1 - self.settings['source_target_delay'],
-            source.shape[0] - startFirstPoint - 1)
-        
-        conditional_past = self.makeDelayEmbeddingVector(conditional,
-            self.settings['history_conditional'],
-            self.settings['tau_conditional'],
-            startFirstPoint + 1 - self.settings['conditional_target_delay'],
-            conditional.shape[0] - startFirstPoint - 1)
-        
-        # combine target_current and conditional_past as conditional for CMI
-        condCombine = np.hstack([target_past, conditional_past])
-        """
-
         # delay embedding
         startTimeBasedOnTargetPast = (self.settings['history_target'] - 1) * self.settings['tau_target']
         startTimeBasedOnSourcePast = (self.settings['history_source'] - 1) * self.settings['tau_source'] + self.settings['source_target_delay'] - 1
@@ -1415,6 +1251,8 @@ class PythonGaussian(PythonEstimator):
         settings.setdefault('normalise', False)
         settings.setdefault('noise_level', 0)
         super().__init__(settings)
+
+        self.actualValue = None
         
     def logdet_cholesky(self, cov):
         """
@@ -1443,6 +1281,10 @@ class PythonGaussian(PythonEstimator):
 
     
     ##################################################################################################### TODO
+    def is_analytic_null_estimator(self):
+        return True
+
+    
     def estimate_surrogates_analytic(self, n_perm=200, **data):
         """Estimate the surrogate distribution analytically.
         This method must be implemented because this class'
@@ -1585,6 +1427,23 @@ class PythonGaussianMI(PythonGaussian):
         else:
             return self.calculateAverageMI(var1, var2)
 
+    
+    def computeSignificance(self, var1, var2):
+        average = self.calculateAverageMI(var1, var2)
+
+        C = ChiSquareMeasurementDistribution()
+
+        print(C)
+        print(type(C))
+
+        x = C.ChiSquareMeasurementDistribution(average, 
+                                            len(var1),
+                                            var1.shape[1] * var2.shape[1],
+                                            False)
+        print(x)
+
+        return x
+
 
 class PythonGaussianCMI(PythonGaussian):
     """Calculate conditional mutual information with python Gaussian implementation.
@@ -1629,6 +1488,16 @@ class PythonGaussianCMI(PythonGaussian):
         cov_xz  = self.cov_reg(xz, eps)
         cov_yz  = self.cov_reg(yz, eps)
         cov_z   = self.cov_reg(conditional, eps)
+
+        ################################################################# TODO remove
+        #print("cov xyz: ", cov_xyz.shape)
+        #print("cov xz: ", cov_xz.shape)
+        #print(cov_xz)
+        #print("cov yz: ", cov_yz.shape)
+        #print("cov z: ", cov_z.shape)
+        #print("var1: ", var1.shape)
+        #print("var2: ", var2.shape)
+        
 
         # Handle 1D Z cleanly
         if cov_z.ndim == 0:
@@ -1732,12 +1601,65 @@ class PythonGaussianCMI(PythonGaussian):
                 0, self._noise_level, conditional.shape
             )
 
+        self.n_samples = var1.shape[0]
+
         if self.settings['local_values']:
             cmi = self.calculateLocalCMI(var1, var2, conditional)
+            self.actualValue = np.mean(cmi)
         else:
             cmi = self.calculateAverageCMI(var1, var2, conditional)
+            self.actualValue = cmi
 
         return cmi
+
+    def computeSignificance(self):
+
+        #average = self.estimate(self.var1, self.var2, self.conditional)
+        C = ChiSquareMeasurementDistribution()
+        
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                
+                2########################################## TODO var1IndicesInCovariance.length * var2IndicesInCovariance.length,
+                ,
+                False)
+        """
+        print("est ", self.actualValue)
+        print("cs ", C)
+        print(max(self.var1))
+        print(max(self.var2))
+        print(max(self.conditional))
+        print("p ", C.pValue )
+        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
+        """
+        return C
+
+    ######################################################################### TODO only in actract class?
+    def get_analytic_distribution(self, var1, var2, conditional=None):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2#
+
+        Returns:
+            idtxl calculator that was used here
+        """
+
+        if not self.actualValue:
+            est = self.estimate(var1, var2, conditional)
+        return self.computeSignificance()
 
 
 class PythonGaussianAIS(PythonGaussian):
@@ -1868,6 +1790,7 @@ class PythonGaussianTE(PythonGaussian):
             raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
 
+    #################################################################### TODO remove
     def residual_cov(self, X, Y):
 
         n = X.shape[0]
@@ -1880,7 +1803,7 @@ class PythonGaussianTE(PythonGaussian):
         return self.cov_reg(E)
         #return np.cov(E, rowvar=False, bias=False)
 
-    
+    #################################################################### TODO remove
     def calculateAverageTE(self, source_past, target_past, target_current):
         """calaculate Average transfer entropy for gaussian data"""
         
@@ -1914,8 +1837,6 @@ class PythonGaussianTE(PythonGaussian):
                 average TE over all samples or local TE for individual
                 samples if 'local_values'=True
         
-
-
         TE_{Y->X} = 0.5 * log det Sigma(X_t | X_past) / det Sigma(X_t | X_past, Y_past)
         where X_past = X_{t-lag}, Y_past = Y_{t-lag}
         
@@ -2126,6 +2047,8 @@ class PythonDiscrete(PythonEstimator):
         settings.setdefault('discretise_method', 'none')
         settings.setdefault('local_values', False)
         super().__init__(settings)
+
+        self.actualValue = None
 
     def _discretise_vars(self, var1, var2=None, conditional=None):
         # Discretise variables if requested. Otherwise assert data are discrete
@@ -2350,12 +2273,13 @@ class PythonDiscrete(PythonEstimator):
 
         return h_xz
 
-
+    ################################################################################### TODO
     def is_analytic_null_estimator(self):
         return True
 
+    ################################################################################### TODO
     def get_analytic_distribution(self, **data):
-        """Return a JIDT AnalyticNullDistribution object.
+        """Return a Python AnalyticNullDistribution object.
 
         Required so that our estimate_surrogates_analytic method can use the
         common_estimate_surrogates_analytic() method, where data is formatted
@@ -2370,6 +2294,7 @@ class PythonDiscrete(PythonEstimator):
         """
         pass
 
+    ################################################################################### TODO
     def estimate_surrogates_analytic(self, n_perm=200, **data):
         """Return estimate of the analytical surrogate distribution.
 
@@ -2530,7 +2455,6 @@ class PythonDiscreteMI(PythonDiscrete):
 
         return i_xy
 
-    
     def estimate(self, var1, var2):
         """Estimate mutual information.
 
@@ -2568,6 +2492,9 @@ class PythonDiscreteMI(PythonDiscrete):
         var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
         var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
         
+        self.n_samples = var1.shape[0]
+        
+
         # Shift variables to calculate a lagged MI.
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi']]
@@ -2576,11 +2503,58 @@ class PythonDiscreteMI(PythonDiscrete):
         if self.settings['local_values']:
             var1 = self._ensure_one_dim_input(var1)
             var2 = self._ensure_one_dim_input(var2)
-            return self.calculateLocalMI(var1, var2)
+            mi = self.calculateLocalMI(var1, var2)
+            self.actualValue = np.mean(mi)
         else:
             var1 = self._ensure_two_dim_input(var1)
             var2 = self._ensure_two_dim_input(var2)
-            return self.calculateAverageMI(var1, var2)
+            mi = self.calculateAverageMI(var1, var2)
+            self.actualValue = mi
+
+        return mi
+    
+    ############################################################################ TODO
+    def computeSignificance(self):
+
+        #average = self.estimate(self.var1, self.var2, self.conditional)
+        C = ChiSquareMeasurementDistribution()
+        
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1),
+                False)
+        """
+        print("est ", self.actualValue)
+        print("cs ", C)
+        print(max(self.var1))
+        print(max(self.var2))
+        print(max(self.conditional))
+        print("p ", C.pValue )
+        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
+        """
+        return C
+    
+    ############################################################################ TODO
+    def get_analytic_distribution(self, var1, var2):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        return self.computeSignificance()
 
 
 class PythonDiscreteCMI(PythonDiscrete):
@@ -2595,8 +2569,6 @@ class PythonDiscreteCMI(PythonDiscrete):
         settings : dict [optional]
             sets estimation parameters:
 
-            - debug : bool [optional] - return debug information when calling
-              JIDT (default=False)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
             - discretise_method : str [optional] - if and how to discretise
@@ -2792,11 +2764,67 @@ class PythonDiscreteCMI(PythonDiscrete):
         var2 = self._ensure_one_dim_input(var2)
         conditional = self._ensure_one_dim_input(conditional)
 
-        if self.settings['local_values']:
-            return self.calculateLocalCMI(var1, var2, conditional)
-        else:
-            return self.calculateAverageCMI(var1, var2, conditional)
+        self.n_samples = var1.shape[0]
 
+        if self.settings['local_values']:
+            cmi = self.calculateLocalCMI(var1, var2, conditional)
+            self.actualValue = np.mean(cmi)
+        else:
+            cmi = self.calculateAverageCMI(var1, var2, conditional)
+            self.actualValue = cmi
+        
+        return cmi
+
+
+    def computeSignificance(self):
+
+        #average = self.estimate(self.var1, self.var2, self.conditional)
+        C = ChiSquareMeasurementDistribution()
+        
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']),
+                False)
+        """
+        print("est ", self.actualValue)
+        print("cs ", C)
+        print(max(self.var1))
+        print(max(self.var2))
+        print(max(self.conditional))
+        print("p ", C.pValue )
+        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
+        """
+        return C
+
+
+    def get_analytic_distribution(self, var1, var2, conditional=None):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        if not self.actualValue:
+            est = self.estimate(var1, var2, conditional)
+        return self.computeSignificance()
+
+        
+       
 
 class PythonDiscreteAIS(PythonDiscrete):
     """Calculate AIS with Python discrete-variable implementation.
@@ -2849,6 +2877,7 @@ class PythonDiscreteAIS(PythonDiscrete):
         assert settings['alph1'] >= 2, 'Number of bins must be >= 2'
         super().__init__(settings)
 
+
     def estimate(self, process):
         """Estimate active information storage.
 
@@ -2886,13 +2915,64 @@ class PythonDiscreteAIS(PythonDiscrete):
         process_past = self._ensure_two_dim_input(process_past)
         process_past = process_past.astype(int)
         
+        self.n_samples = process.shape[0]
+
         if self.settings['local_values']:
             ais = PythonDiscreteMI.calculateLocalMI(self, process_past, process_current)
             ais = np.hstack([np.zeros(self.settings['history']), ais[:,0]])
+            self.actualValue = np.mean(ais)
         else:
             ais = PythonDiscreteMI.calculateAverageMI(self, process_past, process_current)
+            self.actualValue = ais
+        
         return ais
 
+
+    ########################################################################### TODO
+    def computeSignificance(self):
+
+        #average = self.estimate(self.var1, self.var2, self.conditional)
+        C = ChiSquareMeasurementDistribution()
+        
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                (self.settings['alph1'] - 1) * (np.power(self.settings['alph1'], self.settings['history']) - 1),
+                False)
+        """
+        print("est ", self.actualValue)
+        print("cs ", C)
+        print(max(self.var1))
+        print(max(self.var2))
+        print(max(self.conditional))
+        print("p ", C.pValue )
+        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
+        """
+        return C
+
+    ########################################################################### TODO
+    def get_analytic_distribution(self, process):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            process : numpy array
+                realisations as either a 2D numpy array where array dimensions
+                represent [realisations x variable dimension] or a 1D array
+                representing [realisations], array type can be float (requires
+                discretisation) or int
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        
+        ###################################################################### TODO test
+
+
+        return self.computeSignificance()
+        
 
 class PythonDiscreteTE(PythonDiscrete):
     """Calculate TE with Python implementation for discrete variables.
@@ -3036,6 +3116,37 @@ class PythonDiscreteTE(PythonDiscrete):
             te = PythonDiscreteCMI.calculateAverageCMI(self, source_past, target_current, target_past)
         
         return te
+
+    ########################################################################### TODO
+    def get_analytic_distribution(self, source, target):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            target : numpy array
+                realisations of target variable (similar to var1)
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        # Make one estimate to prepare the calculator:
+        
+        ###################################################################### TODO test
+        average = self.estimate(source, target)
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(average,
+                source.shape[0],
+                (self.settings['alph1'] - 1)*(self.settings['alph2'] - 1),
+                False)
+        return C
 
 
 
@@ -3489,10 +3600,24 @@ def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
     # Compute the statistical significance of the estimate to get an
     #  AnalyticMeasurementDistribution object:
     analytic_distribution = estimator.get_analytic_distribution(**data)
+
+    ################################################################ TODO remove
+    print("###############################################")
+    print(estimator)
+    #print(data)
+    #print(analytic_distribution)
+    #print(type(analytic_distribution))
+    print(analytic_distribution.computeEstimateForGivenPValue(0.1))
+    print(analytic_distribution.computePValueForGivenEstimate(0.0000123))
+    print("###############################################")
+    #print("###############################################")
+
     # Then compute surrogates at n_perm random p-values
     surrogate_estimates = np.empty(n_perm)
     for perm in range(n_perm):
         surrogate_estimates[perm] = \
-            analytic_distribution.computeEstimateForGivenPValue(
-                np.random.random())
+            analytic_distribution.computeEstimateForGivenPValue(np.random.random())
+
+    print(surrogate_estimates)
+    
     return surrogate_estimates

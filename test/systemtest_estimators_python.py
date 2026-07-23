@@ -1,11 +1,12 @@
-
-
-
+"""
+Provide tests to compare Jidt and Python estimators
+"""
 
 import numpy as np
 
 import time
 import sys
+import copy
 
 from idtxl.estimators_jidt import (JidtKraskovMI, JidtKraskovCMI, JidtKraskovAIS, JidtKraskovTE, JidtKraskovCTE, 
 									JidtGaussianMI, JidtGaussianCMI, JidtGaussianTE, JidtGaussianCTE, JidtGaussianAIS, 
@@ -15,10 +16,19 @@ from idtxl.estimators_python import (PythonKraskovMI, PythonKraskovCMI, PythonKr
 									PythonDiscreteMI, PythonDiscreteCMI, PythonDiscreteAIS, PythonDiscreteTE, 
 									PythonSpectralMI, PythonSpectralCMI)
 
+from idtxl.multivariate_te import MultivariateTE
+from idtxl.bivariate_te import BivariateTE
+from idtxl.multivariate_mi import MultivariateMI
+from idtxl.bivariate_mi import BivariateMI
+
 from idtxl.idtxl_utils import calculate_mi
+from idtxl.data import Data
+
 import random as rn
 import itertools
-from gen_testdata import _get_gauss_data, _get_ar_data, _generate_mute_data, _get_mem_binary_data, _get_freq_data, _get_cte_test_data
+from gen_testdata import (_get_gauss_data, _get_ar_data, _generate_mute_data, 
+						_get_mem_binary_data, _get_freq_data, _get_cte_test_data, 
+						_get_discrete_gauss_data)
 
 
 SEED = 42
@@ -642,13 +652,14 @@ def test_kraskov_cmi():
 
 				count += 1
 
-		print("k, cov\t\tJidtKraskovCMI\t\tPythonKraskovCMI")
+		atol = 1e-03
+		print(f"k, cov\t\tJidtKraskovCMI\t\tPythonKraskovCMI\tclose {atol}")
 		print("uncorrelated conditional")
 		for i in range(len(mi_jidt_cor)):
-			print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}")
+			print(f"{conds[i,:]}\t{mi_jidt_cor[i]}\t{mi_python_cor[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor[i], atol=atol)}")
 		print("uncorrelated source")
 		for i in range(len(mi_jidt_uncor)):
-			print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}")
+			print(f"{conds[i,:]}\t{mi_jidt_uncor[i]}\t{mi_python_uncor[i]}\t{np.isclose(mi_jidt_cor[i], mi_python_cor[i], atol=atol)}")
 		
 		verbose(mi_jidt_cor, mi_python_cor, "uncorrelated conditional", "CMI", local=False)
 		verbose(mi_jidt_uncor, mi_python_uncor, "uncorrelated source", "CMI", local=False)
@@ -3946,7 +3957,1560 @@ def test_spectral_cmi():
 	print("\n\nTest Spectral vs standard MI estimators with orig data")
 
 
+# Test analytic distribution
+
+def test_analytic_distribution_cmi_gaussian():
+
+    pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #evals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    evals = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 3,10 ]
+    m = 'equal'
+    bins = 5
+
+    print(f"\n\nTesting Gaussian CMI on gaussian data with cov=0.4")
+    print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+    print(f"and PValueForGivenEstimate for:\n\t{evals}\n")
+
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+
+
+    EoP_jidt = np.zeros(len(pvals))
+    EoP_python = np.zeros(len(pvals))
+    PoE_jidt = np.zeros(len(evals))
+    PoE_python = np.zeros(len(evals))
+
+    settings_jidt = {'noise_level': 0, 
+        'normalise': False,}
+
+    settings_python = {'noise_level': 0, 
+        'normalise': False,}
+
+    est_jidt = JidtGaussianCMI(settings_jidt)
+    est_python = PythonGaussianCMI(settings_python)
+
+    mi = est_jidt.estimate(source, target, source_uncorr)
+    C_jidt = est_jidt.get_analytic_distribution(source, target, source_uncorr)
+
+    mi2 = est_python.estimate(source, target, source_uncorr)
+    C_python = est_python.computeSignificance()
+
+    mean_jidt = C_jidt.getMeanOfDistribution()
+    mean_python = C_python.getMeanOfDistribution()
+    
+    mean_uncorr_jidt = C_jidt.getMeanOfUncorrectedDistribution()
+    mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+    
+    std_jidt = C_jidt.getStdOfDistribution()
+    std_python = C_python.getStdOfDistribution()
+    
+    count = 0
+    for p in pvals:
+        EoP_jidt[count] = C_jidt.computeEstimateForGivenPValue(p)
+        EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+        count += 1
+
+    count = 0
+    for e in pvals:
+        PoE_jidt[count] = C_jidt.computePValueForGivenEstimate(e)
+        PoE_python[count] = C_python.computePValueForGivenEstimate(e)
+        count += 1
+
+
+    print(f"Jidt computeSignificance:\ntype: {type(C_jidt)}")
+    print(f"Python computeSignificance:\ntype: {type(C_python)}")
+    
+    atol = 1e-03
+    print(f"\nSummary Jidt vs Python GaussianCMI 1D gaussian data using {m}:\n")
+
+    print(f"\t\t\tJidt\t\t\tPython\t\t\tclose {atol}")
+    print(f"actualValue:\n\t\t\t{C_jidt.actualValue}\t{C_python.actualValue}\t{np.isclose(C_jidt.actualValue, C_python.actualValue, atol=atol)}")
+    print(f"pValue:\n\t\t\t{C_jidt.pValue}\t{C_python.pValue}\t{np.isclose(C_jidt.pValue, C_python.pValue, atol=atol)}")
+    print(f"getMeanOfDistribution:\n\t\t\t{mean_jidt}\t{mean_python}\t{np.isclose(mean_jidt, mean_python, atol=atol)}")
+    print(f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_jidt}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_jidt, mean_uncorr_python, atol=atol)}")
+    print(f"StdOfDistribution:\n\t\t\t{std_jidt}\t{std_python}\t{np.isclose(std_jidt, std_python, atol=atol)}")
+    
+    ################################################################################ TODO remove
+    print(f"\ndegrees of freedom: Python: {C_python.degreesOfFreedom}")
+    #verbose(mean_jidt, mean_python, f"{mean_jidt} - {mean_python}", "Mean of Distribution")
+    #verbose(std_jidt, std_python, f"{std_jidt} - {std_python}", "STD of Distribution")
+
+
+    print("\nEstimateForGivenPValue:")
+    print("p\tJidtGaussianCMI\t\tPythonGaussianCMI")
+    for i in range(len(pvals)):
+        print(f"{pvals[i]}   \t{EoP_jidt[i]}\t{EoP_python[i]}")
+    verbose(EoP_jidt, EoP_python, "", "Estimate for given PValue")
+
+    print("\nPValueForGivenEstimate:")
+    print("est\tJidtGaussianCMI\t\tPythonGaussianCMI")
+    for i in range(len(evals)):
+        print(f"{evals[i]}\t\t{PoE_jidt[i]}\t{PoE_python[i]}")
+        
+    verbose(PoE_jidt, PoE_python, "", "PValue for given Estimate")
+
+
+
+def test_analytic_distribution_mi_discrete():
+
+    pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #evals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    evals = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 3,10 ]
+    m = 'equal'
+    bins = 5
+
+    print(f"\n\nTesting Discrete MI on discretized gaussian data with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+    print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+    print(f"and PValueForGivenEstimate for:\n\t{evals}\n")
+
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+
+
+    EoP_jidt = np.zeros(len(pvals))
+    EoP_python = np.zeros(len(pvals))
+    PoE_jidt = np.zeros(len(evals))
+    PoE_python = np.zeros(len(evals))
+
+    settings_jidt = {"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    settings_python = {"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    est_jidt = JidtDiscreteMI(settings_jidt)
+    est_python = PythonDiscreteMI(settings_python)
+
+    mi, calc = est_jidt.estimate(source, target, True)
+    C_jidt = calc.computeSignificance()
+
+    mi2 = est_python.estimate(source, target)
+    C_python = est_python.computeSignificance()
+
+    
+    mean_jidt = C_jidt.getMeanOfDistribution()
+    mean_python = C_python.getMeanOfDistribution()
+    
+    mean_uncorr_jidt = C_jidt.getMeanOfUncorrectedDistribution()
+    mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+    
+    std_jidt = C_jidt.getStdOfDistribution()
+    std_python = C_python.getStdOfDistribution()
+    
+    count = 0
+    for p in pvals:
+        EoP_jidt[count] = C_jidt.computeEstimateForGivenPValue(p)
+        EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+        count += 1
+
+    count = 0
+    for e in pvals:
+        PoE_jidt[count] = C_jidt.computePValueForGivenEstimate(e)
+        PoE_python[count] = C_python.computePValueForGivenEstimate(e)
+        count += 1
+
+    print(f"Jidt computeSignificance:\ntype: {type(C_jidt)}")
+    print(f"Python computeSignificance:\ntype: {type(C_python)}")
+    
+    atol = 1e-03
+    print(f"\nSummary Jidt vs Python DiscreteMI discretised 1D gaussian data using {m}:\n")
+
+    print(f"\t\t\tJidt\t\t\tPython\t\t\tclose {atol}")
+    print(f"actualValue:\n\t\t\t{C_jidt.actualValue}\t{C_python.actualValue}\t{np.isclose(C_jidt.actualValue, C_python.actualValue, atol=atol)}")
+    print(f"pValue:\n\t\t\t{C_jidt.pValue}\t{C_python.pValue}\t{np.isclose(C_jidt.pValue, C_python.pValue, atol=atol)}")
+    print(f"getMeanOfDistribution:\n\t\t\t{mean_jidt}\t{mean_python}\t{np.isclose(mean_jidt, mean_python, atol=atol)}")
+    print(f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_jidt}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_jidt, mean_uncorr_python, atol=atol)}")
+    print(f"StdOfDistribution:\n\t\t\t{std_jidt}\t{std_python}\t{np.isclose(std_jidt, std_python, atol=atol)}")
+    
+    ################################################################################ TODO remove
+    print(f"\ndegrees of freedom: Python: {C_python.degreesOfFreedom}")
+    #verbose(mean_jidt, mean_python, f"{mean_jidt} - {mean_python}", "Mean of Distribution")
+    #verbose(std_jidt, std_python, f"{std_jidt} - {std_python}", "STD of Distribution")
+
+
+    print("\nEstimateForGivenPValue:")
+    print("p\tJidtDiscreteMI\t\tPythonDiscreteMI")
+    for i in range(len(pvals)):
+        print(f"{pvals[i]}   \t{EoP_jidt[i]}\t{EoP_python[i]}")
+    verbose(EoP_jidt, EoP_python, "", "Estimate for given PValue")
+
+    print("\nPValueForGivenEstimate:")
+    print("est\tJidtDiscreteMI\t\tPythonDiscreteMI")
+    for i in range(len(evals)):
+        print(f"{evals[i]}\t\t{PoE_jidt[i]}\t{PoE_python[i]}")
+		
+    verbose(PoE_jidt, PoE_python, "", "PValue for given Estimate")
+
+def test_analytic_distribution_cmi_discrete():
+
+    pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #evals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    evals = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 3,10 ]
+    m = 'equal'
+    bins = 5
+
+    print(f"\n\nTesting Discrete CMI on discretized gaussian data with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+    print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+    print(f"and PValueForGivenEstimate for:\n\t{evals}\n")
+
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+
+
+    EoP_jidt = np.zeros(len(pvals))
+    EoP_python = np.zeros(len(pvals))
+    PoE_jidt = np.zeros(len(evals))
+    PoE_python = np.zeros(len(evals))
+
+    settings_jidt = {"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    settings_python = {"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    est_jidt = JidtDiscreteCMI(settings_jidt)
+    est_python = PythonDiscreteCMI(settings_python)
+
+    mi, calc = est_jidt.estimate(source, target, source_uncorr, True)
+    C_jidt = calc.computeSignificance()
+
+    mi2 = est_python.estimate(source, target, source_uncorr)
+    C_python = est_python.computeSignificance()
+
+    
+    mean_jidt = C_jidt.getMeanOfDistribution()
+    mean_python = C_python.getMeanOfDistribution()
+    
+    mean_uncorr_jidt = C_jidt.getMeanOfUncorrectedDistribution()
+    mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+    
+    std_jidt = C_jidt.getStdOfDistribution()
+    std_python = C_python.getStdOfDistribution()
+    
+    count = 0
+    for p in pvals:
+        EoP_jidt[count] = C_jidt.computeEstimateForGivenPValue(p)
+        EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+        count += 1
+
+    count = 0
+    for e in pvals:
+        PoE_jidt[count] = C_jidt.computePValueForGivenEstimate(e)
+        PoE_python[count] = C_python.computePValueForGivenEstimate(e)
+        count += 1
+
+
+    print(f"Jidt computeSignificance:\ntype: {type(C_jidt)}")
+    print(f"Python computeSignificance:\ntype: {type(C_python)}")
+    
+    atol = 1e-03
+    print(f"\nSummary Jidt vs Python DiscreteCMI discretised 1D gaussian data using {m}:\n")
+
+    print(f"\t\t\tJidt\t\t\tPython\t\t\tclose {atol}")
+    print(f"actualValue:\n\t\t\t{C_jidt.actualValue}\t{C_python.actualValue}\t{np.isclose(C_jidt.actualValue, C_python.actualValue, atol=atol)}")
+    print(f"pValue:\n\t\t\t{C_jidt.pValue}\t{C_python.pValue}\t{np.isclose(C_jidt.pValue, C_python.pValue, atol=atol)}")
+    print(f"getMeanOfDistribution:\n\t\t\t{mean_jidt}\t{mean_python}\t{np.isclose(mean_jidt, mean_python, atol=atol)}")
+    print(f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_jidt}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_jidt, mean_uncorr_python, atol=atol)}")
+    print(f"StdOfDistribution:\n\t\t\t{std_jidt}\t{std_python}\t{np.isclose(std_jidt, std_python, atol=atol)}")
+    
+    ################################################################################ TODO remove
+    print(f"\ndegrees of freedom: Python: {C_python.degreesOfFreedom}")
+    #verbose(mean_jidt, mean_python, f"{mean_jidt} - {mean_python}", "Mean of Distribution")
+    #verbose(std_jidt, std_python, f"{std_jidt} - {std_python}", "STD of Distribution")
+
+
+    print("\nEstimateForGivenPValue:")
+    print("p\tJidtDiscreteCMI\t\tPythonDiscreteCMI")
+    for i in range(len(pvals)):
+        print(f"{pvals[i]}   \t{EoP_jidt[i]}\t{EoP_python[i]}")
+    verbose(EoP_jidt, EoP_python, "", "Estimate for given PValue")
+
+    print("\nPValueForGivenEstimate:")
+    print("est\tJidtDiscreteCMI\t\tPythonDiscreteCMI")
+    for i in range(len(evals)):
+        print(f"{evals[i]}\t\t{PoE_jidt[i]}\t{PoE_python[i]}")
+		
+    verbose(PoE_jidt, PoE_python, "", "PValue for given Estimate")
+
+def test_analytic_distribution_ais_discrete():
+
+    pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #evals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    evals = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 3,10 ]
+    m = 'equal'
+    bins = 5
+
+    print(f"\n\nTesting Discrete AIS using 1D AR with history \n using discretise_method {m} - {bins} bins\n")
+    print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+    print(f"and PValueForGivenEstimate for:\n\t{evals}\n")
+
+    source1, source2 = _get_ar_data(seed=SEED)
+
+    EoP_jidt = np.zeros(len(pvals))
+    EoP_python = np.zeros(len(pvals))
+    PoE_jidt = np.zeros(len(evals))
+    PoE_python = np.zeros(len(evals))
+
+    settings_jidt = {'history': 2,
+    	"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    settings_python = {'history': 2,
+    	"discretise_method": m,
+        "n_discrete_bins": bins, 
+        'noise_level': 0, 
+        'normalise': False,}
+
+    est_jidt = JidtDiscreteAIS(settings_jidt)
+    est_python = PythonDiscreteAIS(settings_python)
+
+    mi, calc = est_jidt.estimate(source1, True)
+    C_jidt = calc.computeSignificance()
+
+    mi2 = est_python.estimate(source1)
+    C_python = est_python.computeSignificance()
+
+    
+    mean_jidt = C_jidt.getMeanOfDistribution()
+    mean_python = C_python.getMeanOfDistribution()
+    
+    mean_uncorr_jidt = C_jidt.getMeanOfUncorrectedDistribution()
+    mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+    
+    std_jidt = C_jidt.getStdOfDistribution()
+    std_python = C_python.getStdOfDistribution()
+    
+    count = 0
+    for p in pvals:
+        EoP_jidt[count] = C_jidt.computeEstimateForGivenPValue(p)
+        EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+        count += 1
+
+    count = 0
+    for e in pvals:
+        PoE_jidt[count] = C_jidt.computePValueForGivenEstimate(e)
+        PoE_python[count] = C_python.computePValueForGivenEstimate(e)
+        count += 1
+
+    print(f"Jidt computeSignificance:\ntype: {type(C_jidt)}")
+    print(f"Python computeSignificance:\ntype: {type(C_python)}")
+    
+
+    atol = 1e-03
+    print(f"\nSummary Jidt vs Python DiscreteAIS on AR data with history using {m}:\n")
+    print(f"\t\t\tJidt\t\t\tPython\t\t\tclose {atol}")
+    print(f"actualValue:\n\t\t\t{C_jidt.actualValue}\t{C_python.actualValue}\t{np.isclose(C_jidt.actualValue, C_python.actualValue, atol=atol)}")
+    print(f"pValue:\n\t\t\t{C_jidt.pValue}\t{C_python.pValue}\t{np.isclose(C_jidt.pValue, C_python.pValue, atol=atol)}")
+    print(f"getMeanOfDistribution:\n\t\t\t{mean_jidt}\t{mean_python}\t{np.isclose(mean_jidt, mean_python, atol=atol)}")
+    print(f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_jidt}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_jidt, mean_uncorr_python, atol=atol)}")
+    print(f"StdOfDistribution:\n\t\t\t{std_jidt}\t{std_python}\t{np.isclose(std_jidt, std_python, atol=atol)}")
+    
+    ################################################################################ TODO remove
+    print(f"\ndegrees of freedom: Python: {C_python.degreesOfFreedom}")
+    #verbose(mean_jidt, mean_python, f"{mean_jidt} - {mean_python}", "Mean of Distribution")
+    #verbose(std_jidt, std_python, f"{std_jidt} - {std_python}", "STD of Distribution")
+
+
+    print("\nEstimateForGivenPValue:")
+    print("p\tJidtDiscreteAIS\t\tPythonDiscreteAIS")
+    for i in range(len(pvals)):
+        print(f"{pvals[i]}   \t{EoP_jidt[i]}\t{EoP_python[i]}")
+    verbose(EoP_jidt, EoP_python, "", "Estimate for given PValue")
+
+    print("\nPValueForGivenEstimate:")
+    print("est\tJidtDiscreteAIS\t\tPythonDiscreteAIS")
+    for i in range(len(evals)):
+        print(f"{evals[i]}\t\t{PoE_jidt[i]}\t{PoE_python[i]}")
+		
+    verbose(PoE_jidt, PoE_python, "", "PValue for given Estimate")
+
 	
+
+
+
+
+# Test bi- and multivariate analysis
+def test_bivariate_mi_gauss_kraskov():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = BivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+
+
+    verbose(mi_jidt, jidt_mi, "Jidt bivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python bivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivariate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtKraskovCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonKraskovCMI: ", np.mean(time_python) )
+
+def test_bivariate_mi_gauss_gaussian():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = BivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    verbose(mi_jidt, jidt_mi, "Jidt bivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python bivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivariate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtGaussianCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonGaussianCMI: ", np.mean(time_python) )
+
+def test_bivariate_mi_gauss_discrete():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    """
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    """
+
+    
+    settings_jidt = {
+        'cmi_estimator': 'JidtDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+    
+    nw = BivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    verbose(mi_jidt, jidt_mi, "Jidt bivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python i vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivariate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtDiscreteCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonDiscreteCMI: ", np.mean(time_python) )
+
+def test_bivariate_te_gauss_kraskov():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = BivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+
+
+    #verbose(mi_jidt, jidt_mi, "Jidt bivariate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python bivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivariate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtKraskovCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonKraskovCMI: ", np.mean(time_python) )
+
+def test_bivariate_te_gauss_gaussian():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = BivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    #verbose(mi_jidt, jidt_mi, "Jidt bivarate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python bivarate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivarate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtGaussianCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonGaussianCMI: ", np.mean(time_python) )
+
+def test_bivariate_te_gauss_discrete():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5,         
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+    
+    nw = BivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    #verbose(mi_jidt, jidt_mi, "Jidt bivariate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python bivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt bivariate vs Python bivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python bivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtDiscreteCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonDiscreteCMI: ", np.mean(time_python) )
+
+
+def test_multivariate_mi_gauss_kraskov():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = MultivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+
+
+    verbose(mi_jidt, jidt_mi, "Jidt multivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python multivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivariate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtKraskovCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonKraskovCMI: ", np.mean(time_python) )
+
+def test_multivariate_mi_gauss_gaussian():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = MultivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    verbose(mi_jidt, jidt_mi, "Jidt multivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python multivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivariate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtGaussianCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonGaussianCMI: ", np.mean(time_python) )
+
+def test_multivariate_mi_gauss_discrete():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+    
+    nw = MultivariateMI()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['mi'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['mi'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    verbose(mi_jidt, jidt_mi, "Jidt multivariate vs core","MI", atol=1e-03)
+    verbose(mi_python, python_mi, "Python multivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivariate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtDiscreteCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonDiscreteCMI: ", np.mean(time_python) )
+
+def test_multivariate_te_gauss_kraskov():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = MultivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+
+    est_python = PythonKraskovMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+
+
+    #verbose(mi_jidt, jidt_mi, "Jidt multivariate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python multivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivariate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtKraskovCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonKraskovCMI: ", np.mean(time_python) )
+
+def test_multivariate_te_gauss_gaussian():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonGaussianCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        }
+    
+    nw = MultivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonGaussianMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    #verbose(mi_jidt, jidt_mi, "Jidt multivarate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python multivarate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivarate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtGaussianCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonGaussianCMI: ", np.mean(time_python) )
+
+def test_multivariate_te_gauss_discrete():
+    """Test multivariate MI estimation from correlated Gaussians."""
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    data = Data(np.hstack((source, source_uncorr, target)),
+                dim_order='sp', normalise=False)
+    
+    data2 = copy.deepcopy(data)
+
+
+    settings_jidt = {
+        'cmi_estimator': 'JidtDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+
+    settings_python = {
+        'cmi_estimator': 'PythonDiscreteCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+    
+    nw = MultivariateTE()
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)['te'][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
+
+
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)['te'][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateMI() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+
+    est_jidt = JidtDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    
+    est_python = PythonDiscreteMI({'lag_mi': 0, 'normalise': False, 'noise_level': 0})
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+
+    #verbose(mi_jidt, jidt_mi, "Jidt multivariate vs core","MI", atol=1e-03)
+    #verbose(mi_python, python_mi, "Python multivariate vs core","MI", atol=1e-03)
+    verbose(mi_jidt, mi_python, "Jidt multivariate vs Python multivariate","MI", atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core","MI", atol=1e-03)
+    verbose(mi_python, expected_mi, "Python multivariate vs expected MI","MI", atol=0.05)
+    verbose(python_mi, expected_mi, "Python core vs expected MI","MI", atol=0.05)
+
+    print("\n calculation times:")
+    print(" multivariateMI JidtDiscreteCMI: ", np.mean(time_jidt) )
+    print(" multivariateMI PythonDiscreteCMI: ", np.mean(time_python) )
+
+
+
+# Test network analysis
+def test_network_analysis_kraskov():
+	# Generate example data: the following was ran once to generate example
+    # data, which is now in the data sub-folder of the test-folder.
+    data = Data()
+    data.generate_mute_data(100, 5)
+    data2 = copy.deepcopy(data)
+
+    list_of_targets = [[0, 1], [1, 2], [0, 2], [0, 1, 2], [1, 2]]
+    
+    # analysis settings
+    settings_jidt = {
+        "cmi_estimator": "JidtKraskovCMI",
+        "n_perm_max_stat": 50,
+        "n_perm_min_stat": 50,
+        "n_perm_omnibus": 200,
+        "n_perm_max_seq": 50,
+        "max_lag_target": 5,
+        "max_lag_sources": 5,
+        "min_lag_sources": 1,
+        "permute_in_time": True,
+    }
+    settings_python = {
+        "cmi_estimator": "PythonKraskovCMI",
+        "n_perm_max_stat": 50,
+        "n_perm_min_stat": 50,
+        "n_perm_omnibus": 200,
+        "n_perm_max_seq": 50,
+        "max_lag_target": 5,
+        "max_lag_sources": 5,
+        "min_lag_sources": 1,
+        "permute_in_time": True,
+    }
+    
+    # network inference for individual data sets
+    nw_jidt = MultivariateTE()
+    nw_python = MultivariateTE()
+    
+    for i, targets in enumerate(list_of_targets):
+        res_jidt = nw_jidt.analyse_network(settings_jidt, data, targets=targets, sources="all")
+        #with open(path.joinpath(f"mute_results_{i}.p"), "wb") as output_file:
+        #    pickle.dump(res, output_file)
+        res_python = nw_python.analyse_network(settings_python, data2, targets=targets, sources="all")
+
+        print(type(res_jidt))
+    
+    #res = nw_jidt.analyse_network(settings, data)
+    #with open(path.joinpath("mute_results_full.p"), "wb") as output_file:
+    #    pickle.dump(res, output_file)
+
+
+
 
 
 if __name__ == '__main__':
@@ -3963,8 +5527,8 @@ if __name__ == '__main__':
 	############ Kraskov
 
 	########################################## TODO KSG 2
-	testhead("KraskovMI") ########################################## TODO and KSG2
-	test_kraskov_mi()
+	#testhead("KraskovMI") ########################################## TODO and KSG2
+	#test_kraskov_mi()
 	
 	#testhead("KraskovMI local values")
 	#test_kraskov_mi_local_values()
@@ -4088,3 +5652,67 @@ if __name__ == '__main__':
 
 	#testhead("SpectralTE local values") ############################################## TODO
 	#test_spectral_te_local_values()
+
+
+	######### Test analytic distributions
+
+	testhead("analytic distribution GaussianCMI")
+	test_analytic_distribution_cmi_gaussian()
+
+
+	#testhead("analytic distribution DiscreteMI")
+	#test_analytic_distribution_mi_discrete()
+	
+	#testhead("analytic distribution DiscreteCMI")
+	#test_analytic_distribution_cmi_discrete()
+
+	#testhead("analytic distribution DiscreteAIS")
+	#test_analytic_distribution_ais_discrete()
+
+
+
+
+
+	######### Test bi- and multivariate analysis
+	#testhead("bivariateMI KraskovCMI")
+	#test_bivariate_mi_gauss_kraskov()
+	
+	#testhead("bivariateMI GaussianCMI")
+	#test_bivariate_mi_gauss_gaussian()
+	
+	#testhead("bivariateMI DiscreteCMI")
+	#test_bivariate_mi_gauss_discrete()
+
+	#testhead("bivariateTE KraskovCMI")
+	#test_bivariate_te_gauss_kraskov()
+	
+	#testhead("bivariateTE GaussianCMI")
+	#test_bivariate_te_gauss_gaussian()
+	
+	#testhead("bivariateTE DiscreteCMI")
+	#test_bivariate_te_gauss_discrete()
+
+
+	#testhead("multivariateMI KraskovCMI")
+	#test_multivariate_mi_gauss_kraskov()
+	
+	#testhead("multivariateMI GaussianCMI")
+	#test_multivariate_mi_gauss_gaussian()
+	
+	#testhead("multivariateMI DiscreteCMI")
+	#test_multivariate_mi_gauss_discrete()
+
+	#testhead("multivariateTE KraskovCMI")
+	#test_multivariate_te_gauss_kraskov()
+	
+	#testhead("multivariateTE GaussianCMI")
+	#test_multivariate_te_gauss_gaussian()
+	
+	#testhead("multivariateTE DiscreteCMI")
+	#test_multivariate_te_gauss_discrete()
+
+	######### Test network analysis
+	#testhead("network analysis") ############################################## TODO
+	#test_network_analysis_kraskov()
+
+
