@@ -40,14 +40,14 @@ class KnnFinder:
         n = self._data.shape[0]
         
         counts = np.empty(n, dtype=int)
-    
-        for i in range(n):
-            # distance to neighbors in x-space
-            dx_i = np.linalg.norm(x[r[i]] - x[i], axis=1)
-            eps_x = dx_i.max()
         
-            counts[i] = len(self.count_neighbors_within(x[i], eps_x, return_length=False))
-            #counts[i] = len(tree_x.query_ball_point(x[i], eps_x, p=2)) - 1
+        for i in range(n):
+            if r[i] <= 0:
+                idx = [0]
+            else:
+                idx = self.count_neighbors_within(x[i], r[i], return_length=False)
+            
+            counts[i] = sum(1 for j in idx if j != 1)
 
         return counts
 
