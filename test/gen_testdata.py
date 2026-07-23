@@ -3,7 +3,8 @@
 import numpy as np
 from idtxl.idtxl_utils import calculate_mi
 import random as rn
-
+from idtxl.estimators_python import PythonDiscreteCMI
+from idtxl.data import Data
 
 def _get_gauss_data(n=10000, covariance=0.4, expand=True, seed=None):
     """Generate correlated and uncorrelated Gaussian variables.
@@ -99,7 +100,28 @@ def _get_cte_test_data(n=10000):
     4 rand
 	"""
 	x = np.zeros((4, n + 3, n_replications))
-        
+
+
+
+
+def _get_discrete_gauss_data(
+    covariance=0.4, n=10000, delay=1, normalise=False, seed=None):
+
+    # Generate two coupled Gaussian time series
+    np.random.seed(seed)
+    source = np.random.normal(0, 1, size=n)
+    target = covariance * source + (1 - covariance) * np.random.normal(0, 1, size=n)
+    source = source[delay:]
+    target = target[:-delay]
+
+    # Discretise data for speed
+    settings = {"discretise_method": "equal", "n_discrete_bins": 5}
+    est = PythonDiscreteCMI(settings)
+    source_dis, target_dis = est._discretise_vars(var1=source, var2=target)
+    return Data(
+        np.vstack((source_dis, target_dis)), dim_order="ps", normalise=normalise
+    )
+
 
 def _generate_mute_data(n_samples=10000, n_replications=10):
     """Generate example data for a 6-process network.
