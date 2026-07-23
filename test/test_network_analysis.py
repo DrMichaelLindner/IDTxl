@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 from idtxl.network_analysis import NetworkAnalysis
 from idtxl.data import Data
-from test_estimators_jidt import _get_gauss_data
+from gen_testdata import _get_gauss_data
 from idtxl.estimators_jidt import JidtKraskovCMI
 
 
