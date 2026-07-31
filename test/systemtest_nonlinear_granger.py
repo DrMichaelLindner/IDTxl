@@ -70,7 +70,7 @@ settings2 = {
 # prepare data object for nonlinear analysis
 settings, data2 = data2.prepare_nonlinear(settings2, data2)
 
-# perform JidtGaussianCMI WITH nonlinear data
+# perform PythonGaussianCMI WITH nonlinear data
 nonlin_analysis = MultivariateTE()
 results = nonlin_analysis.analyse_single_target(settings2, data2,
                                                  target=settings["nonlinear_settings"]["nonlinear_target_predictors"],

@@ -1191,8 +1191,8 @@ class JidtGaussianCTE(JidtGaussian):
         """
         # Return TE if no conditioning variable was provided.
         if conditional is None:
-            self.est_mi = JidtGaussianTE(self.settings)
-            return self.est_mi.estimate(source, target)
+            self.est_te = JidtGaussianTE(self.settings)
+            return self.est_te.estimate(source, target)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
@@ -1218,7 +1218,7 @@ class JidtGaussianCTE(JidtGaussian):
         else:
             return float(self.calc.computeAverageLocalOfObservations())
 
-    def get_analytic_distribution(self, var1, var2, conditional=None):
+    def get_analytic_distribution(self, source, target, conditional=None):
         """Return a JIDT AnalyticNullDistribution object.
 
         Required so that our estimate_surrogates_analytic method can use the
@@ -1240,9 +1240,13 @@ class JidtGaussianCTE(JidtGaussian):
             Java object
                 JIDT calculator that was used here
         """
-        # Make one estimate to prepare the calculator:
-        self.estimate(source, target, conditional)
-        return self.calc.computeSignificance()
+
+        if (conditional is None):
+            return self.est_te.calc.computeSignificance()
+        else:
+            # Make one estimate to prepare the calculator:
+            self.estimate(source, target, conditional)
+            return self.calc.computeSignificance()
 
 
 
@@ -1713,8 +1717,6 @@ class JidtDiscreteCMI(JidtDiscrete):
         """
         # Make one estimate to prepare the calculator:
         (est, jidt_calc) = self.estimate(var1, var2, conditional, True)
-        print("est ", est)
-        print("cS ", jidt_calc.computeSignificance())
         return jidt_calc.computeSignificance()
 
 
@@ -2070,17 +2072,6 @@ def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
     #  AnalyticMeasurementDistribution object:
     analytic_distribution = estimator.get_analytic_distribution(**data)
 
-    ################################################################ TODO remove
-    print("###############################################")
-    print(estimator)
-    #print(data)
-    #print(analytic_distribution)
-    #print(type(analytic_distribution))
-    print(analytic_distribution.computeEstimateForGivenPValue(0.1))
-    print(analytic_distribution.computePValueForGivenEstimate(0.0000123))
-    print("###############################################")
-    #print("###############################################")
-
     # Then compute surrogates at n_perm random p-values
     surrogate_estimates = np.empty(n_perm)
     for perm in range(n_perm):
@@ -2088,8 +2079,6 @@ def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
             analytic_distribution.computeEstimateForGivenPValue(
                 np.random.random())
 
-    print(surrogate_estimates)
-    
     return surrogate_estimates
 
 

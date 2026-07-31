@@ -806,7 +806,7 @@ if __name__ == '__main__':
     
     #test_discrete_mi_memerror()
     
-    test_kraskov_alg1And2()
+    #test_kraskov_alg1And2()
     
     
     

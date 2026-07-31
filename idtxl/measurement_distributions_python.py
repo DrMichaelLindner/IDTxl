@@ -2,6 +2,7 @@
 
 import numpy as np
 from scipy.stats import chi2, gamma
+from scipy.special import gammaincinv
 import math
 
 ################################################################ TODO
@@ -9,7 +10,6 @@ class EmpiricalMeasurementDistribution():
     """
     ######################################################## TODO
     """
-
     
     def new_dist(self, numPermutationsToCheck):
         """Create new empty distribtution array"""
@@ -52,59 +52,55 @@ class EmpiricalMeasurementDistribution():
         return sets
 
 
-################################################################ TODO
 class AnalyticalMeasurementDistribution():
+    """Generic class to represent analytic distributions of info theoretic measurements under
+    some null hypothesis of a relationship between the variables."""
 
     def AnalyticalMeasurementDistribution(self, actualValue, pValue):
 
         self.actualValue = actualValue
         self.pValue = pValue
 
-
     def computePValuesForGivenEstimates(self, estimates):
 
         pValues = np.zeros(len(estimates)) 
         for i in range(len(estimates)):
             pValues[i] = computePValueForGivenEstimate(estimates[i])
-
         return pValues
-
         
     def computeEstimatesForGivenPValues(self, pValues):
-        
         estimates = np.zeros(len(pValues)) 
         for i in range(len(pValues)):
             estimates[i] = computeEstimateForGivenPValue(pValues[i])
-
         return estimates
        
 
-################################################################ TODO
 class ChiSquareMeasurementDistribution(AnalyticalMeasurementDistribution):
+    """Class to represent analytic distributions of info theoretic measurements under
+    some null hypothesis of a relationship between the variables, where the
+    distribution of <b>a function of</b> those information-theoretic measurements
+    is a Chi Square distribution.
+    Can represent an analytic distribution of raw estimates or bias corrected
+    estimates."""
 
-
-    def ChiSquareMeasurementDistribution(self, actualValue, numObservations, degreesOfFreedom, isBiasCorrected):
-
+    def ChiSquareMeasurementDistribution(self, actualValue, numObservations, degreesOfFreedom, isBiasCorrected, est_type="exact"):
+        """construct a chi2 distribution """
         self.actualValue = actualValue
         self.numObservations = numObservations
         self.degreesOfFreedom = degreesOfFreedom
         self.isBiasCorrected = isBiasCorrected
+        self.est_type = est_type
 
         if degreesOfFreedom > 0:
             self.chi2dist = chi2
             #self.chi2dist = gamma
-            #values = self.chi2dist.rvs(degreesOfFreedom, size=numObservations)
-            #mean = chi2.stats(degreesOfFreedom, moments='m')
+            
             self.meanOfUncorrectedDistribution = self.chi2dist.stats(self.degreesOfFreedom, moments='m') / (2.0 * numObservations)
         else:
             self.chi2dist = 0.0
             self.meanOfUncorrectedDistribution = 0
-
         
         self.pValue = self.computePValueForGivenEstimate(actualValue)
-
-        #return pValue
-
 
     def computePValueForGivenEstimate(self, estimate):
         if self.chi2dist == 0.0:
@@ -114,6 +110,7 @@ class ChiSquareMeasurementDistribution(AnalyticalMeasurementDistribution):
                 return 0
         if self.isBiasCorrected:
             cdf = self.chi2dist.cdf(2.0 * self.numObservations * (estimate + self.meanOfUncorrectedDistribution), self.degreesOfFreedom)
+            #cdf = self.chi2dist.cdf(2.0 * self.numObservations * estimate + self.meanOfUncorrectedDistribution, self.degreesOfFreedom/2, loc=0, scale=2)
         else:
             cdf = self.chi2dist.cdf(2.0 * self.numObservations * estimate, self.degreesOfFreedom)
             #cdf = self.chi2dist.cdf(2.0 * self.numObservations * estimate, self.degreesOfFreedom/2, loc=0, scale=2)
@@ -125,38 +122,35 @@ class ChiSquareMeasurementDistribution(AnalyticalMeasurementDistribution):
             # All p-values map to estimate 0
             return 0
 
-        #uncorrectedEstimate = self.chi2dist.ppf((1 - pValue) / (2.0 * self.numObservations), df = self.degreesOfFreedom)
-        
-        print(pValue, self.degreesOfFreedom)
-        print(type(pValue))
-        uncorrectedEstimate = self.chi2_ppf_cheb(pValue, self.degreesOfFreedom)
-        
-
-        #uncorrectedEstimate = self.chi2dist.ppf((1 - pValue) / (2.0 * self.numObservations), self.degreesOfFreedom/2, scale=2)
-        #uncorrectedEstimate = self.chi2dist.ppf((1 - pValue) / (2.0 * self.numObservations), 1.8, scale=2)
-        #uncorrectedEstimate = self.chi2dist.ppf((1- pValue) , self.degreesOfFreedom/2, scale=2)
+        if self.est_type == "fast":
+            uncorrectedEstimate = gammaincinv(self.degreesOfFreedom, (1 - pValue)) / (2.0 * self.numObservations)
+        else:
+            uncorrectedEstimate = self.chi2dist.ppf((1 - pValue), self.degreesOfFreedom) / (2.0 * self.numObservations)
+            #uncorrectedEstimate = self.chi2dist.ppf((1 - pValue), self.degreesOfFreedom/2, scale=2) / (2.0 * self.numObservations)
         
         if self.isBiasCorrected:
             return uncorrectedEstimate - self.meanOfUncorrectedDistribution
         else:
             return uncorrectedEstimate;
 
-
-
     def getMeanOfDistribution(self):
+        """ get the mean of the measurement distribution """
         if self.isBiasCorrected:
             return 1
         else:
             return self.meanOfUncorrectedDistribution
 
     def getMeanOfUncorrectedDistribution(self):
+        """ get the uncorrected mean of the measurement distribution """
         return self.meanOfUncorrectedDistribution
 
     def getStdOfDistribution(self):
+        """ get the standard deviation of the measurement distribution """
         if self.chi2dist == 0.0:
             return 0
 
-        std =  np.square(self.chi2dist.stats(self.degreesOfFreedom, moments='v') / (2.0 * self.numObservations))
+        std = self.chi2dist.std(self.degreesOfFreedom)/ (2.0 * self.numObservations)
+        #std = self.chi2dist.std(self.degreesOfFreedom/2, scale=2)
         return std
 
 

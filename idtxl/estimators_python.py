@@ -16,10 +16,9 @@ from scipy.stats import multivariate_normal, chi2, norm, kstest
 from scipy.spatial import distance_matrix
 from scipy.fft import fft, fftfreq
 from scipy.linalg import cholesky, solve_triangular, cho_solve
+#from scipy.stats.sampling import FastGeneratorInversion
 
 from idtxl.measurement_distributions_python import EmpiricalMeasurementDistribution, AnalyticalMeasurementDistribution, ChiSquareMeasurementDistribution
-
-#from idtxl.get_distribution_likelihood import get_distribution_likelihood
 
 import multiprocessing
 
@@ -38,16 +37,13 @@ class PythonEstimator(Estimator):
     """
 
     def __init__(self, settings=None):
-        """Set default estimator settings.""" ######################################################### TODO  
+        """Set default estimator settings."""
         self.settings = settings.copy()
 
     def _normalise_data(self, data: np.ndarray):
         """Standardise data to zero mean and unit variance."""
         return (data - np.mean(data, axis=0)) / np.std(data, axis=0)
     
-    
-
-
     def computeStartTimeForFirstDestEmbedding(self, history_target, tau_target, history_source, tau_source, delay): 
         """get first time point for embedding"""        
         startTimeBasedOnTargetPast = (history_target - 1) * tau_target
@@ -55,7 +51,7 @@ class PythonEstimator(Estimator):
         return max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast);
 
     def makeDelayEmbeddingVector(self, ts, history, tau, startFirstPoint, numEmbeddingVectors):
-
+        """create past delay embedding vector of given data and settings """
         embedded_vector = np.zeros((numEmbeddingVectors, history))
         
         for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
@@ -63,20 +59,9 @@ class PythonEstimator(Estimator):
                 embedded_vector[t - startFirstPoint, i] = ts[t - i * tau]
 
         return embedded_vector
-    
-    def makeDelayEmbeddingVectorColumn(self, ts, column: int, history, tau, startFirstPoint, numEmbeddingVectors):
 
-        print("ts ", ts.shape)
-        embedded_vector = np.zeros((numEmbeddingVectors, history))
-        
-        for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
-            for i in range(history):
-                embedded_vector[t - startFirstPoint, i] = ts[t - i * tau][column]
-
-        return embedded_vector
-    
     def makeDelayEmbeddingVectorCurrent(self, ts, history, startFirstPoint, numEmbeddingVectors):
-
+        """create current delay embedding vector of given data and settings """
         embedded_vector = np.zeros((numEmbeddingVectors, history))
 
         for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
@@ -85,96 +70,7 @@ class PythonEstimator(Estimator):
 
         return embedded_vector
 
-    """
-    ##################################################################### TODO move ???????    
-    def computeSignificanceEmpirical(self):
-
-        n = len(self.TEopt_var1)
-        
-        if isinstance(self.TEopt_permorder, int):
-            numPermutations = self.TEopt_permorder
-            perm = True
-        else:
-            assert permorder.ndim == 2, ("new Order must be have 2 dims (num_perm x n)")
-
-            numPermutations = len(self.TEopt_permorder)
-            perm = False
-
-
-        # surrogate testing
-        surrogateMeasurements = np.zeros(numPermutations)
-
-        for i in range(numPermutations):
-
-            # get shuffled data
-            if perm:
-                idx = np.random.shuffle(np.arange(n))
-            else:
-                idx = self.TEopt_permorder[i]
-            
-            if self.TEopt_varToReorder == 1:
-                shuffled_data = self.TEopt_var1[idx]
-
-                print("TEopt_var1: ",self.TEopt_var1.shape)
-                print("TEopt_var2: ",self.TEopt_var2.shape)
-                print("TEopt_conditional: ",self.TEopt_conditional.shape)
-                print("shuffled_data: ",shuffled_data.shape)
-                print("idx: ",len(idx))
-
-                surrogateMeasurements[i] = self.TEopt_estimator.calculateAverageCMI(shuffled_data, self.TEopt_var2, self.TEopt_conditional)
-            else:
-                shuffled_data = self.TEopt_var2[idx]
-                surrogateMeasurements[i] = self.TEopt_estimator.calculateAverageCMI(self.TEopt_var1, shuffled_data, self.TEopt_conditional)
-
-        return EmpiricalMeasurementDistribution(surrogateMeasurements, self.TEopt_lastAverage)
-
-
-    ##################################################################### TODO move ???????
-    def computeSignificanceAnalytic(self):
-
-        average = self.TEopt_estimator.calculateAverageCMI(self.TEopt_var1, self.TEopt_var2, self.TEopt_conditional)
-
-        C = ChiSquareMeasurementDistribution()
-
-        print(C)
-        print(type(C))
-
-        x = C.ChiSquareMeasurementDistribution(average, 
-                                            len(self.TEopt_var1),
-                                            self.TEopt_var1.shape[1] * self.TEopt_var2.shape[1],
-                                            False)
-        print(x)
-
-        return x
-
-    ##################################################################### TODO remove or move ???????
-    def computeBiasToRemove(self, var=1, lastAverage=None):
-
-        self.TEopt_varToReorder = var
-        self.TEopt_lastAverage = lastAverage
-        
-        if self.TEopt_permorder == 0:
-            # Analytic bias correction
-
-            analyticMeasDist = self.computeSignificanceAnalystic()
-
-            print(analyticMeasDist)
-                
-            meanOfDist = analyticMeasDist.getMeanOfDistribution();
-
-        else:
-            # Empirical bias correction with numSurrogates surrogates
-
-            empMeasDist = self.computeSignificanceEmpirical()
-
-            meanOfDist = empMeasDist.getMeanOfDistribution();
-
-        del self.TEopt_varToReorder
-        del self.TEopt_lastAverage
-
-        return meanOfDist
-    """
-
+    
     ################################################################ TODO e.g. kraskov and theiler str to int
 
     def _set_te_defaults(self, settings):
@@ -375,10 +271,8 @@ class PythonKraskov(PythonEstimator):
 
         return n_c_var1, n_c_var2
 
-
     def getCountsCMI(self, var1, var2, conditional):
         """get digamma values for CMI estimation"""
-        
         
         if self.settings['algorithm_num'] == 1: 
             # Compute distances to kth nearest neighbors in the joint space
@@ -407,7 +301,6 @@ class PythonKraskov(PythonEstimator):
             n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
             n_c = self._compute_n(conditional, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
         return n_c_var1, n_c_var2, n_c
-
 
     def is_analytic_null_estimator(self):
         return False
@@ -458,8 +351,8 @@ class PythonKraskovMI(PythonKraskov):
 
         ################################################################################### TODO
         # Check for currently unsupported settings
-        #if settings.get('algorithm_num', 1) != 1:
-        #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
+        if self.settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
         
 
         if self.settings['noise_level'] > 0:
@@ -523,7 +416,6 @@ class PythonKraskovMI(PythonKraskov):
             
         return mi
 
-
     def estimate(self, var1: np.ndarray, var2: np.ndarray):
         """Estimate mutual information.
 
@@ -541,9 +433,6 @@ class PythonKraskovMI(PythonKraskov):
                 samples if 'local_values'=True
         """
 
-        #print(self.settings)
-
-
         # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
@@ -554,7 +443,6 @@ class PythonKraskovMI(PythonKraskov):
         assert (
             var1.shape[0] == var2.shape[0]
         ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]})"
-
         
         # Normalise data
         if self.settings['normalise']:
@@ -613,8 +501,6 @@ class PythonKraskovCMI(PythonKraskov):
             ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
-            
-
     """
 
     def __init__(self, settings=None):
@@ -623,8 +509,8 @@ class PythonKraskovCMI(PythonKraskov):
         super().__init__(settings)
 
         # Check for currently unsupported settings
-        #if settings.get('algorithm_num', 1) != 1:
-        #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
+        if self.settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
         if self.settings['noise_level'] > 0:
             rng_seed = settings.get("rng_seed", None)
@@ -642,10 +528,8 @@ class PythonKraskovCMI(PythonKraskov):
         self._knn_finder_name = settings.get("knn_finder", "scipy_ckdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
 
-
     def calculateLocalCMI(self, var1, var2, conditional):
         """calculate local Kraskov CMI"""
-        
         n_c_var1, n_c_var2, n_c = self.getCountsCMI(var1, var2, conditional)
             
         if self.settings['algorithm_num'] == 1:
@@ -674,7 +558,6 @@ class PythonKraskovCMI(PythonKraskov):
             #    ) / np.log(self.settings['base'])
 
         return cmi
-    
     
     def calculateAverageCMI(self, var1, var2, conditional):
         """calculate Average Kraskov CMI"""
@@ -734,7 +617,6 @@ class PythonKraskovCMI(PythonKraskov):
                 samples if 'local_values'=True
                 
         """
-
         # Return MI if no conditioning variable was provided.
         if conditional is None:
             #if (self.est_mi is None):
@@ -829,7 +711,6 @@ class PythonKraskovAIS(PythonKraskov):
             
             
     """
-
     def __init__(self, settings):
         settings = self._check_settings(settings)
         # Check for history for AIS estimation.
@@ -841,9 +722,11 @@ class PythonKraskovAIS(PythonKraskov):
         assert type(settings['history']) is int, (
                                             'History has to be an integer.')
         assert type(settings['tau']) is int, ('Tau has to be an integer.')
-
+        
         super().__init__(settings)
         
+        if self.settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
     def estimate(self, process):
         """Estimate active information storage.
@@ -859,6 +742,7 @@ class PythonKraskovAIS(PythonKraskov):
                 average AIS over all samples or local AIS for individual
                 samples if 'local_values'=True
         """
+        # Check the input data
         process = self._ensure_one_dim_input(process)
 
         # Check if number of points is sufficient for estimation.
@@ -932,7 +816,6 @@ class PythonKraskovTE(PythonKraskov):
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
 
-
     """
     def __init__(self, settings):
         """Initialise estimator with settings."""
@@ -941,7 +824,7 @@ class PythonKraskovTE(PythonKraskov):
         super().__init__(settings)
 
         # Check for currently unsupported settings
-        if settings.get('algorithm_num', 1) != 1:
+        if self.settings.get('algorithm_num', 1) != 1:
             raise ValueError('This estimator currently does not support algorithm_num argument.')
 
         if self.settings['noise_level'] > 0:
@@ -959,8 +842,7 @@ class PythonKraskovTE(PythonKraskov):
         # Get KNN finder class
         self._knn_finder_name = settings.get("knn_finder", "scipy_kdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
-        
-    
+     
     def estimate(self, source: np.ndarray, target: np.ndarray):
         """Estimate transfer entropy from a source to a target variable.
 
@@ -978,7 +860,7 @@ class PythonKraskovTE(PythonKraskov):
                 samples if 'local_values'=True
 
         """
-
+        # Check the input data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
 
@@ -1034,8 +916,7 @@ class PythonKraskovTE(PythonKraskov):
 
         else:
             te = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, target_past)
-            #te = self.calculateAverageTE(source_past, target_past, target_current)
-
+            
         return te
         ######################################################################################################## TODO algorithm 2
         # algorithm 2
@@ -1076,20 +957,16 @@ class PythonKraskovTE(PythonKraskov):
         """
         
 
-
-        return te
-
-
 class PythonKraskovCTE(PythonKraskov):
     """Calculate conditional transfer entropy with Python Gaussian 
     implementation.
-
     
-    ################################################################################# TODO
     Calculate transfer entropy between a source and a target variable using
     Pathon implementation of the Gaussian estimator. Transfer entropy is
     defined as the conditional mutual information between the source's past
-    state and the target's current value, conditional on the target's past.
+    state and the target's current value, conditional on the target's and 
+    another conditional's past
+    .
 
     Past states need to be defined in the settings dictionary, where a past
     state is defined as a uniform embedding with parameters history and tau.
@@ -1130,8 +1007,6 @@ class PythonKraskovCTE(PythonKraskov):
             ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
-            
-
     """
     def __init__(self, settings):
         """Initialise estimator with settings."""
@@ -1142,8 +1017,8 @@ class PythonKraskovCTE(PythonKraskov):
 
         ####################################################### TODO alg2 ?
         # Check for currently unsupported settings
-        #if settings.get('algorithm_num', 1) != 1:
-        #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
+        if self.settings.get('algorithm_num', 1) != 1:
+            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
     def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy from a source to a target variable
@@ -1162,7 +1037,6 @@ class PythonKraskovCTE(PythonKraskov):
                 average TE over all samples
         
         """
-
         # Return TE if no conditioning variable was provided.
         if conditional is None:
             self.est_mi = PythonKraskovTE(self.settings)
@@ -1170,9 +1044,10 @@ class PythonKraskovCTE(PythonKraskov):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
-        source = self._ensure_two_dim_input(source)
-        target = self._ensure_two_dim_input(target)
-        conditional = self._ensure_two_dim_input(conditional)
+        # check the imput data
+        source = self._ensure_one_dim_input(source)
+        target = self._ensure_one_dim_input(target)
+        conditional = self._ensure_one_dim_input(conditional)
 
         # Check if number of points is sufficient for estimation.
         self._check_number_of_points(source.shape[0] -
@@ -1187,6 +1062,8 @@ class PythonKraskovCTE(PythonKraskov):
         startTimeBasedOnConditionalPast = (self.settings['history_conditional'] - 1) * self.settings['tau_conditional'] + self.settings['conditional_target_delay'] - 1
         
         startFirstPoint = max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast, startTimeBasedOnConditionalPast)
+
+        print(startFirstPoint)
 
         target_past = self.makeDelayEmbeddingVector(target, 
             self.settings['history_target'], 
@@ -1217,7 +1094,6 @@ class PythonKraskovCTE(PythonKraskov):
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
         else:
             cte = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, condCombine)
-            #cte = np.mean(PythonKraskovCMI.calculateLocalCMI(self, source_past, target_current, condCombine))
             
         return cte
 
@@ -1253,6 +1129,9 @@ class PythonGaussian(PythonEstimator):
         super().__init__(settings)
 
         self.actualValue = None
+
+        ##################################################################### TODO
+        self.surr_est_type = "fast" 
         
     def logdet_cholesky(self, cov):
         """
@@ -1279,12 +1158,9 @@ class PythonGaussian(PythonEstimator):
         logdet = 2.0 * np.sum(np.log(np.diag(L)))
         return -0.5 * (d * np.log(2.0 * np.pi) + logdet + maha)
 
-    
-    ##################################################################################################### TODO
     def is_analytic_null_estimator(self):
         return True
 
-    
     def estimate_surrogates_analytic(self, n_perm=200, **data):
         """Estimate the surrogate distribution analytically.
         This method must be implemented because this class'
@@ -1305,8 +1181,6 @@ class PythonGaussian(PythonEstimator):
                 var2 (in the context of conditional)
         """
         return common_estimate_surrogates_analytic(self, n_perm, **data)
-
-    ##################################################################################################### TODO
 
 
 class PythonGaussianMI(PythonGaussian):
@@ -1333,7 +1207,6 @@ class PythonGaussianMI(PythonGaussian):
         super().__init__(settings)
         self.settings.setdefault('lag_mi', int(0))
         
-
     def calculateAverageMI(self, var1, var2):
         """calculate avarage mutual information for gaussian data"""
 
@@ -1355,7 +1228,6 @@ class PythonGaussianMI(PythonGaussian):
         mi = 0.5 * (ld_x + ld_y - ld_xy)
 
         return mi
-
 
     def calculateLocalMI(self, var1, var2):
         """calculate avarage mutual information for gaussian data"""
@@ -1398,7 +1270,7 @@ class PythonGaussianMI(PythonGaussian):
                 average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
-
+        # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
 
@@ -1422,27 +1294,51 @@ class PythonGaussianMI(PythonGaussian):
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
 
+        self.n_samples = var1.shape[0]
+        self.var1_dim = var1.shape[1]
+        self.var2_dim = var2.shape[1]
+
         if self.settings['local_values']:
-            return self.calculateLocalMI(var1, var2)
+            mi = self.calculateLocalMI(var1, var2)
+            self.actualValue = np.mean(mi)
         else:
-            return self.calculateAverageMI(var1, var2)
+            mi = self.calculateAverageMI(var1, var2)
+            self.actualValue = mi
 
+        return mi
     
-    def computeSignificance(self, var1, var2):
-        average = self.calculateAverageMI(var1, var2)
-
+    def computeSignificance(self):
         C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                self.var1_dim * self.var2_dim,
+                False,
+                self.surr_est_type)
+        return C
 
-        print(C)
-        print(type(C))
+    def get_analytic_distribution(self, var1, var2):
+        """Return a Python AnalyticNullDistribution object.
 
-        x = C.ChiSquareMeasurementDistribution(average, 
-                                            len(var1),
-                                            var1.shape[1] * var2.shape[1],
-                                            False)
-        print(x)
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
 
-        return x
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2#
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        self.estimate(var1, var2)
+        return self.computeSignificance()
 
 
 class PythonGaussianCMI(PythonGaussian):
@@ -1471,7 +1367,6 @@ class PythonGaussianCMI(PythonGaussian):
         settings = self._check_settings(settings)
         super().__init__(settings)
         self.est_mi = None
-
     
     def calculateAverageCMI(self, var1, var2, conditional):
         """calculate avarage conditional mutual information for gaussian data"""
@@ -1489,16 +1384,6 @@ class PythonGaussianCMI(PythonGaussian):
         cov_yz  = self.cov_reg(yz, eps)
         cov_z   = self.cov_reg(conditional, eps)
 
-        ################################################################# TODO remove
-        #print("cov xyz: ", cov_xyz.shape)
-        #print("cov xz: ", cov_xz.shape)
-        #print(cov_xz)
-        #print("cov yz: ", cov_yz.shape)
-        #print("cov z: ", cov_z.shape)
-        #print("var1: ", var1.shape)
-        #print("var2: ", var2.shape)
-        
-
         # Handle 1D Z cleanly
         if cov_z.ndim == 0:
             cov_z = np.array([[cov_z]])
@@ -1511,7 +1396,6 @@ class PythonGaussianCMI(PythonGaussian):
         cmi = 0.5 * (ld_xz + ld_yz - ld_z - ld_xyz)
 
         return cmi
-
 
     def calculateLocalCMI(self, var1, var2, conditional):
         """calculate avarage conditional mutual information for gaussian data"""
@@ -1547,7 +1431,6 @@ class PythonGaussianCMI(PythonGaussian):
 
         return lcmi
 
-
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
         conditional.
@@ -1578,6 +1461,7 @@ class PythonGaussianCMI(PythonGaussian):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
+        # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
@@ -1602,6 +1486,8 @@ class PythonGaussianCMI(PythonGaussian):
             )
 
         self.n_samples = var1.shape[0]
+        self.var1_dim = var1.shape[1]
+        self.var2_dim = var2.shape[1]
 
         if self.settings['local_values']:
             cmi = self.calculateLocalCMI(var1, var2, conditional)
@@ -1613,28 +1499,14 @@ class PythonGaussianCMI(PythonGaussian):
         return cmi
 
     def computeSignificance(self):
-
-        #average = self.estimate(self.var1, self.var2, self.conditional)
         C = ChiSquareMeasurementDistribution()
-        
         C.ChiSquareMeasurementDistribution(self.actualValue,
                 self.n_samples,
-                
-                2########################################## TODO var1IndicesInCovariance.length * var2IndicesInCovariance.length,
-                ,
-                False)
-        """
-        print("est ", self.actualValue)
-        print("cs ", C)
-        print(max(self.var1))
-        print(max(self.var2))
-        print(max(self.conditional))
-        print("p ", C.pValue )
-        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
-        """
+                self.var1_dim * self.var2_dim,
+                False,
+                self.surr_est_type)
         return C
 
-    ######################################################################### TODO only in actract class?
     def get_analytic_distribution(self, var1, var2, conditional=None):
         """Return a Python AnalyticNullDistribution object.
 
@@ -1656,10 +1528,13 @@ class PythonGaussianCMI(PythonGaussian):
         Returns:
             idtxl calculator that was used here
         """
-
-        if not self.actualValue:
-            est = self.estimate(var1, var2, conditional)
-        return self.computeSignificance()
+        if (conditional is None):
+            mi = PythonGaussianMI(self.settings)
+            mi.estimate(var1, var2)
+            return mi.computeSignificance()
+        else:
+            self.estimate(var1, var2, conditional)
+            return self.computeSignificance()
 
 
 class PythonGaussianAIS(PythonGaussian):
@@ -1699,9 +1574,7 @@ class PythonGaussianAIS(PythonGaussian):
         assert type(settings['history']) is int, (
                                             'History has to be an integer.')
         assert type(settings['tau']) is int, ('Tau has to be an integer.')
-
         super().__init__(settings)
-
 
     def estimate(self, process):
         """Estimate active information storage.
@@ -1717,7 +1590,7 @@ class PythonGaussianAIS(PythonGaussian):
                 average AIS over all samples 
 
         """
-
+        # Check the input data
         process = self._ensure_one_dim_input(process)
 
         startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
@@ -1733,15 +1606,54 @@ class PythonGaussianAIS(PythonGaussian):
             startFirstPoint, 
             process.shape[0] - startFirstPoint - 1)
         
+        self.n_samples = process_current.shape[0]
+        self.process_current_dim = process_current.shape[1]
+        self.process_past_dim = process_past.shape[1]
+
         if self.settings['local_values']:
             ais = PythonGaussianMI.calculateLocalMI(self, process_current, process_past)
             # correction to compare with JidtGaussianTE results
             ais = np.hstack([np.zeros(startFirstPoint+1), ais])
+            self.actualValue = np.mean(ais)
         else:
             ais = PythonGaussianMI.calculateAverageMI(self, process_current, process_past)
+            self.actualValue = ais
         
         return ais
-        
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                self.process_current_dim * self.process_past_dim,
+                False,
+                self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, process):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2#
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        self.estimate(process)
+        return self.computeSignificance()
+
 
 class PythonGaussianTE(PythonGaussian):
     """Calculate transfer entropy with Python Gaussian implementation.
@@ -1785,42 +1697,6 @@ class PythonGaussianTE(PythonGaussian):
         settings = self._set_te_defaults(settings)
         super().__init__(settings)
 
-        # Check for currently unsupported settings
-        if settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num arguments.')
-
-
-    #################################################################### TODO remove
-    def residual_cov(self, X, Y):
-
-        n = X.shape[0]
-        # Add intercept
-        Y1 = np.column_stack([np.ones(n), Y])
-        # Least-squares fit
-        beta, *_ = np.linalg.lstsq(Y1, X, rcond=None)
-        E = X - Y1 @ beta
-        # unbiased sample covariance of residuals
-        return self.cov_reg(E)
-        #return np.cov(E, rowvar=False, bias=False)
-
-    #################################################################### TODO remove
-    def calculateAverageTE(self, source_past, target_past, target_current):
-        """calaculate Average transfer entropy for gaussian data"""
-        
-        cov_y_given_y = self.residual_cov(target_current, target_past)
-        cov_y_given_xy = self.residual_cov(target_current, np.hstack([target_past, source_past]))
-
-        if cov_y_given_y.ndim == 0:
-            cov_y_given_y = np.array([[cov_y_given_y]])
-        if cov_y_given_xy.ndim == 0:
-            cov_y_given_xy = np.array([[cov_y_given_xy]])
-
-        ld_y = self.logdet_cholesky(cov_y_given_y)
-        ld_yx = self.logdet_cholesky(cov_y_given_xy)
-
-        return 0.5 * (ld_y - ld_yx)
-
-    
     def estimate(self, source: np.ndarray, target: np.ndarray):
         """Estimate transfer entropy from a source to a target variable.
 
@@ -1839,9 +1715,8 @@ class PythonGaussianTE(PythonGaussian):
         
         TE_{Y->X} = 0.5 * log det Sigma(X_t | X_past) / det Sigma(X_t | X_past, Y_past)
         where X_past = X_{t-lag}, Y_past = Y_{t-lag}
-        
         """
-
+        # Check the input data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
 
@@ -1874,29 +1749,67 @@ class PythonGaussianTE(PythonGaussian):
             self.settings['tau_source'],
             startFirstPoint + 1 - self.settings['source_target_delay'],
             source.shape[0] - startFirstPoint - 1)
-            
+        
+        self.n_samples = source.shape[0]
+        self.source_past_dim = source_past.shape[1]
+        self.target_current_dim = target_current.shape[1]
+        #self.target_past_dim = target_past.shape[1]
+
         if self.settings['local_values']:
             te = PythonGaussianCMI.calculateLocalCMI(self, source_past, target_current, target_past)
             # correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
+            self.actualValue = np.mean(te)
 
         else:
             te = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_current, target_past)
-            #te = self.calculateAverageTE(source_past, target_past, target_current)
+            self.actualValue = te
 
         return te
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                self.source_past_dim * self.target_current_dim,
+                False,
+                self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, source, target):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2#
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        self.estimate(source, target)
+        return self.computeSignificance()
 
 
 class PythonGaussianCTE(PythonGaussian):
     """Calculate conditional transfer entropy with Python Gaussian 
     implementation.
 
-    
-    ################################################################################# TODO
     Calculate transfer entropy between a source and a target variable using
     Pathon implementation of the Gaussian estimator. Transfer entropy is
     defined as the conditional mutual information between the source's past
-    state and the target's current value, conditional on the target's past.
+    state and the target's current value, conditional on the target's and 
+    another conditional'spast.
 
     Past states need to be defined in the settings dictionary, where a past
     state is defined as a uniform embedding with parameters history and tau.
@@ -1939,12 +1852,7 @@ class PythonGaussianCTE(PythonGaussian):
         settings = self._set_te_defaults(settings)
         settings = self._set_cte_defaults(settings)
         super().__init__(settings)
-        ####################################################### TODO alg2 ?
-        # Check for currently unsupported settings
-        #if settings.get('algorithm_num', 1) != 1:
-        #    raise ValueError('This estimator currently does not support algorithm_num arguments.')
-
-    
+        
     def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy from a source to a target variable
         conditioned on another.
@@ -1962,14 +1870,14 @@ class PythonGaussianCTE(PythonGaussian):
                 average TE over all samples
         
         """
-
         # Return TE if no conditioning variable was provided.
         if conditional is None:
             est = PythonGaussianTE(self.settings)
             return est.estimate(source, target)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
-        
+
+        # Check the input data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
         conditional = self._ensure_one_dim_input(conditional)
@@ -1978,7 +1886,6 @@ class PythonGaussianCTE(PythonGaussian):
             source.shape[0] == target.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {conditional.shape[0]}, target: {conditional.shape[0]})"
 
-     
         # delay embedding
         startTimeBasedOnTargetPast = (self.settings['history_target'] - 1) * self.settings['tau_target']
         startTimeBasedOnSourcePast = (self.settings['history_source'] - 1) * self.settings['tau_source'] + self.settings['source_target_delay'] - 1
@@ -2009,14 +1916,58 @@ class PythonGaussianCTE(PythonGaussian):
         
         # combine target_current and conditional_past as conditional for CMI
         condCombine = np.hstack([target_past, conditional_past])
-       
+        
+        self.n_samples = source_past.shape[0]
+        self.source_past_dim = source_past.shape[1]
+        self.target_current_dim = target_current.shape[1]
+
         if self.settings['local_values']:
             cte = PythonGaussianCMI.calculateLocalCMI(self, source_past, target_current, condCombine)
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
+            self.actualValue = np.mean(cte)
         else:
             cte = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_current, condCombine)
+            self.actualValue = cte
             
         return cte
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                self.source_past_dim * self.target_current_dim,
+                False,
+                self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, source, target, conditional=None):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2#
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        if (conditional is None):
+            te = PythonGaussianTE(self.settings)
+            te.estimate(source, target)
+            return te.computeSignificance()
+        else:
+            self.estimate(source, target, conditional)
+            return self.computeSignificance()
 
 
 
@@ -2049,6 +2000,9 @@ class PythonDiscrete(PythonEstimator):
         super().__init__(settings)
 
         self.actualValue = None
+
+        ####################################################################### TODO
+        self.surr_est_type = "exact"
 
     def _discretise_vars(self, var1, var2=None, conditional=None):
         # Discretise variables if requested. Otherwise assert data are discrete
@@ -2184,7 +2138,6 @@ class PythonDiscrete(PythonEstimator):
         n_states = int(codes.max()) + 1
         return codes, n_states
 
-
     def entropy(self, X):
         """
         Calculate Shannon entropy H(X) for discrete data.
@@ -2273,11 +2226,9 @@ class PythonDiscrete(PythonEstimator):
 
         return h_xz
 
-    ################################################################################### TODO
     def is_analytic_null_estimator(self):
         return True
 
-    ################################################################################### TODO
     def get_analytic_distribution(self, **data):
         """Return a Python AnalyticNullDistribution object.
 
@@ -2328,7 +2279,6 @@ class PythonDiscreteMI(PythonDiscrete):
     Args:
         settings : dict [optional]
             sets estimation parameters:
-
             
             - discretise_method : str [optional] - if and how to discretise
               incoming continuous data, can be 'max_ent' for maximum entropy
@@ -2475,9 +2425,7 @@ class PythonDiscreteMI(PythonDiscrete):
                 average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
-
-        # Check and remember the no. dimensions for each variable before
-        # collapsing them into univariate arrays later.
+        # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         
@@ -2513,28 +2461,15 @@ class PythonDiscreteMI(PythonDiscrete):
 
         return mi
     
-    ############################################################################ TODO
     def computeSignificance(self):
-
-        #average = self.estimate(self.var1, self.var2, self.conditional)
         C = ChiSquareMeasurementDistribution()
-        
         C.ChiSquareMeasurementDistribution(self.actualValue,
                 self.n_samples,
-                (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1),
-                False)
-        """
-        print("est ", self.actualValue)
-        print("cs ", C)
-        print(max(self.var1))
-        print(max(self.var2))
-        print(max(self.conditional))
-        print("p ", C.pValue )
-        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
-        """
+                (self.settings['alph1'] - 1) * (self.settings['alph2'] -1),
+                False,
+                self.surr_est_type)
         return C
     
-    ############################################################################ TODO
     def get_analytic_distribution(self, var1, var2):
         """Return a Python AnalyticNullDistribution object.
 
@@ -2554,6 +2489,7 @@ class PythonDiscreteMI(PythonDiscrete):
         Returns:
             idtxl calculator that was used here
         """
+        self.estimate(var1, var2)
         return self.computeSignificance()
 
 
@@ -2609,9 +2545,7 @@ class PythonDiscreteCMI(PythonDiscrete):
         h_x_z = self.conditional_entropy(var1, conditional)
         h_y_z = self.conditional_entropy(var2, conditional)
         h_xy_z = self.conditional_entropy(np.column_stack([var1, var2]), conditional[:,None])
-        
         cmi = h_x_z + h_y_z - h_xy_z
-
         return cmi
     
     def calculateAverageCMI(self, var1, var2, conditional):
@@ -2705,7 +2639,6 @@ class PythonDiscreteCMI(PythonDiscrete):
 
         return local_cmi
 
-
     def estimate(self, var1, var2, conditional=None):
         """Estimate conditional mutual information.
 
@@ -2727,7 +2660,6 @@ class PythonDiscreteCMI(PythonDiscrete):
                 samples if 'local_values'=True
             
         """
-
         # Return MI if no conditioning variable was provided.
         if conditional is None:
             #if (self.est_mi is None):
@@ -2736,15 +2668,10 @@ class PythonDiscreteCMI(PythonDiscrete):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
-
-        # Check and remember the no. dimensions for each variable before
-        # collapsing them into univariate arrays later.
+        # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
-        var1_dim = var1.shape[1]
-        var2_dim = var2.shape[1]
-        cond_dim = conditional.shape[1]
 
         assert (
             var1.shape[0] == var2.shape[0] == conditional.shape[0]
@@ -2775,27 +2702,14 @@ class PythonDiscreteCMI(PythonDiscrete):
         
         return cmi
 
-
     def computeSignificance(self):
-
-        #average = self.estimate(self.var1, self.var2, self.conditional)
         C = ChiSquareMeasurementDistribution()
-        
         C.ChiSquareMeasurementDistribution(self.actualValue,
                 self.n_samples,
                 (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']),
-                False)
-        """
-        print("est ", self.actualValue)
-        print("cs ", C)
-        print(max(self.var1))
-        print(max(self.var2))
-        print(max(self.conditional))
-        print("p ", C.pValue )
-        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
-        """
+                False,
+                self.surr_est_type)
         return C
-
 
     def get_analytic_distribution(self, var1, var2, conditional=None):
         """Return a Python AnalyticNullDistribution object.
@@ -2819,12 +2733,14 @@ class PythonDiscreteCMI(PythonDiscrete):
         Returns:
             idtxl calculator that was used here
         """
-        if not self.actualValue:
-            est = self.estimate(var1, var2, conditional)
-        return self.computeSignificance()
+        if (conditional is None):
+            mi = PythonDiscreteMI(self.settings)
+            mi.estimate(var1, var2)
+            return mi.computeSignificance()
+        else:
+            self.estimate(var1, var2, conditional)
+            return self.computeSignificance()
 
-        
-       
 
 class PythonDiscreteAIS(PythonDiscrete):
     """Calculate AIS with Python discrete-variable implementation.
@@ -2877,7 +2793,6 @@ class PythonDiscreteAIS(PythonDiscrete):
         assert settings['alph1'] >= 2, 'Number of bins must be >= 2'
         super().__init__(settings)
 
-
     def estimate(self, process):
         """Estimate active information storage.
 
@@ -2893,6 +2808,7 @@ class PythonDiscreteAIS(PythonDiscrete):
                 samples if 'local_values'=True
 
         """
+        # Check the input data
         process = self._ensure_one_dim_input(process)
         
         # Discretise variables if requested.
@@ -2927,29 +2843,15 @@ class PythonDiscreteAIS(PythonDiscrete):
         
         return ais
 
-
-    ########################################################################### TODO
     def computeSignificance(self):
-
-        #average = self.estimate(self.var1, self.var2, self.conditional)
         C = ChiSquareMeasurementDistribution()
-        
         C.ChiSquareMeasurementDistribution(self.actualValue,
                 self.n_samples,
                 (self.settings['alph1'] - 1) * (np.power(self.settings['alph1'], self.settings['history']) - 1),
-                False)
-        """
-        print("est ", self.actualValue)
-        print("cs ", C)
-        print(max(self.var1))
-        print(max(self.var2))
-        print(max(self.conditional))
-        print("p ", C.pValue )
-        print("df ", (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']))
-        """
+                False,
+                self.surr_est_type)
         return C
 
-    ########################################################################### TODO
     def get_analytic_distribution(self, process):
         """Return a Python AnalyticNullDistribution object.
 
@@ -2967,12 +2869,9 @@ class PythonDiscreteAIS(PythonDiscrete):
         Returns:
             idtxl calculator that was used here
         """
-        
-        ###################################################################### TODO test
-
-
+        self.estimate(process)
         return self.computeSignificance()
-        
+
 
 class PythonDiscreteTE(PythonDiscrete):
     """Calculate TE with Python implementation for discrete variables.
@@ -3038,7 +2937,6 @@ class PythonDiscreteTE(PythonDiscrete):
             'Num discrete levels for target must be >= 2')
         super().__init__(settings)
 
-
     def combine_embedding_dimensions(self, var, alph):
         var = utils.combine_discrete_dimensions(var, alph)
         var = self._ensure_one_dim_input(var)
@@ -3066,7 +2964,7 @@ class PythonDiscreteTE(PythonDiscrete):
                 samples if 'local_values'=True
             
         """
-
+        # Check the input data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
 
@@ -3108,16 +3006,28 @@ class PythonDiscreteTE(PythonDiscrete):
                 
         source_past = self.combine_embedding_dimensions(source_past, self.settings['alph1'])
         
+        self.n_samples = source_past.shape[0]
+
         if self.settings['local_values']:
             te = PythonDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
             # correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
+            self.actualValue = np.mean(te)
         else:
             te = PythonDiscreteCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            self.actualValue = te
         
         return te
 
-    ########################################################################### TODO
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                (np.power(self.settings['alph1'], self.settings['history_source']) - 1) * (self.settings['alph1'] - 1) * np.power(self.settings['alph2'], self.settings['history_target']),
+                False,
+                self.surr_est_type)
+        return C
+
     def get_analytic_distribution(self, source, target):
         """Return a Python AnalyticNullDistribution object.
 
@@ -3138,15 +3048,8 @@ class PythonDiscreteTE(PythonDiscrete):
             idtxl calculator that was used here
         """
         # Make one estimate to prepare the calculator:
-        
-        ###################################################################### TODO test
-        average = self.estimate(source, target)
-        C = ChiSquareMeasurementDistribution()
-        C.ChiSquareMeasurementDistribution(average,
-                source.shape[0],
-                (self.settings['alph1'] - 1)*(self.settings['alph2'] - 1),
-                False)
-        return C
+        self.estimate(source, target)
+        return self.computeSignificance()
 
 
 
@@ -3401,6 +3304,7 @@ class PythonSpectralMI(PythonSpectral):
         return mi
 
 
+################################################################################ TODO
 class PythonSpectralCMI(PythonSpectral):
     """Estimate conditional mutual information using Spectral estimator.
 
@@ -3480,9 +3384,7 @@ class PythonSpectralCMI(PythonSpectral):
                     self.estimator_settings[i] = self.settings[i]
 
             self.estimator_settings.setdefault('discretise_method', 'max_ent')
-
-            ############################################################### TODO test adjust or remove
-            settings.setdefault('n_discrete_bins', 2)
+            self.estimator_settings.setdefault('n_discrete_bins', 2)
 
             try:
                 n_discrete_bins = int(self.settings['n_discrete_bins'])
@@ -3496,13 +3398,10 @@ class PythonSpectralCMI(PythonSpectral):
             self.estimator_settings.setdefault('alph3', int(2))
 
         elif self.settings['estimator'] == 'gaussian':
-
             self.estimator_settings = {}
-
             
         else:
             raise ValueError(f"Unkown estimator choice: {self.settings['estimator']}")
-
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional: np.ndarray):
         """Estimate conditional mutual information.
@@ -3569,11 +3468,9 @@ class PythonSpectralCMI(PythonSpectral):
             mi = est.estimate(var1, var2, conditional)
         
         return mi
-     
 
 
 
-############################################################################# TODO
 
 def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
     """Estimate the surrogate distribution analytically for PythonEstimator.
@@ -3598,26 +3495,14 @@ def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
             var2 (in the context of conditional)
     """
     # Compute the statistical significance of the estimate to get an
-    #  AnalyticMeasurementDistribution object:
+    # AnalyticMeasurementDistribution object:
     analytic_distribution = estimator.get_analytic_distribution(**data)
-
-    ################################################################ TODO remove
-    print("###############################################")
-    print(estimator)
-    #print(data)
-    #print(analytic_distribution)
-    #print(type(analytic_distribution))
-    print(analytic_distribution.computeEstimateForGivenPValue(0.1))
-    print(analytic_distribution.computePValueForGivenEstimate(0.0000123))
-    print("###############################################")
-    #print("###############################################")
-
+    
     # Then compute surrogates at n_perm random p-values
     surrogate_estimates = np.empty(n_perm)
     for perm in range(n_perm):
         surrogate_estimates[perm] = \
-            analytic_distribution.computeEstimateForGivenPValue(np.random.random())
+            analytic_distribution.computeEstimateForGivenPValue(
+                np.random.random())
 
-    print(surrogate_estimates)
-    
     return surrogate_estimates
