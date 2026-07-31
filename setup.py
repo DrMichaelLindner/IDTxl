@@ -12,14 +12,18 @@ extensions = [
         "idtxl.hde_fast_embedding",
         ["idtxl/hde_fast_embedding.pyx"], include_dirs=[numpy.get_include()],
     ),
+    Extension(
+        "idtxl.chi2_ppf",
+        ["idtxl/chi2_ppf.pyx"], include_dirs=[numpy.get_include()],
+    ),
 ]
 
 setup(
     name="idtxl",
     packages=["idtxl", "idtxl/knn"],
     include_package_data=True,
-    version="1.8.3",
-    description="Information Dynamics Toolkit xl",
+    version="2.0",
+    description="Information Dynamics Toolkit xl 2.0",
     author="Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
     author_email="p.wollstadt@gmail.com",
     url="https://github.com/pwollstadt/IDTxl",
