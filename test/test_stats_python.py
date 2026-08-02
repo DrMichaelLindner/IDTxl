@@ -5,7 +5,7 @@ import copy as cp
 
 import numpy as np
 import pytest
-from gen_testdata import _get_gauss_data
+from generate_test_data import _get_gauss_data
 
 from idtxl import stats
 from idtxl.active_information_storage import ActiveInformationStorage

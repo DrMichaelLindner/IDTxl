@@ -16,10 +16,10 @@ from idtxl.estimators_python import (PythonKraskovMI, PythonKraskovCMI,
                                 PythonDiscreteMI, PythonDiscreteCMI,
                                 PythonDiscreteAIS, PythonDiscreteTE,)
 
-from gen_testdata import (_get_gauss_data, 
-                        _get_ar_data, 
-                        _get_mem_binary_data, 
-                        )
+from generate_test_data import (_get_gauss_data,
+                                _get_ar_data,
+                                _get_mem_binary_data,
+                                )
 
 from idtxl.idtxl_utils import calculate_mi
 import idtxl.idtxl_exceptions as ex

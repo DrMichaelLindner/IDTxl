@@ -9,7 +9,7 @@ from idtxl.estimators_jidt import JidtDiscreteCMI, JidtKraskovTE
 from test_estimators_jidt import jpype_missing
 from idtxl.idtxl_utils import calculate_mi
 from idtxl.multivariate_te import MultivariateTE
-from gen_testdata import _get_discrete_gauss_data, _get_gauss_data
+from generate_test_data import _get_discrete_gauss_data, _get_gauss_data
 
 SEED = 0
 

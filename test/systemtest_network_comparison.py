@@ -11,14 +11,14 @@ import pickle
 import numpy as np
 from idtxl.network_comparison import NetworkComparison
 from idtxl.data import Data
-from generate_test_data import generate_continuous_data, generate_discrete_data
+from generate_test_data import generate_continuous_idtxl_data, generate_discrete_idtxl_data
 
 
 def test_network_comparison():
     """Run within/between, dependent/independent test on bivariate MI."""
     # Generate continuous data.
-    data_cont = generate_continuous_data(n_replications=10)
-    data_disc = generate_discrete_data(n_replications=10)
+    data_cont = generate_continuous_idtxl_data(n_replications=10)
+    data_disc = generate_discrete_idtxl_data(n_replications=10)
     data_dummy_cont = _generate_dummy_data(data_cont)
     data_dummy_disc = _generate_dummy_data(data_disc)
 

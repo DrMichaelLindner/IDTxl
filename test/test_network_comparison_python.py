@@ -11,7 +11,7 @@ import numpy as np
 from idtxl.network_comparison import NetworkComparison
 from idtxl.data import Data
 from idtxl.idtxl_utils import calculate_mi
-from gen_testdata import _get_gauss_data
+from generate_test_data import _get_gauss_data
 
 SEED = 0
 

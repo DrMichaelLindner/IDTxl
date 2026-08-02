@@ -3,7 +3,7 @@
 
 import numpy as np
 import pytest
-from gen_testdata import _get_gauss_data
+from generate_test_data import _get_gauss_data
 from idtxl.data import Data
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.bivariate_te import BivariateTE
