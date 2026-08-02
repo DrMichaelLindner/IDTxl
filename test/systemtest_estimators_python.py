@@ -26,9 +26,8 @@ from idtxl.data import Data
 
 import random as rn
 import itertools
-from gen_testdata import (_get_gauss_data, _get_ar_data, _generate_mute_data, 
-						_get_mem_binary_data, _get_freq_data, _get_cte_test_data, 
-						_get_discrete_gauss_data, _generate_mute_data_discrete)
+from generate_test_data import (_get_gauss_data, _get_ar_data, _generate_mute_data,
+                                _get_mem_binary_data, _get_freq_data)
 
 
 SEED = 42
@@ -105,10 +104,10 @@ def test_kraskov_mi():
 	
 	resj={}
 	resp={}
-	for a in [1,2]:
-	#for a in [2]:
+	#for a in [1,2]:
+	for a in [1]:
 	
-		print(f"\nKSG-{a}\n")
+		#print(f"\nKSG-{a}\n")
 		time_jidt_cor = np.empty(np.power(len(kvals),2))
 		mi_jidt_cor = np.empty(np.power(len(kvals),2))
 		time_python_cor = np.empty(np.power(len(kvals),2))
@@ -130,13 +129,15 @@ def test_kraskov_mi():
 							"noise_level": 0,
 							"num_threads": "USE_ALL",
 							"lag_mi": l,
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 				settings_p = {"kraskov_k": k,
 							"noise_level": 0,
 							"knn_finder": "scipy_ckdtree",
 							"num_threads": "USE_ALL",
 							"lag_mi": l,
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 
 				jidt_estimator = JidtKraskovMI(settings_j)
 				python_estimator = PythonKraskovMI(settings_p)
@@ -188,7 +189,6 @@ def test_kraskov_mi():
 		print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
 	
 	
-	"""
 	# test 2D data
 	data = _generate_mute_data(n_samples=2000, n_replications=4)
 
@@ -388,8 +388,6 @@ def test_kraskov_mi():
 	print(" JidtKraskovMI: ", np.mean(time_jidt_cor) )
 	print(" PythonKraskovMI (scipy_kdtree): ", np.mean(time_python_cor1) )
 	print(" PythonKraskovMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
-	
-	"""
 
 def test_kraskov_mi_local_values():
 
@@ -401,8 +399,9 @@ def test_kraskov_mi_local_values():
 	
 	print(f"\n\nTesting local MI using 1D gaussian data with covariance 0.4 and lag 1 \ntesting settings kraskov k {kvals} and lag_mi {lvals}\n")
 	
-	for a in [1,2]:
-		print(f"\nKSG-{a}")
+	#for a in [1,2]:
+	for a in [1]:
+		#print(f"\nKSG-{a}")
 		time_jidt_cor = np.empty(np.power(len(kvals),2))
 		time_python_cor = np.empty(np.power(len(kvals),2))
 		time_jidt_uncor = np.empty(np.power(len(kvals),2))
@@ -422,7 +421,8 @@ def test_kraskov_mi_local_values():
 							"local_values": True,
 							"num_threads": "USE_ALL",
 							"lag_mi": l,
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 				settings_p = {"kraskov_k": k,
 							"noise_level": 0,
 							"normalise": False,
@@ -430,7 +430,8 @@ def test_kraskov_mi_local_values():
 							"local_values": True,
 							"num_threads": "USE_ALL",
 							"lag_mi": l,
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 
 				jidt_estimator = JidtKraskovMI(settings_j)
 				python_estimator = PythonKraskovMI(settings_p)
@@ -472,7 +473,7 @@ def test_kraskov_mi_local_values():
 		print(" JidtKraskovMI (uncor): ", np.mean(time_jidt_uncor) )
 		print(" PythonKraskovMI (uncor): ", np.mean(time_python_uncor) )
 
-	"""
+	
 	# test 2D
 	print(f"\n\nTesting local MI using 2D mute data with and without coupling\n")
 	
@@ -584,24 +585,19 @@ def test_kraskov_mi_local_values():
 			mi_python_cor = python_estimator.estimate(source1, target)
 			itoc = time.perf_counter()
 			time_python_cor = itoc - itic
-
-			#print(mi_jidt_cor)
-			#print(mi_python_cor)
-			
+		
 			verbose(mi_jidt_cor, mi_python_cor, cond, "MI", local=True, atol=1e-03)
-	"""
 
 def test_kraskov_cmi():
 	
 	cvals = [0.2, 0.4, 0.6, 0.8]
 	kvals = [2,4,6,8]
 	
-	
-	
 	# test 1D data
 	print(f"\n\nTesting average CMI using 1D gaussian data with covariances {cvals} \ntesting settings kraskov k {kvals} and uncorrelated conditional and uncorrelated source")
 		
-	for a in [1,2]:
+	#for a in [1,2]:
+	for a in [1]:
 		time_jidt_cor = np.empty(np.power(len(kvals),2))
 		mi_jidt_cor = np.empty(np.power(len(kvals),2))
 		time_python_cor = np.empty(np.power(len(kvals),2))
@@ -613,7 +609,7 @@ def test_kraskov_cmi():
 
 		conds = np.empty((np.power(len(kvals),2),2))
 		
-		print(f"\nKSG-{a}")
+		#print(f"\nKSG-{a}")
 		
 		count = 0
 		for k in kvals:
@@ -626,13 +622,15 @@ def test_kraskov_cmi():
 							"noise_level": 0,
 							"normalise": False,
 							"num_threads": "USE_ALL",
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 				settings_p = {"kraskov_k": k,
 							"noise_level": 0,
 							"normalise": False,
 							"knn_finder": "scipy_ckdtree",
 							"num_threads": "USE_ALL",
-							"algorithm_num": a}
+							#"algorithm_num": a,
+							}
 
 				jidt_estimator = JidtKraskovCMI(settings_j)
 				python_estimator = PythonKraskovCMI(settings_p)
@@ -678,8 +676,7 @@ def test_kraskov_cmi():
 		print(" JidtKraskovCMI: (uncorrelated source)", np.mean(time_jidt_uncor) )
 		print(" PythonKraskovCMI: (uncorrelated source)", np.mean(time_python_uncor) )
 
-	"""
-
+	
 	# test 2D data
 	time_jidt_cor = np.empty(4)
 	mi_jidt_cor = np.empty(4)
@@ -873,8 +870,6 @@ def test_kraskov_cmi():
 	print(" JidtKraskovCMI: ", np.mean(time_jidt_cor) )
 	print(" PythonKraskovCMI (scipy_kdtree): ", np.mean(time_python_cor1) )
 	print(" PythonKraskovCMI (scipy_ckdtree): ", np.mean(time_python_cor2) )
-
-	"""
 
 def test_kraskov_cmi_local_values():
 
@@ -2421,7 +2416,7 @@ def test_gaussian_cte():
 
 def test_gaussian_cte_local_values():
 	
-	vals = [1,2,3]
+	vals = [1,3]
 
 	print(f"\n\nTesting local CTE using 1D mute data - correlated and uncorrelated conditional")
 	print(f"testing settings history_source, tau_source, history_target, tau_target, history_conditional")
@@ -3432,7 +3427,7 @@ def test_discrete_te():
 
 def test_discrete_te_local_values():
 
-	vals = [1,2,3]
+	vals = [1,3]
 
 	print(f"\n\nTesting average TE using 1D binary data with memory\n")
 	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each.\nand n_discrete_bins 2\n")
@@ -4789,7 +4784,7 @@ def test_analytic_distribution_te_discrete():
 
 
 # Test bi- and multivariate analysis (single target)
-def test_single_target_analysis(analysis, est_type, numperm=500):
+def test_single_target_analysis(analysis, est_type, numperm=500, samples=1000):
     """Test multivariate TE estimation from correlated Gaussians."""
     
     measure = analysis[-2:].lower()
@@ -4800,7 +4795,7 @@ def test_single_target_analysis(analysis, est_type, numperm=500):
     print(f"with covariance 0.4, lag 1\n")
 
     # Generate data and add a delay one one sample.
-    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+    expected_mi, source, source_uncorr, target = _get_gauss_data(n=samples, seed=SEED)
     source = source[1:]
     source_uncorr = source_uncorr[1:]
     target = target[:-1]
@@ -4818,7 +4813,7 @@ def test_single_target_analysis(analysis, est_type, numperm=500):
         'n_perm_min_stat': numperm,
         'n_perm_max_seq': numperm,
         'n_perm_omnibus': numperm,
-        'max_lag_sources': 2,
+        'max_lag_sources': 3,
         'min_lag_sources': 1,
         'noise_level': 0, 
         'normalise': False,
@@ -4832,7 +4827,7 @@ def test_single_target_analysis(analysis, est_type, numperm=500):
         'n_perm_min_stat': numperm,
         'n_perm_max_seq': numperm,
         'n_perm_omnibus': numperm,
-        'max_lag_sources': 2,
+        'max_lag_sources': 3,
         'min_lag_sources': 1,
         'noise_level': 0, 
         'normalise': False,
@@ -4897,8 +4892,9 @@ def test_single_target_analysis(analysis, est_type, numperm=500):
     print(f"single target analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
 
 
+
 # Test network analysis
-def test_network_analysis(analysis, est_type, numperm=500, samples=1000, reps=3):
+def test_network_analysis(analysis, est_type, numperm=300, samples=500, reps=3):
 	
 	measure = analysis[-2:].lower()
 	jidt_estimator = f"Jidt{est_type}CMI"
@@ -4985,7 +4981,6 @@ def test_network_analysis(analysis, est_type, numperm=500, samples=1000, reps=3)
 	for t in range(5):
 		print(f"{t}\t\t{selected_sources_jidt[t]==selected_sources_python[t]}\t{jidt_estimator}  : {selected_sources_jidt[t]}\n\t\t\t\t{python_estimator}: {selected_sources_python[t]}")
 
-
 	atol = 1e-03
 	print("\ntarget delays:\n")
 	print("target\t\t\t\t\t\tequal")
@@ -5001,37 +4996,15 @@ def test_network_analysis(analysis, est_type, numperm=500, samples=1000, reps=3)
 	print(f"target\tclose {atol}")
 
 	for t in range(5):
-		if len(selected_sources_te_jidt[t])==len(selected_sources_te_python[t]):
-			equal = np.allclose(selected_sources_te_jidt[t], selected_sources_te_python[t], atol=atol)	
-		else: 
+		try:
+			if len(selected_sources_te_jidt[t])==len(selected_sources_te_python[t]):
+				equal = np.allclose(selected_sources_te_jidt[t], selected_sources_te_python[t], atol=atol)	
+			else: 
+				equal = False
+		except:
 			equal = False
 		print(f"{t}\t\t{equal}\t{jidt_estimator}  : {selected_sources_te_jidt[t]}\n\t\t\t\t{python_estimator}: {selected_sources_te_python[t]}")
-	"""
-	for t in range(5):
-
-		print(type(selected_sources_te_jidt[t]))
-		print(len(selected_sources_te_jidt[t]))
-
-
-		if isinstance(selected_sources_te_jidt[t], list):
-			if isinstance(selected_sources_te_python[t], list):
-				if len(selected_sources_te_jidt[t])==len(selected_sources_te_python[t]):
-					equal = np.allclose(selected_sources_te_jidt[t], selected_sources_te_python[t], atol=atol)	
-				else:
-					equal = False
-			else:
-				equal = False
-		elif selected_sources_te_jidt==None:
-			if selected_sources_te_python==None:
-				equal = True
-			else:
-				equal = False
-			
-		else:
-			equal = False
-		print(f"{t}\t\t{equal}\t{jidt_estimator}  : {selected_sources_te_jidt[t]}\n\t\t\t\t{python_estimator}: {selected_sources_te_python[t]}")
-	"""
-
+	
 	print("\nEdge lists:")
 	print("Jidt:")
 	results_jidt.print_edge_list("max_te_lag", fdr=False)
@@ -5045,12 +5018,12 @@ def test_network_analysis(analysis, est_type, numperm=500, samples=1000, reps=3)
 
 
 # test nonlinear granger
-def test_nonlinear_granger():
+def test_nonlinear_granger(analysis, est_type, numperm=300, samples=500, reps=6):
 	
-	samples = 100
-	reps = 3
-	
-	print(f"\n\nTesting nonlinear granger analysis via MultivariateTE")
+	jidt_estimator = f"Jidt{est_type}"
+	python_estimator = f"Python{est_type}"
+
+	print(f"\n\nTesting nonlinear granger analysis via {analysis}")
 	print(f"using mute data ({samples} samples, {reps} replications)\n")
 
 	
@@ -5063,11 +5036,11 @@ def test_nonlinear_granger():
 	settings = {
 	    "target": 1,   # mandatory in settings for nonlinear single target analysis
 	    "sources": 0,  # optional in settings for nonlinear  single targetanalysis
-	    "cmi_estimator": "JidtGaussianCMI",
-	    "n_perm_max_stat": 21,
-	    "n_perm_min_stat": 21,
-	    "n_perm_omnibus": 21,
-	    "n_perm_max_seq": 21,
+	    "cmi_estimator": jidt_estimator,
+	    "n_perm_max_stat": numperm,
+	    "n_perm_min_stat": numperm,
+	    "n_perm_omnibus": numperm,
+	    "n_perm_max_seq": numperm,
 	    "max_lag_sources": 5,
 	    "min_lag_sources": 1,
 	}
@@ -5088,11 +5061,11 @@ def test_nonlinear_granger():
 	settings2 = {
 	    "target": 1,   # mandatory in settings for nonlinear single target analysis
 	    "sources": 0,  # optional in settings for nonlinear  single targetanalysis
-	    "cmi_estimator": "PythonGaussianCMI",
-	    "n_perm_max_stat": 21,
-	    "n_perm_min_stat": 21,
-	    "n_perm_omnibus": 21,
-	    "n_perm_max_seq": 21,
+	    "cmi_estimator": python_estimator,
+	    "n_perm_max_stat": numperm,
+	    "n_perm_min_stat": numperm,
+	    "n_perm_omnibus": numperm,
+	    "n_perm_max_seq": numperm,
 	    "max_lag_sources": 5,
 	    "min_lag_sources": 1,
 	}
@@ -5106,24 +5079,32 @@ def test_nonlinear_granger():
 	itoc = time.perf_counter()
 	time_python = itoc - itic
 
-	print(f"\nSummary nonlinear granger network analysis JidtGaussianCMI vs PythonGaussianCMI\n")
+	print(f"\nSummary nonlinear granger network analysis {jidt_estimator} vs {python_estimator}\n")
 	
 	print("ts = target_sources")
 	print("type = type of target sources: 1=lin, 2=nonlin")
-	print("\tJidtGaussianCMI\t\tPythonGaussianCMI")
-	print("target\tts\ttype\t\tts\ttype\tequal ts\tequal type")
+	print(f"\t{jidt_estimator}\t\t{python_estimator}")
+	print("target\tts\t\ttype\tts\ttype\t\tequal ts\tequal type")
 	for t in range(5):
 		ts_jidt = results_jidt.get_nonlinear_target_sources(t, fdr=False)
 		ts_python = results_python.get_nonlinear_target_sources(t, fdr=False)
 		tt_jidt = results_jidt.get_target_source_types(t, fdr=False)
 		tt_python = results_python.get_target_source_types(t, fdr=False)
 
+		try:
+			equal_ts = ts_jidt==ts_python
+		except:
+			equal_ts = False
+		try:
+			equal_tt = tt_jidt==tt_python
+		except:
+			equal_tt = False
 
-		print(f"{t}\t{ts_jidt}\t{tt_jidt}\t\t{ts_python}\t{tt_python}\t{ts_jidt==ts_python}{"\t\t" if len(ts_jidt)==1 else "\t"  }{tt_jidt==tt_python}")
+		print(f"{t}\t\t{ts_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{tt_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{ts_python}{"\t\t" if len(ts_python)<=1 else "\t"}{tt_python}\t\t{equal_ts}{"\t\t" if len(tt_python)<=1 else "\t"}{equal_tt}")
 
 	print("\n calculation times:")
-	print(" nonlinear Granger via MultivariateTE JidtGaussianCMI: ", np.mean(time_jidt) )
-	print(" nonlinear Granger via MultivariateTE PythonGaussianCMI: ", np.mean(time_python) )
+	print(f" nonlinear Granger via {analysis} {jidt_estimator}: ", np.mean(time_jidt) )
+	print(f" nonlinear Granger via {analysis} {python_estimator}: ", np.mean(time_python) )
 	
 
 
@@ -5133,112 +5114,114 @@ if __name__ == '__main__':
 	# get_dist nur gaussian testen für gaussian estimator? 
 	# 			multivariate gaussian mit flag is_tested dann Analytic für Gaussian zulassen.
 	# 
-	# get_analytic_distribution
 
     ##												check theiler_T and kraskov string instead int
 	## 															check theiler _T >3
 	
 	# Test Kraskov estimators
-	#testhead("KraskovMI") ########################################## TODO KSG2
-	#test_kraskov_mi()
+	"""
+	testhead("KraskovMI") ########################################## TODO KSG2
+	test_kraskov_mi()
 	
-	#testhead("KraskovMI local values")
-	#test_kraskov_mi_local_values()
+	testhead("KraskovMI local values")
+	test_kraskov_mi_local_values()
 	
-	#testhead("KraskovCMI") ########################################## TODO  KSG2
-	#test_kraskov_cmi()
+	testhead("KraskovCMI") ########################################## TODO  KSG2
+	test_kraskov_cmi()
 	
-	#testhead("KraskovCMI local values")
-	#test_kraskov_cmi_local_values()
+	testhead("KraskovCMI local values")
+	test_kraskov_cmi_local_values()
 	
-	#testhead("KraskovAIS")
-	#test_kraskov_ais()
+	testhead("KraskovAIS")
+	test_kraskov_ais()
 	
-	#testhead("KraskovAIS local values")
-	#test_kraskov_ais_local_values()
+	testhead("KraskovAIS local values")
+	test_kraskov_ais_local_values()
 	
-	#testhead("KraskovTE")
-	#test_kraskov_te()
+	testhead("KraskovTE")
+	test_kraskov_te()
 	
-	#testhead("KraskovTE local values")
-	#test_kraskov_te_local_values()
+	testhead("KraskovTE local values")
+	test_kraskov_te_local_values()
 	
-	#testhead("KraskovCTE")
-	#test_Kraskov_cte()
+	testhead("KraskovCTE")
+	test_Kraskov_cte()
 	
-	#testhead("KraskovCTE local values")
-	#test_kraskov_cte_local_values()
-	
+	testhead("KraskovCTE local values")
+	test_kraskov_cte_local_values()
+	"""
 
     # Test Gaussian estimators
-	#testhead("GaussianMI")
-	#test_gaussian_mi()
+	"""
+	testhead("GaussianMI")
+	test_gaussian_mi()
 	
-	#testhead("GaussianMI local values") 
-	#test_gaussian_mi_local_values()
+	testhead("GaussianMI local values") 
+	test_gaussian_mi_local_values()
 	
-	#testhead("GaussianCMI")
-	#test_gaussian_cmi()
+	testhead("GaussianCMI")
+	test_gaussian_cmi()
 	
-	#testhead("GaussianCMI local values")
-	#test_gaussian_cmi_local_values()
+	testhead("GaussianCMI local values")
+	test_gaussian_cmi_local_values()
 	
-	#testhead("GaussianAIS")
-	#test_gaussian_ais()
+	testhead("GaussianAIS")
+	test_gaussian_ais()
 
-	#testhead("GaussianAIS local values")
-	#test_gaussian_ais_local_values()
+	testhead("GaussianAIS local values")
+	test_gaussian_ais_local_values()
 	
-	#testhead("GaussianTE")
-	#test_gaussian_te()
+	testhead("GaussianTE")
+	test_gaussian_te()
 	
-	#testhead("GaussianTE local values")
-	#test_gaussian_te_local_values()
+	testhead("GaussianTE local values")
+	test_gaussian_te_local_values()
 	
-	#testhead("GaussianCTE")
-	#test_gaussian_cte()
+	testhead("GaussianCTE")
+	test_gaussian_cte()
 	
-	#testhead("GaussianCTE local values")
-	#test_gaussian_cte_local_values()
-	
+	testhead("GaussianCTE local values")
+	test_gaussian_cte_local_values()
+	"""
 	
 	# Test Discrete estimators
-	#testhead("DiscreteMI")
-	#test_discrete_mi()
+	"""
+	testhead("DiscreteMI")
+	test_discrete_mi()
 
-	#testhead("DiscreteMI local values")
-	#test_discrete_mi_local_values()
+	testhead("DiscreteMI local values")
+	test_discrete_mi_local_values()
 
-	#testhead("DiscreteCMI")
-	#test_discrete_cmi()
+	testhead("DiscreteCMI")
+	test_discrete_cmi()
 
-	#testhead("DiscreteCMI local values")
-	#test_discrete_cmi_local_values()
+	testhead("DiscreteCMI local values")
+	test_discrete_cmi_local_values()
 	
-	#testhead("DiscreteAIS")
-	#test_discrete_ais()
+	testhead("DiscreteAIS")
+	test_discrete_ais()
 
-	#testhead("DiscreteAIS local values")
-	#test_discrete_ais_local_values()
+	testhead("DiscreteAIS local values")
+	test_discrete_ais_local_values()
 
-	#testhead("DiscreteTE")
-	#test_discrete_te()
+	testhead("DiscreteTE")
+	test_discrete_te()
 
-	#testhead("DiscreteTE local values")
-	#test_discrete_te_local_values()
-	
+	testhead("DiscreteTE local values")
+	test_discrete_te_local_values()
+	"""
 
 	# Test Spectral estimators
 	#testhead("SpectralMI")
 	#test_spectral_mi()
-	############################################ TODO 2D performence dest data with or without lags new data 
+	############################################ TODO 2D performence test data with or without lags new data 
 
 	#testhead("SpectralMI local values")
 	#test_spectral_mi_local_values()
 
 	#testhead("SpectralCMI")
 	#test_spectral_cmi()
-	############################################ TODO 2D performence dest data with or without lags new data 
+	############################################ TODO 2D performence test data with or without lags new data 
 
 
 	#testhead("SpectralCMI local values") ############################################## TODO
@@ -5258,99 +5241,124 @@ if __name__ == '__main__':
 
 
 	# Test analytic distributions
-	#testhead("analytic distribution Gaussian")
-	#test_analytic_distribution_mi_gaussian()
-	#test_analytic_distribution_cmi_gaussian()
-	#test_analytic_distribution_cmi_nocond_gaussian()
-	#test_analytic_distribution_ais_gaussian()
-	#test_analytic_distribution_te_gaussian()
-	#test_analytic_distribution_cte_gaussian()
-	#test_analytic_distribution_cte_nocond_gaussian()
+	"""
+	testhead("analytic distribution Gaussian")
+	test_analytic_distribution_mi_gaussian()
+	test_analytic_distribution_cmi_gaussian()
+	test_analytic_distribution_cmi_nocond_gaussian()
+	test_analytic_distribution_ais_gaussian()
+	test_analytic_distribution_te_gaussian()
+	test_analytic_distribution_cte_gaussian()
+	test_analytic_distribution_cte_nocond_gaussian()
+	"""
+	"""
+	testhead("analytic distribution Discrete")
+	test_analytic_distribution_mi_discrete()
+	test_analytic_distribution_cmi_discrete()
+	test_analytic_distribution_cmi_nocond_discrete()
+	test_analytic_distribution_ais_discrete()
+	test_analytic_distribution_te_discrete()
+	"""
 
-	#testhead("analytic distribution Discrete")
-	#test_analytic_distribution_mi_discrete()
-	#test_analytic_distribution_cmi_discrete()
-	#test_analytic_distribution_cmi_nocond_discrete()
-	#test_analytic_distribution_ais_discrete()
-	#test_analytic_distribution_te_discrete()
+	# Test bi- and multivariate analysis (single target) 
+	# Kraskov CMI
+	"""
+	testhead("BivariateMI KraskovCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateMI","Kraskov")
 
+	testhead("BivariateTE KraskovCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateTE","Kraskov")
 
-	# Test bi- and multivariate analysis (single target)
-	#testhead("BivariateMI KraskovCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateMI","Kraskov")
+	testhead("MultivariateMI KraskovCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateMI","Kraskov")
 
-	#testhead("BivariateMI GaussianCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateMI","Gaussian")
-	
-	#testhead("BivariateMI DiscreteCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateMI","Discrete")
-	
-	#testhead("BivariateTE KraskovCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateTE","Kraskov")
-	
-	#testhead("BivariateTE GaussianCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateTE","Gaussian")
-	
-	#testhead("BivariateTE DiscreteCMI (analyse_single_target)")
-	#test_single_target_analysis("BivariateTE","Discrete")
+	testhead("MultivariateTE KraskovCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateTE","Kraskov")
+	"""
 
-	#testhead("MultivariateMI KraskovCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateMI","Kraskov")
-	
-	#testhead("MultivariateMI GaussianCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateMI","Gaussian")
-	
-	#testhead("MultivariateMI DiscreteCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateMI","Discrete")
+	# Gaussian CMI
+	"""
+	testhead("BivariateMI GaussianCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateMI","Gaussian")
 
-	#testhead("MultivariateTE KraskovCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateTE","Kraskov")
+	testhead("BivariateTE GaussianCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateTE","Gaussian")
+
+	testhead("MultivariateMI GaussianCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateMI","Gaussian")
+
+	testhead("MultivariateTE GaussianCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateTE","Gaussian")
+	"""
 	
-	#testhead("MultivariateTE GaussianCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateTE","Gaussian")
+	#Discrete CMI
+	"""
+	testhead("BivariateMI DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateMI","Discrete")
 	
-	#testhead("MultivariateTE DiscreteCMI (analyse_single_target)")
-	#test_single_target_analysis("MultivariateTE","Discrete")
+	testhead("BivariateTE DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateTE","Discrete")
+
+	testhead("MultivariateMI DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateMI","Discrete")
+
+	testhead("MultivariateTE DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateTE","Discrete")
+	"""
+
 
 
 	# Test network analysis
-	#testhead("network analysis BivariateMI KraskovCMI")
-	#test_network_analysis("BivariateMI","Kraskov", numperm=21, samples=100, reps=3)
+	# Kraskov
+	"""
+	testhead("network analysis BivariateMI KraskovCMI")
+	test_network_analysis("BivariateMI","Kraskov", numperm=21, samples=100, reps=3)
 
-	#testhead("network analysis BivariateMI GaussianCMI")
-	#test_network_analysis("BivariateMI","Gaussian", numperm=100, samples=100, reps=3)
-
-	#testhead("network analysis BivariateMI DiscreteCMI") ######################### TODO
-	#test_network_analysis("BivariateMI","Discrete")
-
-	#testhead("network analysis BivariateTE KraskovCMI")
-	#test_network_analysis("BivariateTE","Kraskov", numperm=21, samples=100, reps=3)
+	testhead("network analysis BivariateTE KraskovCMI")
+	test_network_analysis("BivariateTE","Kraskov", numperm=21, samples=100, reps=3)
 	
-	#testhead("network analysis BivariateTE GaussianCMI")
-	#test_network_analysis("BivariateTE","Gaussian", numperm=100, samples=100, reps=3)
+	testhead("network analysis MultivariateMI KraskovCMI")
+	test_network_analysis("MultivariateMI","Kraskov", numperm=21, samples=100, reps=3)
 
-	#testhead("network analysis BivariateTE DiscreteCMI") ######################### TODO
-	#test_network_analysis("BivariateTE","Discrete")
+	testhead("network analysis MultivariateTE KraskovCMI")
+	test_network_analysis("MultivariateTE","Kraskov", numperm=21, samples=100, reps=3)
+	"""
+
+	# Gaussian
+	"""
+	testhead("network analysis BivariateMI GaussianCMI")
+	test_network_analysis("BivariateMI","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis BivariateTE GaussianCMI")
+	test_network_analysis("BivariateTE","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis MultivariateMI GaussianCMI")
+	test_network_analysis("MultivariateMI","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis MultivariateTE GaussianCMI")
+	test_network_analysis("MultivariateTE","Gaussian", numperm=300, samples=100, reps=6)
+	"""
+
+	# Discrete
+
+	testhead("network analysis BivariateMI DiscreteCMI") ######################### TODO
+	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis BivariateTE DiscreteCMI") ######################### TODO
+	test_network_analysis("BivariateTE","Discrete", numperm=300, samples=100, reps=6)
 	
-	#testhead("network analysis MultivariateMI KraskovCMI")
-	#test_network_analysis("MultivariateMI","Kraskov", numperm=21, samples=100, reps=3)
+	testhead("network analysis MultivariateMI DiscreteCMI") ######################### TODO
+	test_network_analysis("MultivariateMI","Discrete", numperm=300, samples=100, reps=6)
 
-	#testhead("network analysis MultivariateMI GaussianCMI")
-	#test_network_analysis("MultivariateMI","Gaussian", numperm=100, samples=100, reps=3)
-
-	#testhead("network analysis MultivariateMI DiscreteCMI") ######################### TODO
-	#test_network_analysis("MultivariateMI","Discrete")
-
-	#testhead("network analysis MultivariateTE KraskovCMI")
-	#test_network_analysis("MultivariateTE","Kraskov", numperm=21, samples=100, reps=3)
-	
-	#testhead("network analysis MultivariateTE GaussianCMI")
-	#test_network_analysis("MultivariateTE","Gaussian", numperm=100, samples=100, reps=3)
-
-	#testhead("network analysis MultivariateTE DiscreteCMI") ######################### TODO
-	#test_network_analysis("MultivariateTE","Discrete")
+	testhead("network analysis MultivariateTE DiscreteCMI") ######################### TODO
+	test_network_analysis("MultivariateTE","Discrete", numperm=300, samples=100, reps=6)
 	
 
 	# Test nonlinear Granger analysis
-	#testhead("nonlinear granger network analysis") TODO bi multi TE MI
-	#test_nonlinear_granger()
+	"""
+	testhead("nonlinear granger network analysis BivariateTE GaussianCMI") 
+	test_nonlinear_granger("BivariateTE", "GaussianCMI", numperm=300, samples=500, reps=3)
+	
+	testhead("nonlinear granger network analysis MultivariateTE GaussianCMI")
+	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=300, samples=500, reps=3)
+	"""

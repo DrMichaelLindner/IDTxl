@@ -123,10 +123,6 @@ class PythonEstimator(Estimator):
         return settings
         
 
-    ####################################################################### TODO remove
-    #def is_analytic_null_estimator(self):
-    #    return False
-
     def is_parallel(self):
         return False
 
@@ -1130,7 +1126,6 @@ class PythonGaussian(PythonEstimator):
 
         self.actualValue = None
 
-        ##################################################################### TODO
         self.surr_est_type = "fast" 
         
     def logdet_cholesky(self, cov):
@@ -2000,9 +1995,7 @@ class PythonDiscrete(PythonEstimator):
         super().__init__(settings)
 
         self.actualValue = None
-
-        ####################################################################### TODO
-        self.surr_est_type = "exact"
+        self.surr_est_type = "fast"
 
     def _discretise_vars(self, var1, var2=None, conditional=None):
         # Discretise variables if requested. Otherwise assert data are discrete
@@ -2245,7 +2238,6 @@ class PythonDiscrete(PythonEstimator):
         """
         pass
 
-    ################################################################################### TODO
     def estimate_surrogates_analytic(self, n_perm=200, **data):
         """Return estimate of the analytical surrogate distribution.
 
@@ -3101,6 +3093,9 @@ class PythonSpectral(PythonEstimator):
                 magnitude[:,i] = m[:,0]
         return magnitude
 
+    def is_analytic_null_estimator(self):
+        return False
+
 
 ################################################################################ TODO
 class PythonSpectralMI(PythonSpectral):
@@ -3468,6 +3463,14 @@ class PythonSpectralCMI(PythonSpectral):
             mi = est.estimate(var1, var2, conditional)
         
         return mi
+
+
+################################################################################ TODO
+#class PythonSpectralAIS(PythonSpectral):
+
+################################################################################ TODO
+#class PythonSpectralTE(PythonSpectral):
+
 
 
 
