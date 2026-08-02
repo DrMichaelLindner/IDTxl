@@ -85,7 +85,7 @@ def testhead(est):
 	print("#######################################################################")
 
 
-# Test Kraskov estimators
+#### Test Kraskov estimators
 def test_kraskov_mi():
 	
 	
@@ -1532,7 +1532,7 @@ def test_kraskov_cte_local_values():
 	print(" PythonKraskovCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
 
-# Test Gaussian estimators
+#### Test Gaussian estimators
 def test_gaussian_mi():
 
 	expected_mi, source1, source2, target = _get_gauss_data(expand=True, seed=SEED)
@@ -2498,7 +2498,7 @@ def test_gaussian_cte_local_values():
 	print(" PythonGaussianCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
 
-# Test Discrete estimators
+#### Test Discrete estimators
 def test_discrete_mi():
 
 	vals = [2,5,8,32]
@@ -3507,8 +3507,9 @@ def test_discrete_te_local_values():
 	print(" PythonDiscreteTE: ", np.mean(time_python) )
 
 
-# Test Spectral estimators
+#### Test Spectral estimators
 def test_spectral_mi():
+
 	# test different estimator settings for PythonSpectralMI
 	Hz = 40
 	lag = 30
@@ -3519,9 +3520,9 @@ def test_spectral_mi():
 	vals = [0,10,20,30,40,50,60,70]
 
 	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
-		
+	
 	# test different estimator settings
-	print(f"\nTest average SpectralMI on {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"\nTest average SpectralMI on 1D {Hz} Hz freq data noise {noise} and lag {lag}")
 	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
 	
 	
@@ -3557,11 +3558,11 @@ def test_spectral_mi():
 
 		ecount += 1
 
-	print(f"Summary PythonSpectralMI lags ({vals}):")
+	print(f"Summary PythonSpectralMI lags ({vals}) (1D data):")
 
 	print("MI values:")
 	print("correlated data:")
-	print("lag\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
+	print("lag\tkraskov\t\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}\t{mi_python_cor[3,i]}")
 	
@@ -3572,7 +3573,81 @@ def test_spectral_mi():
 
 
 	print(f"\nuncorrelated data var2 ={Hz*0.7} Hz:")
-	print("lag\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
+	print("lag\tkraskov\t\t\tdiscrete\t\tgaussian\t\tnone")
+	for i in range(len(vals)):
+		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}\t{mi_python_uncor[3,i]}")
+	
+
+	print("\nmean calculation times:")
+	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0,:]) )
+	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1,:]) )
+	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2,:]) )
+	print(" PythonSpectralMI none (cor): ", np.mean(time_python_cor[3,:]) )
+	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0,:]) )
+	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1,:]) )
+	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2,:]) )
+	print(" PythonSpectralMI none (uncor): ", np.mean(time_python_uncor[3,:]) )
+
+	# Test 2D data input
+	reps = 10
+	source1_2D = np.zeros((source1.shape[0], reps))
+	target_2D = np.zeros((source1.shape[0], reps))
+	source2_2D = np.zeros((source1.shape[0], reps))
+	
+	for i in range(reps):
+		source1_2D[:,i], target_2D[:,i], source2_2D[:,i] = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise)#, seed=SEED)
+		
+	print(f"\nTest average SpectralMI on 2D {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
+	
+	expected_best = vals.index(lag)
+	
+	mi_python_cor = np.zeros([len(estimators),len(vals)])
+	mi_python_uncor = np.zeros([len(estimators),len(vals)])
+	time_python_cor = np.zeros([len(estimators),len(vals)])
+	time_python_uncor = np.zeros([len(estimators),len(vals)])
+
+	ecount = 0
+	for e in estimators:
+
+		lcount=0
+		for lags in vals:
+			settings = {"estimator": e,
+						"lag_mi": lags,
+						}
+
+			python_estimator = PythonSpectralMI(settings)
+			itic = time.perf_counter()
+			mi_python_cor[ecount,lcount] = python_estimator.estimate(source1_2D, target_2D)
+			itoc = time.perf_counter()
+			time_python_cor[ecount,lcount] = itoc - itic
+			
+			python_estimator = PythonSpectralMI(settings)
+			itic = time.perf_counter()
+			mi_python_uncor[ecount,lcount] = python_estimator.estimate(source1_2D, source2_2D)
+			itoc = time.perf_counter()
+			time_python_uncor[ecount,lcount] = itoc - itic
+
+			lcount += 1
+
+		ecount += 1
+
+	print(f"Summary PythonSpectralMI lags ({vals}) (2D data):")
+
+	print("MI values:")
+	print("correlated data:")
+	print("lag\tkraskov\t\t\tdiscrete\t\tgaussian\t\tnone")
+	for i in range(len(vals)):
+		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}\t{mi_python_cor[3,i]}")
+	
+	test = []
+	for e in range(len(estimators)):
+		test.append(expected_best==np.argmax(mi_python_cor[e,:]))
+	print(f"found expected lag:\t{test[0]}\t\t{test[1]}\t\t\t{test[2]}\t\t\t{test[3]}")
+
+
+	print(f"\nuncorrelated data var2 ={Hz*0.7} Hz:")
+	print("lag\tkraskov\t\t\tdiscrete\t\tgaussian\t\tnone")
 	for i in range(len(vals)):
 		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}\t{mi_python_uncor[3,i]}")
 	
@@ -3588,9 +3663,7 @@ def test_spectral_mi():
 	print(" PythonSpectralMI none (uncor): ", np.mean(time_python_uncor[3,:]) )
 	
 
-
-
-
+	# test spectral vs other estimators
 	print(f"\n\nTest Spectral vs standard MI estimators with orig data {Hz} Hz freq data \nwith noise {noise} and lag {lag}")
 	print(f"different estimator setting {estimators} and lag_mi {vals}\n")
 	
@@ -3744,78 +3817,6 @@ def test_spectral_mi():
 	print(" JidtGaussianMI: ", np.mean(time_jidt) )
 	print(" PythonGaussianMI: ", np.mean(time_python2) )
 
-
-
-	# test 2D input
-	print("\ntest 2D data input (10000,2) - {Hz} Hz freq data with noise {noise} and lag {lag} \n")
-	
-	source1x, targetx, source2x = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED+1)
-	
-	n = source1.shape[0]
-	shift = 0
-	source1_2d = np.concatenate([source1[0:n-shift,None], source1x[shift:n,None]], axis=1)
-	source2_2d = np.concatenate([source2[0:n-shift,None], source2x[shift:n,None]], axis=1)
-	target_2d = np.concatenate([target[0:n-shift,None], targetx[shift:n,None]], axis=1)
-	
-	mi_python_cor = np.zeros([len(estimators),len(vals)])
-	mi_python_uncor = np.zeros([len(estimators),len(vals)])
-	time_python_cor = np.zeros([len(estimators),len(vals)])
-	time_python_uncor = np.zeros([len(estimators),len(vals)])
-
-	ecount = 0
-	for e in estimators:
-
-		lcount=0
-		for lags in vals:
-			settings = {"estimator": e,
-						"lag_mi": lags}
-
-			python_estimator = PythonSpectralMI(settings)
-			itic = time.perf_counter()
-			mi_python_cor[ecount,lcount] = python_estimator.estimate(source1_2d, target_2d)
-			itoc = time.perf_counter()
-			time_python_cor[ecount,lcount] = itoc - itic
-			
-			python_estimator = PythonSpectralMI(settings)
-			itic = time.perf_counter()
-			mi_python_uncor[ecount,lcount] = python_estimator.estimate(source1_2d, source2_2d)
-			itoc = time.perf_counter()
-			time_python_uncor[ecount,lcount] = itoc - itic
-
-			lcount += 1
-
-		ecount += 1
-
-	print(f"Summary PythonSpectralMI lags ({vals}):")
-
-	print("MI values:")
-	print("correlated data:")
-	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
-	for i in range(len(vals)):
-		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}\t{mi_python_cor[3,i]}")
-	
-	test = []
-	for e in range(len(estimators)):
-		test.append(expected_best==np.argmax(mi_python_cor[e,:]))
-	print(f"found expected lag:\t{test[0]}\t\t{test[1]}\t\t\t{test[2]}\t\t\t{test[3]}")
-
-
-	print(f"\nuncorrelated data {Hz*0.7} Hz:")
-	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian\t\tnone")
-	for i in range(len(vals)):
-		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}\t{mi_python_uncor[3,i]}")
-	
-
-	print("\nmean calculation times:")
-	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0,:]) )
-	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1,:]) )
-	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2,:]) )
-	print(" PythonSpectralMI none (cor): ", np.mean(time_python_cor[3,:]) )
-	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0,:]) )
-	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1,:]) )
-	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2,:]) )
-	print(" PythonSpectralMI none (uncor): ", np.mean(time_python_uncor[3,:]) )
-
 def test_spectral_mi_local_values():
 	# test different estimator settings for PythonSpectralCMI local values
 	Hz = 40
@@ -3829,7 +3830,7 @@ def test_spectral_mi_local_values():
 	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
 		
 	# test different estimator settings
-	print(f"\nTest SpectralMI (mean of local values) on {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"\nTest SpectralMI (mean of local values) on 1D {Hz} Hz freq data noise {noise} and lag {lag}")
 	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
 	
 	
@@ -3869,7 +3870,83 @@ def test_spectral_mi_local_values():
 
 		ecount += 1
 
-	print(f"Summary PythonSpectralMI (mean of local values) lags ({vals}):")
+	print(f"Summary PythonSpectralMI (mean of local values) lags ({vals}) (1D data):")
+
+	print("MI values:")
+	print("correlated data:")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian")
+	for i in range(len(vals)):
+		print(f"{vals[i]}\t{mi_python_cor[0,i]}\t{mi_python_cor[1,i]}\t{mi_python_cor[2,i]}")
+	
+	test = []
+	for e in range(len(estimators)):
+		test.append(expected_best==np.argmax(mi_python_cor[e,:]))
+	print(f"found expected lag:\t{test[0]}\t\t{test[1]}\t\t\t{test[2]}")
+
+
+	print(f"\nuncorrelated data var2 = {Hz*0.7} Hz:")
+	print("lag\t\tkraskov\t\tdiscrete\t\tgaussian")
+	for i in range(len(vals)):
+		print(f"{vals[i]}\t{mi_python_uncor[0,i]}\t{mi_python_uncor[1,i]}\t{mi_python_uncor[2,i]}")
+	
+
+	print("\nmean calculation times:")
+	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0,:]) )
+	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1,:]) )
+	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2,:]) )
+	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0,:]) )
+	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1,:]) )
+	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2,:]) )
+
+
+
+
+	# Test 2D data input
+	reps = 10
+	source1_2D = np.zeros((source1.shape[0], reps))
+	target_2D = np.zeros((source1.shape[0], reps))
+	source2_2D = np.zeros((source1.shape[0], reps))
+	
+	for i in range(reps):
+		source1_2D[:,i], target_2D[:,i], source2_2D[:,i] = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise)#, seed=SEED)
+		
+	print(f"\nTest average SpectralMI on 2D {Hz} Hz freq data noise {noise} and lag {lag}")
+	print(f"different estimator type settings {estimators} and lag_mi {vals}\n")
+	
+	expected_best = vals.index(lag)
+	
+	mi_python_cor = np.zeros([len(estimators),len(vals)])
+	mi_python_uncor = np.zeros([len(estimators),len(vals)])
+	time_python_cor = np.zeros([len(estimators),len(vals)])
+	time_python_uncor = np.zeros([len(estimators),len(vals)])
+
+	ecount = 0
+	for e in estimators:
+
+		lcount=0
+		for lags in vals:
+			settings = {"estimator": e,
+						"lag_mi": lags,
+						'local_values': True
+						}
+
+			python_estimator = PythonSpectralMI(settings)
+			itic = time.perf_counter()
+			mi_python_cor[ecount,lcount] = np.mean(python_estimator.estimate(source1_2D, target_2D))
+			itoc = time.perf_counter()
+			time_python_cor[ecount,lcount] = itoc - itic
+			
+			python_estimator = PythonSpectralMI(settings)
+			itic = time.perf_counter()
+			mi_python_uncor[ecount,lcount] = np.mean(python_estimator.estimate(source1_2D, source2_2D))
+			itoc = time.perf_counter()
+			time_python_uncor[ecount,lcount] = itoc - itic
+
+			lcount += 1
+
+		ecount += 1
+
+	print(f"Summary PythonSpectralMI (mean of local values) lags ({vals}) (2D data):")
 
 	print("MI values:")
 	print("correlated data:")
@@ -3906,7 +3983,7 @@ def test_spectral_cmi():
 	estimators = ['kraskov','discrete','gaussian']
 	
 	# test different estimator settings
-	print(f"\nTest different estimator types of SpectralCMI on {Hz} Hz freq data \nwith noise {noise} and no lag")
+	print(f"\nTest different estimator types of SpectralCMI on 1D {Hz} Hz freq data \nwith noise {noise} and no lag")
 	
 	mi_python_cor = np.zeros(len(estimators))
 	mi_python_uncor = np.zeros(len(estimators))
@@ -3953,11 +4030,183 @@ def test_spectral_cmi():
 	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2]) )
 	
 
-	################################################################################ TODO
-	print("\n\nTest Spectral vs standard MI estimators with orig data")
+	# Test 2D data input
+	reps = 10
+	source1_2D = np.zeros((source1.shape[0], reps))
+	target_2D = np.zeros((source1.shape[0], reps))
+	source2_2D = np.zeros((source1.shape[0], reps))
+	
+	for i in range(reps):
+		source1_2D[:,i], target_2D[:,i], source2_2D[:,i] = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise)#, seed=SEED)
+		
+	# test different estimator settings
+	print(f"\nTest different estimator types of SpectralCMI on 2D {Hz} Hz freq data \nwith noise {noise} and no lag")
+	
+	
+	mi_python_cor = np.zeros(len(estimators))
+	mi_python_uncor = np.zeros(len(estimators))
+	time_python_cor = np.zeros(len(estimators))
+	time_python_uncor = np.zeros(len(estimators))
+	
+	
+	ecount = 0
+	for e in estimators:
+		settings = {"estimator": e}
+
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_cor[ecount] = python_estimator.estimate(source1_2D, target_2D, source2_2D)
+		itoc = time.perf_counter()
+		time_python_cor[ecount] = itoc - itic
+		
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_uncor[ecount] = python_estimator.estimate(source2_2D, target_2D, source1_2D)
+		itoc = time.perf_counter()
+		time_python_uncor[ecount] = itoc - itic
+
+		ecount += 1
+		
+	print(f"Summary PythonSpectralCMI:")
+	print("CMI values:")
+	print("uncorrelated conditional:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_cor[0]}\t{mi_python_cor[1]}\t{mi_python_cor[2]}")
+	
+	print(f"\nuncorrelated source:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_uncor[0]}\t{mi_python_uncor[1]}\t{mi_python_uncor[2]}")
+
+	print("\nmean calculation times:")
+	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0]) )
+	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1]) )
+	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2]) )
+	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0]) )
+	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1]) )
+	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2]) )
+
+def test_spectral_cmi_local_values():
+	
+	Hz = 40
+	lag = 0
+	noise = 0.2
+	
+	estimators = ['kraskov','discrete','gaussian']
+	
+	# test different estimator settings
+	print(f"\nTest different estimator types of SpectralCMI on 1D {Hz} Hz freq data \nwith noise {noise} and no lag")
+	
+	mi_python_cor = np.zeros(len(estimators))
+	mi_python_uncor = np.zeros(len(estimators))
+	time_python_cor = np.zeros(len(estimators))
+	time_python_uncor = np.zeros(len(estimators))
+	
+	source1, target, source2 = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise, seed=SEED)
+	
+	ecount = 0
+	for e in estimators:
+		settings = {"estimator": e,
+					"local_values": True}
+
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_cor[ecount] = np.mean(python_estimator.estimate(source1, target, source2))
+		itoc = time.perf_counter()
+		time_python_cor[ecount] = itoc - itic
+		
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_uncor[ecount] = np.mean(python_estimator.estimate(source2, target, source1))
+		itoc = time.perf_counter()
+		time_python_uncor[ecount] = itoc - itic
+
+		ecount += 1
+		
+	print(f"Summary (mean of local values) PythonSpectralCMI:")
+	print("CMI values:")
+	print("uncorrelated conditional:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_cor[0]}\t{mi_python_cor[1]}\t{mi_python_cor[2]}")
+	
+	print(f"\nuncorrelated source:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_uncor[0]}\t{mi_python_uncor[1]}\t{mi_python_uncor[2]}")
+
+	print("\nmean calculation times:")
+	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0]) )
+	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1]) )
+	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2]) )
+	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0]) )
+	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1]) )
+	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2]) )
+
+	# Test 2D data input
+	reps = 10
+	source1_2D = np.zeros((source1.shape[0], reps))
+	target_2D = np.zeros((source1.shape[0], reps))
+	source2_2D = np.zeros((source1.shape[0], reps))
+	
+	for i in range(reps):
+		source1_2D[:,i], target_2D[:,i], source2_2D[:,i] = _get_freq_data(sample_rate=10000, duration=1.0, hz=Hz, lag=lag, noise=noise)#, seed=SEED)
+		
+	# test different estimator settings
+	print(f"\nTest different estimator types of SpectralCMI on 2D {Hz} Hz freq data \nwith noise {noise} and no lag")
+		
+	mi_python_cor = np.zeros(len(estimators))
+	mi_python_uncor = np.zeros(len(estimators))
+	time_python_cor = np.zeros(len(estimators))
+	time_python_uncor = np.zeros(len(estimators))
+	
+	ecount = 0
+	for e in estimators:
+		settings = {"estimator": e,
+					"local_values": True}
+
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_cor[ecount] = np.mean(python_estimator.estimate(source1_2D, target_2D, source2_2D))
+		itoc = time.perf_counter()
+		time_python_cor[ecount] = itoc - itic
+		
+		python_estimator = PythonSpectralCMI(settings)
+		itic = time.perf_counter()
+		mi_python_uncor[ecount] = np.mean(python_estimator.estimate(source2_2D, target_2D, source1_2D))
+		itoc = time.perf_counter()
+		time_python_uncor[ecount] = itoc - itic
+
+		ecount += 1
+		
+	print(f"Summary (mean of local values) PythonSpectralCMI:")
+	print("CMI values:")
+	print("uncorrelated conditional:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_cor[0]}\t{mi_python_cor[1]}\t{mi_python_cor[2]}")
+	
+	print(f"\nuncorrelated source:")
+	print("\tkraskov\t\tdiscrete\t\tgaussian")
+	print(f"{mi_python_uncor[0]}\t{mi_python_uncor[1]}\t{mi_python_uncor[2]}")
+
+	print("\nmean calculation times:")
+	print(" PythonSpectralMI kraskov (cor): ", np.mean(time_python_cor[0]) )
+	print(" PythonSpectralMI discrete (cor): ", np.mean(time_python_cor[1]) )
+	print(" PythonSpectralMI gaussian (cor): ", np.mean(time_python_cor[2]) )
+	print(" PythonSpectralMI kraskov (uncor): ", np.mean(time_python_uncor[0]) )
+	print(" PythonSpectralMI discrete (uncor): ", np.mean(time_python_uncor[1]) )
+	print(" PythonSpectralMI gaussian (uncor): ", np.mean(time_python_uncor[2]) )
+	
+
+#test_spectral_ais(): ############################################## TODO
+
+#test_spectral_mi_local_values(): ############################################## TODO
+
+#test_spectral_te(): ############################################## TODO
+
+#test_spectral_te_local_values(): ############################################## TODO
 
 
-# Test analytic distribution
+
+
+#### Test analytic distribution
 def test_analytic_distribution_mi_gaussian():
 
     pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -4783,7 +5032,7 @@ def test_analytic_distribution_te_discrete():
     verbose(EoP_jidt, EoP_python, "", "Estimate for given PValue")
 
 
-# Test bi- and multivariate analysis (single target)
+#### Test bi- and multivariate analysis (single target)
 def test_single_target_analysis(analysis, est_type, numperm=500, samples=1000):
     """Test multivariate TE estimation from correlated Gaussians."""
     
@@ -4891,9 +5140,115 @@ def test_single_target_analysis(analysis, est_type, numperm=500, samples=1000):
     print(f"single target analysis {analysis} {jidt_estimator} nperms {numperm}: ", np.mean(time_jidt) )
     print(f"single target analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
 
+def test_single_target_analysis_cte(analysis, est_type, numperm=500, samples=1000):
+    """Test multivariate TE estimation from correlated Gaussians."""
+    
+    measure = analysis[-2:].lower()
+    jidt_estimator = f"Jidt{est_type}CTE"
+    python_estimator = f"Python{est_type}CTE"
+
+    print(f"\n\nTesting average {analysis} (nperms: {numperm}) using discretized 1D gaussian data")
+    print(f"with covariance 0.4, lag 1\n")
+
+    # Generate data and add a delay one one sample.
+    expected_mi, source, source_uncorr, target = _get_gauss_data(n=samples, seed=SEED)
+    source = source[1:]
+    source_uncorr = source_uncorr[1:]
+    target = target[:-1]
+    if est_type == "Discrete":
+    	est = PythonDiscreteCMI({"discretise_method": "equal", "n_discrete_bins": 2})
+    	source, target, source_uncorr = est._discretise_vars(var1=source, var2=target, conditional=source_uncorr)
+
+    data = Data(np.hstack((source, source_uncorr, target)),
+       	        dim_order='sp', normalise=False)
+    data2 = copy.deepcopy(data)
+
+    settings_jidt = {
+        'cmi_estimator': jidt_estimator,
+        'n_perm_max_stat': numperm,
+        'n_perm_min_stat': numperm,
+        'n_perm_max_seq': numperm,
+        'n_perm_omnibus': numperm,
+        'max_lag_sources': 3,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+
+    settings_python = {
+        'cmi_estimator': python_estimator,
+        'n_perm_max_stat': numperm,
+        'n_perm_min_stat': numperm,
+        'n_perm_max_seq': numperm,
+        'n_perm_omnibus': numperm,
+        'max_lag_sources': 3,
+        'min_lag_sources': 1,
+        'noise_level': 0, 
+        'normalise': False,
+        "discretise_method": "equal",
+        "n_discrete_bins": 5, 
+        }
+    
+    nw = eval(f"{analysis}()")
+    print(nw)
+    
+    print("\n#### Analyse single target JIDT\n")
+
+    itic = time.perf_counter()
+    results_jidt = nw.analyse_single_target(
+        settings_jidt, data, target=2, sources=[0, 1])
+    mi_jidt = results_jidt.get_single_target(2, fdr=False)[measure][0]
+    sources_jidt = results_jidt.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_jidt = itoc-itic
+
+    # Assert that only the correlated source was detected.
+    assert len(sources_jidt) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_jidt))
+    assert sources_jidt[0] == 0, 'Wrong inferred source: {0}.'.format(sources_jidt[0])
 
 
-# Test network analysis
+    print("\n#### Analyse single target Python\n")
+
+    itic = time.perf_counter()
+    results_python = nw.analyse_single_target(
+        settings_python, data2, target=2, sources=[0, 1])
+    mi_python = results_python.get_single_target(2, fdr=False)[measure][0]
+    sources_python = results_python.get_target_sources(2, fdr=False)
+    itoc = time.perf_counter()
+    time_python = itoc-itic
+
+    assert len(sources_python) == 1, 'Wrong no. inferred sources: {0}.'.format(
+        len(sources_python))
+    assert sources_python[0] == 0, 'Wrong inferred source: {0}.'.format(sources_python[0])
+    
+    # Compare MultivariateTE() estimate to JIDT and Python estimate. Mimick realisations used
+    # internally by the algorithm.
+    settings = {'lag_mi': 0, 'normalise': False, 'noise_level': 0}
+    est_jidt = eval(f"{jidt_estimator}(settings)")
+    est_python = eval(f"{python_estimator}(settings)")
+    
+    jidt_mi = est_jidt.estimate(var1=source[1:-1], var2=target[2:])
+    python_mi = est_python.estimate(var1=source[1:-1], var2=target[2:])
+    
+    print(f"Summary of comparing {analysis} using {jidt_estimator} vs {python_estimator}:\n")
+    if sources_jidt==sources_python:
+        print(f"Jidt {sources_jidt} and Python {sources_python} found identical target_sources. +++")
+    else:
+        print(f"Jidt {sources_jidt} and Python {sources_python} DID NOT find identical target_sources. !!!!!!!")
+    verbose(mi_jidt, jidt_mi, f"Jidt {analysis} vs core", measure.upper(), atol=1e-03)
+    verbose(mi_python, python_mi, f"Python {analysis} vs core", measure.upper(), atol=1e-03)
+    verbose(mi_jidt, mi_python, f"Jidt {analysis} vs Python {analysis}", measure.upper(), atol=1e-03)
+    verbose(jidt_mi, python_mi, "Jidt core vs Python core", measure.upper(), atol=1e-03)
+
+    print("\n calculation times:")
+    print(f"single target analysis {analysis} {jidt_estimator} nperms {numperm}: ", np.mean(time_jidt) )
+    print(f"single target analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
+
+
+#### Test network analysis
 def test_network_analysis(analysis, est_type, numperm=300, samples=500, reps=3):
 	
 	measure = analysis[-2:].lower()
@@ -5015,9 +5370,129 @@ def test_network_analysis(analysis, est_type, numperm=300, samples=500, reps=3):
 	print(f" network_analysis {analysis} {jidt_estimator} nperms {numperm}: ", np.mean(time_jidt) )
 	print(f" network_analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
 
+def test_network_analysis_cte(analysis, est_type, numperm=300, samples=500, reps=3):
+	
+	measure = analysis[-2:].lower()
+	jidt_estimator = f"Jidt{est_type}CTE"
+	python_estimator = f"Python{est_type}CTE"
+	
+	print(f"\n\nTesting network analysis via {analysis} (nperms: {numperm})")
+	print(f"using mute data ({samples} samples, {reps} replications)\n")
+	
+	data = Data(normalise=False)  # initialise an empty data object
+	data.generate_mute_data(n_samples=samples, n_replications=reps)
+	if est_type == "Discrete":
+		est = PythonDiscreteCMI({"discretise_method": "equal", "n_discrete_bins": 2})
+		d = data.data
+		for i in range(5):
+			d[i,:,:] = est._discretise_vars(var1=d[i,:,:])
+		d = d.astype(int)
+		data.set_data(d, "psr")
+
+	data2 = copy.deepcopy(data)
+
+	network_analysis = eval(f"{analysis}()")
+	#print(network_analysis)
+	
+	print("\n#### Analyse network Jidt\n")
+
+	settings = {
+	    "cmi_estimator": jidt_estimator,
+	    "n_perm_max_stat": numperm,
+	    "n_perm_min_stat": numperm,
+	    "n_perm_omnibus": numperm,
+	    "n_perm_max_seq": numperm,
+	    "max_lag_sources": 5,
+	    "min_lag_sources": 1,
+	}
+
+	itic = time.perf_counter()
+	results_jidt = network_analysis.analyse_network(settings, data)
+	itoc = time.perf_counter()
+	time_jidt = itoc - itic
+	
+	print("\n#### Analyse network Python\n")
+
+	settings2 = {
+	    "cmi_estimator": python_estimator,
+	    "n_perm_max_stat": numperm,
+	    "n_perm_min_stat": numperm,
+	    "n_perm_omnibus": numperm,
+	    "n_perm_max_seq": numperm,
+	    "max_lag_sources": 5,
+	    "min_lag_sources": 1,
+	}
+
+	itic = time.perf_counter()
+	results_python = network_analysis.analyse_network(settings2, data2)
+	itoc = time.perf_counter()
+	time_python = itoc - itic
+
+	# get results
+	target_delays_jidt = [None]*5
+	selected_sources_jidt = [None]*5
+	selected_sources_te_jidt = [None]*5
+	
+	target_delays_python = [None]*5
+	selected_sources_python = [None]*5
+	selected_sources_te_python = [None]*5
+
+	for t in range(5):
+		target_delays_jidt[t] = results_jidt.get_target_delays(t, fdr=False)
+		target_delays_python[t] = results_python.get_target_delays(t, fdr=False)
+
+		target_jidt = results_jidt.get_single_target(t, fdr=False)
+		selected_sources_jidt[t] = target_jidt['selected_vars_sources']
+		selected_sources_te_jidt[t] = target_jidt[f'selected_sources_{measure}']
+		
+		target_python = results_python.get_single_target(t, fdr=False)
+		selected_sources_python[t] = target_python['selected_vars_sources']
+		selected_sources_te_python[t] = target_python[f'selected_sources_{measure}']
+
+	
+	print(f"\nSummary network analysis {analysis} - {jidt_estimator} vs {python_estimator}\n")
+	
+	print("\nselected sources:\n")
+	print("target\tequal")
+	for t in range(5):
+		print(f"{t}\t\t{selected_sources_jidt[t]==selected_sources_python[t]}\t{jidt_estimator}  : {selected_sources_jidt[t]}\n\t\t\t\t{python_estimator}: {selected_sources_python[t]}")
+
+	atol = 1e-03
+	print("\ntarget delays:\n")
+	print("target\t\t\t\t\t\tequal")
+	for t in range(5):
+		if len(target_delays_jidt[t])==len(target_delays_python[t]):
+			equal = np.allclose(target_delays_jidt[t], target_delays_python[t], atol=atol)
+		else:
+			equal = False
+		
+		print(f"{t}\t{jidt_estimator}  :\t{target_delays_jidt[t]}{"\t" if len(target_delays_jidt[t])>1 else "\t\t"}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
+	
+	print(f"\nselected sources {measure.upper()}:\n")
+	print(f"target\tclose {atol}")
+
+	for t in range(5):
+		try:
+			if len(selected_sources_te_jidt[t])==len(selected_sources_te_python[t]):
+				equal = np.allclose(selected_sources_te_jidt[t], selected_sources_te_python[t], atol=atol)	
+			else: 
+				equal = False
+		except:
+			equal = False
+		print(f"{t}\t\t{equal}\t{jidt_estimator}  : {selected_sources_te_jidt[t]}\n\t\t\t\t{python_estimator}: {selected_sources_te_python[t]}")
+	
+	print("\nEdge lists:")
+	print("Jidt:")
+	results_jidt.print_edge_list("max_te_lag", fdr=False)
+	print("Python:")
+	results_python.print_edge_list("max_te_lag", fdr=False)
+
+	print("\n calculation times:")
+	print(f" network_analysis {analysis} {jidt_estimator} nperms {numperm}: ", np.mean(time_jidt) )
+	print(f" network_analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
 
 
-# test nonlinear granger
+#### test nonlinear granger
 def test_nonlinear_granger(analysis, est_type, numperm=300, samples=500, reps=6):
 	
 	jidt_estimator = f"Jidt{est_type}"
@@ -5118,15 +5593,15 @@ if __name__ == '__main__':
     ##												check theiler_T and kraskov string instead int
 	## 															check theiler _T >3
 	
-	# Test Kraskov estimators
+	#### Test Kraskov estimators
 	"""
-	testhead("KraskovMI") ########################################## TODO KSG2
+	testhead("KraskovMI")
 	test_kraskov_mi()
 	
 	testhead("KraskovMI local values")
 	test_kraskov_mi_local_values()
 	
-	testhead("KraskovCMI") ########################################## TODO  KSG2
+	testhead("KraskovCMI")
 	test_kraskov_cmi()
 	
 	testhead("KraskovCMI local values")
@@ -5151,7 +5626,7 @@ if __name__ == '__main__':
 	test_kraskov_cte_local_values()
 	"""
 
-    # Test Gaussian estimators
+    #### Test Gaussian estimators
 	"""
 	testhead("GaussianMI")
 	test_gaussian_mi()
@@ -5184,7 +5659,7 @@ if __name__ == '__main__':
 	test_gaussian_cte_local_values()
 	"""
 	
-	# Test Discrete estimators
+	#### Test Discrete estimators
 	"""
 	testhead("DiscreteMI")
 	test_discrete_mi()
@@ -5211,20 +5686,17 @@ if __name__ == '__main__':
 	test_discrete_te_local_values()
 	"""
 
-	# Test Spectral estimators
+	#### Test Spectral estimators
 	#testhead("SpectralMI")
 	#test_spectral_mi()
-	############################################ TODO 2D performence test data with or without lags new data 
-
+	
 	#testhead("SpectralMI local values")
 	#test_spectral_mi_local_values()
 
 	#testhead("SpectralCMI")
 	#test_spectral_cmi()
-	############################################ TODO 2D performence test data with or without lags new data 
-
-
-	#testhead("SpectralCMI local values") ############################################## TODO
+	
+	#testhead("SpectralCMI local values")
 	#test_spectral_cmi_local_values()
 
 	#testhead("SpectralAIS") ############################################## TODO
@@ -5240,7 +5712,7 @@ if __name__ == '__main__':
 	#test_spectral_te_local_values()
 
 
-	# Test analytic distributions
+	#### Test analytic distributions
 	"""
 	testhead("analytic distribution Gaussian")
 	test_analytic_distribution_mi_gaussian()
@@ -5260,7 +5732,7 @@ if __name__ == '__main__':
 	test_analytic_distribution_te_discrete()
 	"""
 
-	# Test bi- and multivariate analysis (single target) 
+	#### Test bi- and multivariate analysis (single target) 
 	# Kraskov CMI
 	"""
 	testhead("BivariateMI KraskovCMI (analyse_single_target)")
@@ -5308,7 +5780,48 @@ if __name__ == '__main__':
 
 
 
-	# Test network analysis
+	# Kraskov CTE ############################################################## TODO
+	"""
+	testhead("BivariateMI KraskovCTE (analyse_single_target)")
+	test_single_target_analysis_cte("BivariateMI","Kraskov")
+
+	testhead("BivariateTE KraskovCTE (analyse_single_target)")
+	test_single_target_analysis_cte("BivariateTE","Kraskov")
+
+	testhead("MultivariateMI KraskovCTE (analyse_single_target)")
+	test_single_target_analysis_cte("MultivariateMI","Kraskov")
+
+	testhead("MultivariateTE KraskovCTE (analyse_single_target)")
+	test_single_target_analysis_cte("MultivariateTE","Kraskov")
+	"""
+	# Gaussian CTE ############################################################## TODO
+	"""
+	testhead("BivariateMI GaussianCTE (analyse_single_target)")
+	test_single_target_analysis_cte("BivariateMI","Gaussian")
+
+	testhead("BivariateTE GaussianCTE (analyse_single_target)")
+	test_single_target_analysis_cte("BivariateTE","Gaussian")
+
+	testhead("MultivariateMI GaussianCTE (analyse_single_target)")
+	test_single_target_analysis_cte("MultivariateMI","Gaussian")
+
+	testhead("MultivariateTE GaussianCTE (analyse_single_target)")
+	test_single_target_analysis_cte("MultivariateTE","Gaussian")
+	"""
+	
+
+
+
+
+
+
+
+
+
+
+
+
+	#### Test network analysis CMI
 	# Kraskov
 	"""
 	testhead("network analysis BivariateMI KraskovCMI")
@@ -5340,19 +5853,56 @@ if __name__ == '__main__':
 	"""
 
 	# Discrete
-
-	testhead("network analysis BivariateMI DiscreteCMI") ######################### TODO
+	"""
+	testhead("network analysis BivariateMI DiscreteCMI")
 	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=100, reps=6)
 
-	testhead("network analysis BivariateTE DiscreteCMI") ######################### TODO
+	testhead("network analysis BivariateTE DiscreteCMI")
 	test_network_analysis("BivariateTE","Discrete", numperm=300, samples=100, reps=6)
 	
-	testhead("network analysis MultivariateMI DiscreteCMI") ######################### TODO
+	testhead("network analysis MultivariateMI DiscreteCMI")
 	test_network_analysis("MultivariateMI","Discrete", numperm=300, samples=100, reps=6)
 
-	testhead("network analysis MultivariateTE DiscreteCMI") ######################### TODO
+	testhead("network analysis MultivariateTE DiscreteCMI")
 	test_network_analysis("MultivariateTE","Discrete", numperm=300, samples=100, reps=6)
+	"""
+
+
+	#### Test network analysis CTE ########################################################## TODO
+	# Kraskov ########################################################## TODO
+	"""
+	testhead("network analysis BivariateMI KraskovCTE")
+	test_network_analysis_cte("BivariateMI","Kraskov", numperm=21, samples=100, reps=3)
+
+	testhead("network analysis BivariateTE KraskovCTE")
+	test_network_analysis_cte("BivariateTE","Kraskov", numperm=21, samples=100, reps=3)
 	
+	testhead("network analysis MultivariateMI KraskovCTE")
+	test_network_analysis_cte("MultivariateMI","Kraskov", numperm=21, samples=100, reps=3)
+
+	testhead("network analysis MultivariateTE KraskovCTE")
+	test_network_analysis_cte("MultivariateTE","Kraskov", numperm=21, samples=100, reps=3)
+	"""
+
+	# Gaussian ########################################################## TODO
+	"""
+	testhead("network analysis BivariateMI GaussianCTE")
+	test_network_analysis_cte("BivariateMI","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis BivariateTE GaussianCTE")
+	test_network_analysis_cte("BivariateTE","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis MultivariateMI GaussianCTE")
+	test_network_analysis_cte("MultivariateMI","Gaussian", numperm=300, samples=100, reps=6)
+
+	testhead("network analysis MultivariateTE GaussianCTE")
+	test_network_analysis_cte("MultivariateTE","Gaussian", numperm=300, samples=100, reps=6)
+	"""
+
+
+
+
+
 
 	# Test nonlinear Granger analysis
 	"""

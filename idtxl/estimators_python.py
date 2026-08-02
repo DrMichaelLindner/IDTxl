@@ -2747,6 +2747,7 @@ class PythonDiscreteAIS(PythonDiscrete):
             
             - history : int - number of samples in the target's past used as
               embedding (>= 0)
+            - tau : int [optional] - the processes' embedding delay (default=1)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
             - discretise_method : str [optional] - if and how to discretise
@@ -3049,7 +3050,6 @@ class PythonDiscreteTE(PythonDiscrete):
 # Spectral estimators
 ###############################
 
-################################################################################ TODO
 class PythonSpectral(PythonEstimator):
     """Abstract class for implementation of Python Spectral-estimators.
 
@@ -3073,7 +3073,7 @@ class PythonSpectral(PythonEstimator):
         # check unsupported settings
         # set defaults
         settings.setdefault('local_values', False)
-        settings.setdefault('pos_only', True)
+        settings.setdefault('pos_only', False)
         super().__init__(settings)
         
     def fft_spectral_data(self, data):
@@ -3084,11 +3084,11 @@ class PythonSpectral(PythonEstimator):
         if data.shape[1] == 1:
             fft_result = np.fft.fft(data, axis=-1)
             magnitude = np.abs(fft_result)
-        else:
+        else:    
             magnitude = np.zeros([data.shape[0],data.shape[1]])
             for i in range(data.shape[1]):
                 ts = data[:,i]
-                fft_result = np.fft.fft2(ts[:,None])
+                fft_result = np.fft.fft(ts[:,None])
                 m=np.abs(fft_result)
                 magnitude[:,i] = m[:,0]
         return magnitude
@@ -3097,7 +3097,6 @@ class PythonSpectral(PythonEstimator):
         return False
 
 
-################################################################################ TODO
 class PythonSpectralMI(PythonSpectral):
     """Estimate mutual information using Spectral estimator.
 
@@ -3147,7 +3146,7 @@ class PythonSpectralMI(PythonSpectral):
                   (default=2).
             
             - pos_only : bool [optional] - only use positive frequencies of fft 
-              (default=True)
+              (default=False)
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
             - local_values : bool [optional] - return local TE instead of
@@ -3258,7 +3257,6 @@ class PythonSpectralMI(PythonSpectral):
                 - spec1, spec2: spectral magnitudes
         """
 
-        ########################################################### TODO test 2D for calculateAverageMI
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         var1_dim = var1.shape[1]
@@ -3299,7 +3297,6 @@ class PythonSpectralMI(PythonSpectral):
         return mi
 
 
-################################################################################ TODO
 class PythonSpectralCMI(PythonSpectral):
     """Estimate conditional mutual information using Spectral estimator.
 
@@ -3344,14 +3341,9 @@ class PythonSpectralCMI(PythonSpectral):
                   available threads on the current machine)
                 - knn_finder : str [optional] - knn algorithm to use, can be
                   'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn
-
-              if 'none' estimator is used additionally:
-                - n_discrete_bins : int [optional] - number of discrete bins/
-                  levels or the base of each dimension of the discrete variables
-                  (default=2).
             
             - pos_only : bool [optional] - only use positive frequencies of fft 
-              (default=True)
+              (default=False)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
     
@@ -3428,13 +3420,12 @@ class PythonSpectralCMI(PythonSpectral):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
-        ########################################################### TODO test 2D for calculateAverageMI
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
-        var1_dim = var1.shape[1]
-        var2_dim = var2.shape[1]
-        cond_dim = conditional.shape[1]
+        #var1_dim = var1.shape[1]
+        #var2_dim = var2.shape[1]
+        #cond_dim = conditional.shape[1]
 
         assert (
             var1.shape[0] == var2.shape[0] == conditional.shape[0]
@@ -3466,7 +3457,111 @@ class PythonSpectralCMI(PythonSpectral):
 
 
 ################################################################################ TODO
-#class PythonSpectralAIS(PythonSpectral):
+class PythonSpectralAIS(PythonSpectral):
+    """Calculate active information storage with Python Spectral implementation.
+
+    Calculate active information storage (AIS) for some process using Python
+    implementation of the Spectral estimator. AIS is defined as the
+    mutual information between the processes' past state and current value.
+    
+    Results are returned in nats.
+
+    Args:
+        settings : dict
+            sets estimation parameters:
+
+            - history : int - number of samples in the processes' past used as
+              embedding
+            - tau : int [optional] - the processes' embedding delay (default=1)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+
+            - estimator : str - type of MI estimator should be used. Can be 
+              'discrete', 'kraskov' or 'gaussian'
+            
+              if 'discrete' estimator is used additionally:
+                - discretise_method : str [optional] - if and how to discretise
+                  incoming continuous data, can be 'max_ent' for maximum entropy
+                  binning or 'equal' for equal size bins (default='max_ent')
+                - n_discrete_bins : int [optional] - number of discrete bins/
+                  levels or the base of each dimension of the discrete variables
+                  (default=2). If set, this parameter overwrites/sets alph1 and
+                  alph2
+                - alph1 : int [optional] - number of discrete bins/levels for var1
+                  (default=2, or the value set for n_discrete_bins)
+
+              if 'kraskov' estimator is used additionally:
+                - kraskov_k : int [optional] - no. nearest neighbours for KNN
+                  search (default=4)        
+                - theiler_t : int [optional] - no. next temporal neighbours ignored
+                  in KNN and range searches (default=0)
+                - base : float - base of returned values (default=np=e)
+                - rng_seed : int | None [optional] - random seed if noise level > 0
+                - num_threads : int | str [optional] - number of threads used for
+                  estimation (default='USE_ALL', note that this uses *all*
+                  available threads on the current machine)
+                - knn_finder : str [optional] - knn algorithm to use, can be
+                  'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn
+            
+            
+    """
+
+    def __init__(self, settings):
+        settings = self._check_settings(settings)
+        # Check for history for AIS estimation.
+        try:
+            settings['history']
+        except KeyError:
+            raise RuntimeError('No history was provided for AIS estimation.')
+        settings.setdefault('tau', 1)
+        assert type(settings['history']) is int, (
+                                            'History has to be an integer.')
+        assert type(settings['tau']) is int, ('Tau has to be an integer.')
+        super().__init__(settings)
+
+
+
+        ############################################################### TODO estimator settings
+
+
+
+    def estimate(self, process):
+        """Estimate active information storage.
+
+        Args:
+            process : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+
+        Returns:
+            float | numpy array
+                average AIS over all samples 
+
+        """
+        # Check the input data
+        process = self._ensure_one_dim_input(process)
+        
+        # convert to FFT and get magnitude spectra
+        process = self.fft_spectral_data(process)
+
+        # Only use positive frequencies (first half of FFT output)
+        if self.settings['pos_only']:
+            n_positive = len(process) // 2
+            process = process[:n_positive]
+        
+        if self.settings['estimator'] == 'kraskov':
+            est = PythonKraskovAIS(self.estimator_settings)
+            ais = est.estimate(process)
+        elif self.settings['estimator'] == 'discrete':
+            est = PythonDiscreteAIS(self.estimator_settings)
+            ais = est.estimate(process)
+        elif self.settings['estimator'] == 'gaussian':
+            est = PythonGaussianAIS(self.estimator_settings)
+            ais = est.estimate(process)
+        
+        return ais
+
 
 ################################################################################ TODO
 #class PythonSpectralTE(PythonSpectral):
