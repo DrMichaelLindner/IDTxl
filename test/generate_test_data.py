@@ -182,14 +182,14 @@ def _generate_mute_data(n_samples=10000, n_replications=10):
 
 def generate_discrete_idtxl_data(n_samples=10000, n_replications=1):
     """Generate Gaussian test data: 1 -> 2 -> 3, delay 1."""
-    d = generate_gauss_data(n_samples=10000, n_replications=n_replications, discrete=True)
+    d = generate_gauss_data(n_samples=n_samples, n_replications=n_replications, discrete=True)
     data = Data(d, dim_order="psr", normalise=False)
     return data
 
 
 def generate_continuous_idtxl_data(n_samples=10000, n_replications=1):
     """Generate Gaussian test data: 1 -> 2 -> 3, delay 1."""
-    d = generate_gauss_data(n_samples=10000, n_replications=n_replications, discrete=False)
+    d = generate_gauss_data(n_samples=n_samples, n_replications=n_replications, discrete=False)
     data = Data(d, dim_order="psr", normalise=True)
     return data
 
@@ -205,12 +205,12 @@ def generate_gauss_data(n_samples=10000, n_replications=1, discrete=False):
     else:
         d = np.zeros((3, n_samples - 2 * delay, n_replications))
     for r in range(n_replications):
-        proc_1 = np.random.normal(0, 1, size=n)
+        proc_1 = np.random.normal(0, 1, size=n_samples)
         proc_2 = covariance_1 * proc_1 + (1 - covariance_1) * np.random.normal(
-            0, 1, size=n
+            0, 1, size=n_samples
         )
         proc_3 = covariance_2 * proc_2 + (1 - covariance_2) * np.random.normal(
-            0, 1, size=n
+            0, 1, size=n_samples
         )
         proc_1 = proc_1[(2 * delay) :]
         proc_2 = proc_2[delay:-delay]
