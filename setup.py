@@ -12,10 +12,6 @@ extensions = [
         "idtxl.hde_fast_embedding",
         ["idtxl/hde_fast_embedding.pyx"], include_dirs=[numpy.get_include()],
     ),
-    Extension(
-        "idtxl.chi2_ppf",
-        ["idtxl/chi2_ppf.pyx"], include_dirs=[numpy.get_include()],
-    ),
 ]
 
 setup(
