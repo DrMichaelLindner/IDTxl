@@ -1059,8 +1059,6 @@ class PythonKraskovCTE(PythonKraskov):
         
         startFirstPoint = max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast, startTimeBasedOnConditionalPast)
 
-        print(startFirstPoint)
-
         target_past = self.makeDelayEmbeddingVector(target, 
             self.settings['history_target'], 
             self.settings['tau_target'], 
@@ -3047,6 +3045,15 @@ class PythonDiscreteTE(PythonDiscrete):
 
 
 ###############################
+# Bayesian estimators
+###############################
+
+################################################################ TODO
+#class PythonBayesianCMI(PythonDiscrete):
+
+
+
+###############################
 # Spectral estimators
 ###############################
 
@@ -3081,7 +3088,8 @@ class PythonSpectral(PythonEstimator):
         Compute FFT of spectral data and return magnitude spectrum.
         data: input array (can be multi-dimensional)
         """
-        if data.shape[1] == 1:
+        #if data.shape[1] == 1:
+        if data.ndim == 1:
             fft_result = np.fft.fft(data, axis=-1)
             magnitude = np.abs(fft_result)
         else:    
@@ -3128,12 +3136,8 @@ class PythonSpectralMI(PythonSpectral):
               if 'kraskov' estimator is used additionally:
                 - kraskov_k : int [optional] - no. nearest neighbours for KNN
                   search (default=4)
-                - base : float - base of returned values (default=np=e)
-                - normalise : bool [optional] - z-standardise data (default=False)
-                - noise_level : float [optional] - random noise added to the data
-                  (default=1e-8)
-
-                - rng_seed : int | None [optional] - random seed if noise level > 0
+                - theiler_t : int [optional] - no. next temporal neighbours ignored
+                  in KNN and range searches (default=0)
                 - num_threads : int | str [optional] - number of threads used for
                   estimation (default='USE_ALL', note that this uses *all*
                   available threads on the current machine)
@@ -3161,10 +3165,12 @@ class PythonSpectralMI(PythonSpectral):
         super().__init__(settings)
 
         # setup estimator setup depending on input
-        kraskov_settings = ['kraskov_k','base','normalise','noise_level','rng_seed','num_threads','knn_finder']
+        kraskov_settings = ['kraskov_k','theiler_t','num_threads','knn_finder']
         discrete_settings = ['discretise_method','n_discrete_bins','alph1','alph2']
 
-        self.estimator_settings = {}
+        self.estimator_settings = {'normalise': False,
+                                    'noise_level': 0}
+        
         if self.settings['estimator'] == 'kraskov':
             for i in kraskov_settings:
                 if i in self.settings:
@@ -3176,21 +3182,7 @@ class PythonSpectralMI(PythonSpectral):
                     self.estimator_settings[i] = self.settings[i]
 
             self.estimator_settings.setdefault('discretise_method', 'max_ent')
-            settings.setdefault('n_discrete_bins', 2)
-
-            try:
-                n_discrete_bins = int(self.settings['n_discrete_bins'])
-                self.estimator_settings['alph1'] = n_discrete_bins
-                self.estimator_settings['alph2'] = n_discrete_bins
-            except KeyError:
-                pass  # Do nothing and use the default for alph_* set below
-            self.estimator_settings.setdefault('alph1', int(2))
-            self.estimator_settings.setdefault('alph2', int(2))
-
-        elif self.settings['estimator'] == 'gaussian':
-
-            self.estimator_settings = {}
-
+        
         elif self.settings['estimator'] == 'none':
 
             if self.settings['local_values']:
@@ -3207,7 +3199,7 @@ class PythonSpectralMI(PythonSpectral):
             self.estimator_settings.setdefault('alph1', int(2))
             self.estimator_settings.setdefault('alph2', int(2))
         
-        else:
+        elif self.settings['estimator'] != 'gaussian':
             raise ValueError(f"Unkown estimator choice: {self.settings['estimator']}")
 
         if self.settings['local_values']:
@@ -3312,7 +3304,7 @@ class PythonSpectralCMI(PythonSpectral):
             - estimator : str - type of MI estimator should be used. Can be 
               'discrete', 'kraskov' or 'gaussian'
             
-              if 'discrete' estimator is used additionally:
+              if 'discrete' estimator is used additionally (optional):
                 - discretise_method : str [optional] - if and how to discretise
                   incoming continuous data, can be 'max_ent' for maximum entropy
                   binning or 'equal' for equal size bins (default='max_ent')
@@ -3327,15 +3319,11 @@ class PythonSpectralCMI(PythonSpectral):
                 - alph3 : int [optional] - number of discrete bins/levels for var2
                   (default=2, or the value set for n_discrete_bins)
 
-              if 'kraskov' estimator is used additionally:
+              if 'kraskov' estimator is used additionally (optional):
                 - kraskov_k : int [optional] - no. nearest neighbours for KNN
                   search (default=4)
-                - base : float - base of returned values (default=np=e)
-                - normalise : bool [optional] - z-standardise data (default=False)
-                - noise_level : float [optional] - random noise added to the data
-                  (default=1e-8)
-
-                - rng_seed : int | None [optional] - random seed if noise level > 0
+                - theiler_t : int [optional] - no. next temporal neighbours ignored
+                  in KNN and range searches (default=0)
                 - num_threads : int | str [optional] - number of threads used for
                   estimation (default='USE_ALL', note that this uses *all*
                   available threads on the current machine)
@@ -3352,14 +3340,15 @@ class PythonSpectralCMI(PythonSpectral):
     def __init__(self, settings):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
-        settings.setdefault('lag_mi', int(0))
         super().__init__(settings)
 
         # setup estimator setup depending on input
-        kraskov_settings = ['kraskov_k','base','normalise','noise_level','rng_seed','num_threads','knn_finder']
-        discrete_settings = ['discretise_method','n_discrete_bins','alph1','alph2']
+        kraskov_settings = ['kraskov_k','theiler_t','num_threads','knn_finder']
+        discrete_settings = ['discretise_method','n_discrete_bins','alph1','alph2','alphc']
 
-        self.estimator_settings = {}
+        self.estimator_settings = {'normalise': False,
+                                    'noise_level': 0}
+        
         if self.settings['estimator'] == 'kraskov':
             for i in kraskov_settings:
                 if i in self.settings:
@@ -3371,23 +3360,8 @@ class PythonSpectralCMI(PythonSpectral):
                     self.estimator_settings[i] = self.settings[i]
 
             self.estimator_settings.setdefault('discretise_method', 'max_ent')
-            self.estimator_settings.setdefault('n_discrete_bins', 2)
-
-            try:
-                n_discrete_bins = int(self.settings['n_discrete_bins'])
-                self.estimator_settings['alph1'] = n_discrete_bins
-                self.estimator_settings['alph2'] = n_discrete_bins
-                self.estimator_settings['alph3'] = n_discrete_bins
-            except KeyError:
-                pass  # Do nothing and use the default for alph_* set below
-            self.estimator_settings.setdefault('alph1', int(2))
-            self.estimator_settings.setdefault('alph2', int(2))
-            self.estimator_settings.setdefault('alph3', int(2))
-
-        elif self.settings['estimator'] == 'gaussian':
-            self.estimator_settings = {}
             
-        else:
+        elif self.settings['estimator'] != 'gaussian':
             raise ValueError(f"Unkown estimator choice: {self.settings['estimator']}")
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional: np.ndarray):
@@ -3423,10 +3397,7 @@ class PythonSpectralCMI(PythonSpectral):
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         conditional = self._ensure_two_dim_input(conditional)
-        #var1_dim = var1.shape[1]
-        #var2_dim = var2.shape[1]
-        #cond_dim = conditional.shape[1]
-
+        
         assert (
             var1.shape[0] == var2.shape[0] == conditional.shape[0]
         ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]}, conditional: {conditional.shape[0]})"
@@ -3456,7 +3427,7 @@ class PythonSpectralCMI(PythonSpectral):
         return mi
 
 
-################################################################################ TODO
+########################################################################################## TODO
 class PythonSpectralAIS(PythonSpectral):
     """Calculate active information storage with Python Spectral implementation.
 
@@ -3495,8 +3466,6 @@ class PythonSpectralAIS(PythonSpectral):
                   search (default=4)        
                 - theiler_t : int [optional] - no. next temporal neighbours ignored
                   in KNN and range searches (default=0)
-                - base : float - base of returned values (default=np=e)
-                - rng_seed : int | None [optional] - random seed if noise level > 0
                 - num_threads : int | str [optional] - number of threads used for
                   estimation (default='USE_ALL', note that this uses *all*
                   available threads on the current machine)
@@ -3519,10 +3488,29 @@ class PythonSpectralAIS(PythonSpectral):
         assert type(settings['tau']) is int, ('Tau has to be an integer.')
         super().__init__(settings)
 
+        # setup estimator setup depending on input
+        kraskov_settings = ['kraskov_k','theiler_t','num_threads','knn_finder']
+        discrete_settings = ['discretise_method','n_discrete_bins','alph1','alph2']
 
+        self.estimator_settings = {'history': self.settings['history'],
+                                    'tau': self.settings['tau'],
+                                    'normalise': False,
+                                    'noise_level': 0}
+        
+        if self.settings['estimator'] == 'kraskov':
+            for i in kraskov_settings:
+                if i in self.settings:
+                    self.estimator_settings[i] = self.settings[i]
 
-        ############################################################### TODO estimator settings
+        elif self.settings['estimator'] == 'discrete':
+            for i in discrete_settings:
+                if i in self.settings:
+                    self.estimator_settings[i] = self.settings[i]
 
+            self.estimator_settings.setdefault('discretise_method', 'max_ent')
+        
+        elif self.settings['estimator'] != 'gaussian':
+            raise ValueError(f"Unkown estimator choice: {self.settings['estimator']}")
 
 
     def estimate(self, process):
@@ -3541,7 +3529,7 @@ class PythonSpectralAIS(PythonSpectral):
         """
         # Check the input data
         process = self._ensure_one_dim_input(process)
-        
+
         # convert to FFT and get magnitude spectra
         process = self.fft_spectral_data(process)
 
@@ -3564,7 +3552,156 @@ class PythonSpectralAIS(PythonSpectral):
 
 
 ################################################################################ TODO
-#class PythonSpectralTE(PythonSpectral):
+class PythonSpectralTE(PythonSpectral):
+    """Calculate transfer entropy with Python Spectral implementation.
+
+    Calculate transfer entropy between a source and a target variable using
+    Pathon implementation of the Gaussian estimator. Transfer entropy is
+    defined as the conditional mutual information between the source's past
+    state and the target's current value, conditional on the target's past.
+
+    Past states need to be defined in the settings dictionary, where a past
+    state is defined as a uniform embedding with parameters history and tau.
+    The history describes the number of samples taken from a variable's past,
+    tau descrices the embedding delay, i.e., the spacing between every two
+    samples from the processes' past.
+
+    Results are returned in nats.        
+
+    Args:
+        settings : dict
+            sets estimation parameters:
+
+            - history_target : int - number of samples in the target's past
+              used as embedding
+            - history_source  : int [optional] - number of samples in the
+              source's past used as embedding (default=same as the target
+              history)
+            - tau_source : int [optional] - source's embedding delay
+              (default=1)
+            - tau_target : int [optional] - target's embedding delay
+              (default=1)
+            - source_target_delay : int [optional] - information transfer delay
+              between source and target (default=1)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+
+            - estimator : str - type of MI estimator should be used. Can be 
+              'discrete', 'kraskov' or 'gaussian'
+            
+              if 'discrete' estimator is used additionally:
+                - discretise_method : str [optional] - if and how to discretise
+                  incoming continuous data, can be 'max_ent' for maximum entropy
+                  binning or 'equal' for equal size bins (default='max_ent')
+                - n_discrete_bins : int [optional] - number of discrete bins/
+                  levels or the base of each dimension of the discrete variables
+                  (default=2). If set, this parameter overwrites/sets alph1 and
+                  alph2
+                - alph1 : int [optional] - number of discrete bins/levels for var1
+                  (default=2, or the value set for n_discrete_bins)
+                - alph2 : int [optional] - number of discrete bins/levels for
+                  target (default=2, or the value set for n_discrete_bins). (>= 2)
+
+              if 'kraskov' estimator is used additionally:
+                - kraskov_k : int [optional] - no. nearest neighbours for KNN
+                  search (default=4)        
+                - theiler_t : int [optional] - no. next temporal neighbours ignored
+                  in KNN and range searches (default=0)
+                - num_threads : int | str [optional] - number of threads used for
+                  estimation (default='USE_ALL', note that this uses *all*
+                  available threads on the current machine)
+                - knn_finder : str [optional] - knn algorithm to use, can be
+                  'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn
+
+
+    """
+    def __init__(self, settings):
+        """Initialise estimator with settings."""
+        settings = self._check_settings(settings)
+        settings = self._set_te_defaults(settings)
+        super().__init__(settings)
+
+
+        ############################################################################### TODO estimator settings
+
+        self.estimator_settings = {'normalise': False,
+                                    'noise_level': 0}
+        
+        if self.settings['estimator'] == 'kraskov':
+            for i in kraskov_settings:
+                if i in self.settings:
+                    self.estimator_settings[i] = self.settings[i]
+
+        elif self.settings['estimator'] == 'discrete':
+            for i in discrete_settings:
+                if i in self.settings:
+                    self.estimator_settings[i] = self.settings[i]
+
+            self.estimator_settings.setdefault('discretise_method', 'max_ent')
+            
+        elif self.settings['estimator'] != 'gaussian':
+            raise ValueError(f"Unkown estimator choice: {self.settings['estimator']}")
+
+
+
+
+
+
+
+
+
+
+
+
+    def estimate(self, source: np.ndarray, target: np.ndarray):
+        """Estimate transfer entropy from a source to a target variable.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+            target : numpy array
+                realisations of target variable (similar to var1)
+
+        Returns:
+            float | numpy array
+                average TE over all samples or local TE for individual
+                samples if 'local_values'=True
+        
+        """
+        
+        # Check the input data
+        source = self._ensure_one_dim_input(source)
+        target = self._ensure_one_dim_input(target)
+
+        assert (
+            source.shape[0] == target.shape[0]
+        ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
+
+
+        # convert to FFT and get magnitude spectra
+        source = self.fft_spectral_data(source)
+        target = self.fft_spectral_data(target)
+
+        # Only use positive frequencies (first half of FFT output)
+        if self.settings['pos_only']:
+            n_positive = len(source) // 2
+            source = source[:n_positive]
+            target = target[:n_positive]
+        
+        if self.settings['estimator'] == 'kraskov':
+            est = PythonKraskovTE(self.estimator_settings)
+            te = est.estimate(source, target)
+        elif self.settings['estimator'] == 'discrete':
+            est = PythonDiscreteTE(self.estimator_settings)
+            te = est.estimate(source, target)
+        elif self.settings['estimator'] == 'gaussian':
+            est = PythonGaussianTE(self.estimator_settings)
+            te = est.estimate(source, target)
+        
+        return te
+
 
 
 
