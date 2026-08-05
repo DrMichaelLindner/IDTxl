@@ -1,4 +1,4 @@
-# cmi_gaussian_fast.pyx
+# gaussian_fast_estimation.pyx
 # cython: boundscheck=False, wraparound=False, cdivision=True, nonecheck=False, initializedcheck=False, language_level=3
 import numpy as np
 cimport numpy as np
