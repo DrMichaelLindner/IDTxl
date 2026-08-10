@@ -8,9 +8,9 @@ import sys
 import copy
 
 
-from idtxl.estimators_python import PythonBayesianDiscreteMI, PythonDiscreteMI, PythonBayesianDiscreteCMI, PythonDiscreteCMI
-from generate_test_data import (_get_gauss_data, _get_ar_data, _generate_mute_data,
-                                _get_mem_binary_data, _get_freq_data, generate_continuous_idtxl_data)
+from idtxl.estimators_bayesian import PythonBayesianDiscreteMI, PythonBayesianDiscreteCMI
+from idtxl.estimators_python import PythonDiscreteMI, PythonDiscreteCMI
+from generate_test_data import _get_gauss_data, _generate_mute_data)
 
 SEED=42
 
