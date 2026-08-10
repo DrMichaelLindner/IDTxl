@@ -2,6 +2,7 @@ import sys
 import logging
 from pkg_resources import resource_filename
 from scipy.special import digamma
+from scipy.linalg import cholesky
 import numpy as np
 from idtxl.estimator import Estimator
 from . import idtxl_exceptions as ex
@@ -19,8 +20,46 @@ logger = logging.getLogger(__name__)
 C = 1024**2
 
 
-class OpenCLKraskov(Estimator):
+class OpenCLEstimator(Estimator):
     """Abstract class for implementation of OpenCL estimators.
+
+    """
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        
+        self.settings = settings.copy()
+
+    def _get_device(self, gpuid):
+        """Return GPU devices, context, and queue."""
+        all_platforms = cl.get_platforms()
+        platform = next((p for p in all_platforms if
+                         p.get_devices(device_type=cl.device_type.GPU) != []),
+                        None)
+        if platform is None:
+            raise RuntimeError('No OpenCL GPU device found.')
+        my_gpu_devices = platform.get_devices(device_type=cl.device_type.GPU)
+        context = cl.Context(devices=my_gpu_devices)
+        if gpuid > len(my_gpu_devices)-1:
+            raise RuntimeError(
+                'No device with gpuid {0} (available device IDs: {1}).'.format(
+                    gpuid, np.arange(len(my_gpu_devices))))
+        queue = cl.CommandQueue(context, my_gpu_devices[gpuid])
+        logger.debug("Selected Device: {}".format(my_gpu_devices[gpuid].name))
+        return my_gpu_devices, context, queue
+
+    def _get_max_mem(self):
+        """Return max. GPU main memory available for computation."""
+        if 'max_mem' in self.settings:
+            return self.settings['max_mem']
+        elif 'max_mem_frac' in self.settings:
+            return self.settings['max_mem_frac'] * self.devices[
+                                    self.settings['gpuid']].global_mem_size
+        else:
+            return 0.9 * self.devices[self.settings['gpuid']].global_mem_size
+
+
+class OpenCLKraskov(OpenCLEstimator):
+    """Abstract class for implementation of OpenCLKraskov estimators.
 
     Abstract class for implementation of OpenCL estimators, child classes
     implement estimators for mutual information (MI) and conditional mutual
@@ -73,8 +112,7 @@ class OpenCLKraskov(Estimator):
 
     def __init__(self, settings=None):
         # Get defaults for estimator settings
-        settings = self._check_settings(settings)
-        self.settings = settings.copy()
+        super().__init__(settings)
         self.settings.setdefault('gpuid', int(0))
         self.settings.setdefault('kraskov_k', int(4))
         self.settings.setdefault('theiler_t', int(0))
@@ -104,24 +142,6 @@ class OpenCLKraskov(Estimator):
     def is_analytic_null_estimator(self):
         return False
 
-    def _get_device(self, gpuid):
-        """Return GPU devices, context, and queue."""
-        all_platforms = cl.get_platforms()
-        platform = next((p for p in all_platforms if
-                         p.get_devices(device_type=cl.device_type.GPU) != []),
-                        None)
-        if platform is None:
-            raise RuntimeError('No OpenCL GPU device found.')
-        my_gpu_devices = platform.get_devices(device_type=cl.device_type.GPU)
-        context = cl.Context(devices=my_gpu_devices)
-        if gpuid > len(my_gpu_devices)-1:
-            raise RuntimeError(
-                'No device with gpuid {0} (available device IDs: {1}).'.format(
-                    gpuid, np.arange(len(my_gpu_devices))))
-        queue = cl.CommandQueue(context, my_gpu_devices[gpuid])
-        logger.debug("Selected Device: {}".format(my_gpu_devices[gpuid].name))
-        return my_gpu_devices, context, queue
-
     def _get_kernels(self):
         """Return KNN and range search OpenCL kernels."""
         kernel_source = open(self.kernel_location).read()
@@ -136,106 +156,6 @@ class OpenCLKraskov(Estimator):
                                          np.int32, np.int32, np.int32,
                                          np.int32, np.int32, None])  # MW: added one int32 argument
         return (kNN_kernel, RS_kernel)
-
-    def _get_max_mem(self):
-        """Return max. GPU main memory available for computation."""
-        if 'max_mem' in self.settings:
-            return self.settings['max_mem']
-        elif 'max_mem_frac' in self.settings:
-            return self.settings['max_mem_frac'] * self.devices[
-                                    self.settings['gpuid']].global_mem_size
-        else:
-            return 0.9 * self.devices[self.settings['gpuid']].global_mem_size
-
-
-class OpenCLGaussian(Estimator):
-    """Abstract class for implementation of OpenCL Gaussian-estimators.
-
-    Abstract class for implementation of Python Gaussian-estimators, child
-    classes implement estimators for mutual information (MI), conditional
-    mutual information (CMI), 
-
-    actice information storage (AIS) and
-    transfer entropy (TE) 
-
-    using python Gaussian estimator for continuous data. 
-    
-    Estimators can be used to perform multiple, independent searches in
-    parallel. Each of these parallel searches is called a 'chunk'. To search
-    multiple chunks, provide point sets as 2D arrays, where the first
-    dimension represents samples or points, and the second dimension
-    represents the points' dimensions. Concatenate chunk data in the first
-    dimension and pass the number of chunks to the estimators. Chunks must be
-    of equal size.
-
-    Set common estimation parameters for OpenCL estimators.
-
-    Args:
-        settings : dict [optional]
-            set estimator parameters:
-
-            - gpuid : int [optional] - device ID used for estimation (if more
-              than one device is available on the current platform) (default=0)
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
-            - normalise : bool [optional] - z-standardise data (default=False)
-            - noise_level : float [optional] - random noise added to the data
-              (default=0)
-            - local_values : bool [optional] - return local MI/TE instead of
-              average MI/TE (default=False)
-
-            
-    """  
-    def __init__(self, settings=None):
-        # Get defaults for estimator settings
-        settings = self._check_settings(settings)
-        self.settings = settings.copy()
-        self.settings.setdefault('gpuid', int(0))
-        self.settings.setdefault('noise_level', np.float32(1e-8))
-        self.settings.setdefault('local_values', False)
-        self.settings.setdefault('padding', True)
-        self.settings.setdefault('verbose', True)
-        self.sizeof_float = int(np.dtype(np.float32).itemsize)
-        self.sizeof_int = int(np.dtype(np.int32).itemsize)
-
-        # Get kernel and devices.
-        self.devices, self.context, self.queue = self._get_device(
-                                                        self.settings['gpuid'])
-
-    def is_parallel(self):
-        return True
-
-    def is_analytic_null_estimator(self):
-        return False
-
-    def _get_device(self, gpuid):
-        """Return GPU devices, context, and queue."""
-        all_platforms = cl.get_platforms()
-        platform = next((p for p in all_platforms if
-                         p.get_devices(device_type=cl.device_type.GPU) != []),
-                        None)
-        if platform is None:
-            raise RuntimeError('No OpenCL GPU device found.')
-        my_gpu_devices = platform.get_devices(device_type=cl.device_type.GPU)
-        context = cl.Context(devices=my_gpu_devices)
-        if gpuid > len(my_gpu_devices)-1:
-            raise RuntimeError(
-                'No device with gpuid {0} (available device IDs: {1}).'.format(
-                    gpuid, np.arange(len(my_gpu_devices))))
-        queue = cl.CommandQueue(context, my_gpu_devices[gpuid])
-        logger.debug("Selected Device: {}".format(my_gpu_devices[gpuid].name))
-        return my_gpu_devices, context, queue
-
-    def _get_max_mem(self):
-        """Return max. GPU main memory available for computation."""
-        if 'max_mem' in self.settings:
-            return self.settings['max_mem']
-        elif 'max_mem_frac' in self.settings:
-            return self.settings['max_mem_frac'] * self.devices[
-                                    self.settings['gpuid']].global_mem_size
-        else:
-            return 0.9 * self.devices[self.settings['gpuid']].global_mem_size
 
 
 class OpenCLKraskovMI(OpenCLKraskov):
@@ -912,6 +832,84 @@ class OpenCLKraskovCMI(OpenCLKraskov):
 
 
 
+class OpenCLGaussian(OpenCLEstimator):
+    """Abstract class for implementation of OpenCL Gaussian estimators.
+
+    Abstract class for implementation of Python Gaussian-estimators, child
+    classes implement estimators for mutual information (MI), conditional
+    mutual information (CMI), 
+
+    actice information storage (AIS) and ######################### TODO ?????????
+    transfer entropy (TE) 
+
+    using python Gaussian estimator for continuous data. 
+    
+    Estimators can be used to perform multiple, independent searches in
+    parallel. Each of these parallel searches is called a 'chunk'. To search
+    multiple chunks, provide point sets as 2D arrays, where the first
+    dimension represents samples or points, and the second dimension
+    represents the points' dimensions. Concatenate chunk data in the first
+    dimension and pass the number of chunks to the estimators. Chunks must be
+    of equal size.
+
+    Set common estimation parameters for OpenCL estimators.
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+
+            - gpuid : int [optional] - device ID used for estimation (if more
+              than one device is available on the current platform) (default=0)
+            - padding : bool [optional] - pad data to a length that is a
+              multiple of 1024, workaround for a
+            
+            - normalise : bool [optional] - z-standardise data (default=False)
+            - noise_level : float [optional] - random noise added to the data
+              (default=0)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+
+            
+    """  
+    def __init__(self, settings=None):
+        # Get defaults for estimator settings
+        super().__init__(settings)
+        self.settings = settings.copy()
+        self.settings.setdefault('gpuid', int(0))
+        self.settings.setdefault('noise_level', np.float32(1e-8))
+        self.settings.setdefault('local_values', False)
+        self.settings.setdefault('padding', True)
+        self.settings.setdefault('verbose', True)
+        self.sizeof_float = int(np.dtype(np.float32).itemsize)
+        self.sizeof_int = int(np.dtype(np.int32).itemsize)
+
+        # Get kernel and devices.
+        self.devices, self.context, self.queue = self._get_device(
+                                                        self.settings['gpuid'])
+
+        ############################################################################# TODO
+        self.kernel_location = resource_filename(__name__,
+                                                 'gpuGaussianKernel.cl')
+        self.COVkernel, CHOLkernel, LMIkernel = self._get_gauss_kernels()
+
+    def is_parallel(self):
+        return True
+
+    def is_analytic_null_estimator(self):
+        return False
+
+    def _get_gauss_kernels(self):
+        """Return KNN and range search OpenCL kernels."""
+        kernel_source = open(self.kernel_location).read()
+        program = cl.Program(self.context, kernel_source).build()
+        cov_kernel = program.compute_covariance
+        cholesky_kernel = program.cholesky_decompose
+        lmi_kernel = program.local_mi_gaussian
+
+        return cov_kernel, cholesky_kernel, lmi_kernel
+        
+    
+
 class OpenCLGaussianMI(OpenCLGaussian):
     """Calculate mutual information with OpenCL Kraskov implementation.
 
@@ -926,11 +924,17 @@ class OpenCLGaussianMI(OpenCLGaussian):
 
             - gpuid : int [optional] - device ID used for estimation (if more
               than one device is available on the current platform) (default=0)
+            
+            - padding : bool [optional] - pad data to a length that is a
+              multiple of 1024, workaround for a
+            
             - normalise : bool [optional] - z-standardise data (default=False)
             - noise_level : float [optional] - random noise added to the data
               (default=1e-8)
             - lag_mi : int [optional] - time difference in samples to calculate
               the lagged MI between processes (default=0)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
     """
 
     def __init__(self, settings=None):
@@ -938,45 +942,7 @@ class OpenCLGaussianMI(OpenCLGaussian):
         super().__init__(settings)
         self.settings.setdefault('lag_mi', 0)
 
-
-    def gpu_covariance(Z, ctx=None, queue=None):
-        """
-        Estimate covariance matrix of Z on GPU.
-        Z: np.ndarray, shape (T, D), dtype float32.
-        Returns: cov matrix, shape (D, D), dtype float32.
-        """
-        Z = np.asarray(Z, dtype=np.float32)
-        T, D = Z.shape
-        
-        if ctx is None:
-            ctx = cl.create_some_context()
-        if queue is None:
-            queue = cl.CommandQueue(ctx)
-        
-        # Load / build kernel
-        kernel_src = open("gpuCovKernel.cl").read()
-        prg = cl.Program(ctx, kernel_src).build()
-        
-        mf = cl.mem_flags
-        Z_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=Z)
-        C_buf = cl.Buffer(ctx, mf.WRITE_ONLY, Z.nbytes)  # D*D float32
-        
-        # Launch kernel
-        global_size = (D, D)
-        prg.cov_mat(
-            queue, global_size, None,
-            Z_buf,
-            np.int32(T),
-            np.int32(D),
-            C_buf
-        )
-        
-        C = np.empty((D, D), dtype=np.float32)
-        cl.enqueue_copy(queue, C, C_buf).wait()
-        return C
-
-
-
+    
     def estimate(self, var1, var2, n_chunks=1):
         """Estimate mutual information.
 
@@ -1000,50 +966,13 @@ class OpenCLGaussianMI(OpenCLGaussian):
                 distances and neighborhood counts for var1 and var2 if
                 debug=True and return_counts=True
         """
-        # Prepare data: check if variable realisations are passed as 1D or 2D
-        # arrays and have equal no. observations.
-        var1 = self._ensure_two_dim_input(var1)
-        var2 = self._ensure_two_dim_input(var2)
         assert var1.shape[0] == var2.shape[0]
         assert var1.shape[0] % n_chunks == 0
-        
-        self._check_number_of_points(var1.shape[0])
-        
-        # Normalise data
-        if self.settings['normalise']:
-            var1 = self._normalise_data(var1)
-            var2 = self._normalise_data(var2)
-
-        # Add noise to avoid duplicate points
-        # Do not add noise inplace, because it would change the input data
-        if self.settings['noise_level'] > 0:
-            var1 = var1 + self._rng.normal(0, self._noise_level, var1.shape)
-            var2 = var2 + self._rng.normal(0, self._noise_level, var2.shape)
-
         # Shift variables to calculate a lagged MI.
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
-        
-        var1 = np.asarray(var1, dtype=np.float32)
-        var2 = np.asarray(var2, dtype=np.float32)
-
-        ############################################################################## TODO maybe not?
-        cov = gpu_covariance(np.concatenate([var1, var2], axis=1))
-        
-
-        d1 = var1.shape[1]
-        #d2 = Y.shape[1]
-        cov_xx = cov[:d1, :d1]
-        cov_yy = cov[d1:, d1:]
-        
-        logdet_xx = _logdet_cholesky(cov_xx)
-        logdet_yy = _logdet_cholesky(cov_yy)
-        logdet_joint = _logdet_cholesky(cov)
-        
-        mi_nats = 0.5 * (logdet_xx + logdet_yy - logdet_joint)
-        return mi_nats / np.log(base)
-        """
+        self._check_number_of_points(var1.shape[0])
         signallength = var1.shape[0]
         chunklength = signallength // n_chunks
         var1dim = var1.shape[1]
@@ -1068,34 +997,12 @@ class OpenCLGaussianMI(OpenCLGaussian):
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
 
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         mi_array = np.array([])
-        
+        #if self.settings['debug']:
+        #    distances = np.array([])
+        #    count_var1 = np.array([])
+        #    count_var2 = np.array([])
+
         for r in range(0, n_chunks, chunks_per_run):
             startidx = r*chunklength
             stopidx = min(r+chunks_per_run, n_chunks)*chunklength
@@ -1110,16 +1017,15 @@ class OpenCLGaussianMI(OpenCLGaussian):
             #    count_var1 = np.concatenate((count_var1, results[2]))
             #    count_var2 = np.concatenate((count_var2, results[3]))
             #else:
-            
             mi_array = np.concatenate((mi_array, results))
 
         #if self.settings['return_counts']:
         #    return mi_array, distances, count_var1, count_var2
         #else:
-        return mi_array
-
-       """
-
+        if self.settings['local_values']:
+            return mi_array
+        else:
+            return np.mean(mi_array)
 
 
     def _estimate_single_run(self, var1, var2, n_chunks=1):
@@ -1145,6 +1051,8 @@ class OpenCLGaussianMI(OpenCLGaussian):
                 average MI over all samples or local MI for individual
                 samples if 'local_values'=True
         """
+        # Prepare data: check if variable realisations are passed as 1D or 2D
+        # arrays and have equal no. observations.
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         assert var1.shape[0] == var2.shape[0]
@@ -1162,6 +1070,10 @@ class OpenCLGaussianMI(OpenCLGaussian):
 
         if self.settings['padding']:
             # Pad time series to make GPU memory regions a multiple of 1024
+
+
+            ########################################################### TODO adjust to GPU
+
             # This value of 1024 should be replaced by
             #  self.devices[self.settings['gpuid']].CL_DEVICE_MEM_BASE_ADDR_ALIGN
             # or something similar, as professional cards are known to have
@@ -1186,3 +1098,141 @@ class OpenCLGaussianMI(OpenCLGaussian):
             pointset += np.random.normal(
                 scale=self.settings['noise_level'],
                 size=pointset.shape).astype(np.float32)
+
+
+        #if self.settings['debug']:
+        #    # Print memory requirements after padding
+        #    mem_data_pad = (self.sizeof_float *
+        #                    pointset.shape[0] * pointset.shape[1])
+        #    mem_dist = (self.sizeof_float * signallength_padded *
+        #                self.settings['kraskov_k'])
+        #    mem_ncnt = 2 * self.sizeof_int * signallength_padded
+        #    mem_total = mem_data_pad + mem_dist + mem_ncnt
+        #    logger.debug(
+        #        'Memory req. after padding: {0:.2f} MB ({1} elements, shape: '
+        #        '{2}, {3} chunks, chunksize: {4}) -- Padding: {5}'.format(
+        #            mem_total / C, pointset.size, pointset.shape,
+        #            n_chunks, chunklength, pad_size))
+        #    assert (pointset.shape[1] - pad_size) % n_chunks == 0
+
+        # Set OpenCL kernel launch parameters
+        if chunklength < self.devices[
+                                self.settings['gpuid']].max_work_group_size:
+            workitems_x = 8
+        elif self.devices[self.settings['gpuid']].max_work_group_size < 256:
+            workitems_x = self.devices[
+                                self.settings['gpuid']].max_work_group_size
+        else:
+            workitems_x = 256
+        NDRange_x = (workitems_x *
+                     (int((signallength_padded - 1)/workitems_x) + 1))
+        logger.debug('NDRange_x: {}, workitems_x: {}'.format(
+            NDRange_x, workitems_x))
+
+        
+        # Allocate and copy memory to device
+        d_pointset = cl.Buffer(
+                        self.context,
+                        cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
+                        hostbuf=pointset)
+        d_var1 = d_pointset.get_sub_region(
+                        0,
+                        self.sizeof_float * signallength_padded * var1dim,
+                        cl.mem_flags.READ_ONLY)
+        d_var2 = d_pointset.get_sub_region(
+                        self.sizeof_float * signallength_padded * var1dim,
+                        self.sizeof_float * signallength_padded * var2dim,
+                        cl.mem_flags.READ_ONLY)
+
+        # Compute means
+        mu_x = var1.mean(axis=0).astype(np.float32)
+        mu_y = var2.mean(axis=0).astype(np.float32)
+        mu_z = np.concatenate([mu_x, mu_y]).astype(np.float32)
+
+        # Transfer data to device
+        d_X = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=var1)
+        d_Y = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=var2)
+        d_Z = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=Z)
+        
+        # Transfer means to device
+        d_mu_x = cl.Buffer(self.context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=mu_x)
+        d_mu_y = cl.Buffer(self.context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=mu_y)
+        d_mu_z = cl.Buffer(self.context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=mu_z)
+
+        # Output buffers for covariances (dx x dx, dy x dy, dz x dz)
+        d_Sx = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, var1dim * var1dim * 4)
+        d_Sy = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, var2dim * var2dim * 4)
+        d_Sz = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, pointdim * pointdim * 4)
+
+        # Output buffers for Cholesky factors (same shapes, lower-triangular)
+        d_Lx = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, var1dim * var1dim * 4)
+        d_Ly = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, var2dim * var2dim * 4)
+        d_Lz = cl.Buffer(self.context, cl.mem_flags.READ_WRITE, pointdim * pointdim * 4)
+
+        # Output buffer for local MI
+        d_pmi = cl.Buffer(self.context, mf.WRITE_ONLY, signallength_padded * 4)
+
+
+        global_size_x = (var1dim, var2dim) if var2dim > var1dim else (var1dim, var1dim)
+        global_size_y = (var2dim, var2dim)
+        global_size_z = (pointdim, pointdim)
+
+        self.COVkernel(self.queue, global_size_x, None,
+            d_X, np.int32(signallength), np.int32(var1dim), d_Sx)
+        
+        self.COVkernel(self.queue, global_size_y, None,
+            d_Y, np.int32(signallength), np.int32(var2dim), d_Sy)
+        
+        self.COVkernel(self.queue, global_size_z, None,
+            d_Z, np.int32(signallength), np.int32(pointdim), d_Sz)
+
+        ############################################################## TODO remove and adjust       
+        # Copy Sx -> Lx, Sy -> Ly, Sz -> Lz (if you want to keep S intact)
+        cl.enqueue_copy(self.queue, d_Lx, d_Sx)
+        cl.enqueue_copy(self.queue, d_Ly, d_Sy)
+        cl.enqueue_copy(self.queue, d_Lz, d_Sz)
+
+        # Cholesky: Lx
+        self.CHOLkernel(
+            self.queue, (NDRange_x,), (workitems_x,),
+            d_Lx, np.int32(var1dim))
+        # Cholesky: Ly
+        self.CHOLkernel(
+            self.queue, (NDRange_x,), (workitems_x,),
+            d_Ly, np.int32(var2dim))
+        # Cholesky: Lz
+        self.CHOLkernel(
+            self.queue, (NDRange_x,), (workitems_x,),
+            d_Lz, np.int32(pointdim))
+
+
+        self.LMIkernel(self.queue, (signallength_padded,), (workitems_x,),
+            d_var1, d_var2,
+            d_mu_x, d_mu_y, d_mu_z, 
+            d_Lx, d_Ly, d_Lz,
+            np.int32(signallength_padded), 
+            np.int32(var1dim), np.int32(var2dim), np.int32(pointdim),
+            d_pmi
+            )
+
+        # Copy result back
+        pmi = np.empty(signallength_padded, dtype=np.float32)
+        cl.enqueue_copy(self.queue, pmi, d_pmi)
+
+        return pmi
+
+
+class OpenCLGaussianCMI(OpenCLGaussian):
+    """Calculate conditional mutual inform with OpenCL Gaussian implementation.
+
+    Calculate the conditional mutual information (CMI) between three variables
+    using OpenCL GPU-code. If no conditional is given (is None), the function
+    returns the mutual information between var1 and var2. See parent class for
+    references.
+
+    Results are returned in nats.
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+    """
