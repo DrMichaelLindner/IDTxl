@@ -68,14 +68,19 @@ window_width = 1200
 window_higth = 800
 
 # define available estimators for each analysis type
-MI_estimators = ["JidtKraskovMI", "JidtDiscreteMI", "JidtGaussianMI", 
+MI_estimators = ["PythonKraskovMI", "PythonGaussianMI","PythonDiscreteMI", 
+    "JidtKraskovMI", "JidtGaussianMI", "JidtDiscreteMI", 
     "OpenCLKraskovMI", "CudaKraskovMI", "RudeltNSBEstimatorSymbolsMI",
     "RudeltPluginEstimatorSymbolsMI", "RudeltBBCEstimator"]
-TE_estimators = ["JidtKraskovTE", "JidtDiscreteTE", "JidtGaussianTE"]
-CMI_estimators = ["JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI", 
-    "OpenCLKraskovCMI", "CudaKraskovCMI", "PythonKraskovCMI"]
-AIS_estimators = ["ActiveInformationStorage", "JidtKraskovAIS", 
-    "JidtDiscreteAIS", "JidtGaussianAIS", "OptimizationRudelt", 
+TE_estimators = ["PythonKraskovTE",  "PythonGaussianTE", "PythonDiscreteTE",
+    "JidtKraskovTE", "JidtGaussianTE", "JidtDiscreteTE"]
+CMI_estimators = ["PythonKraskovCMI", "PythonDiscreteCMI", "PythonGaussianCMI", 
+    "PythonKraskovCTE", "PythonGaussianCTE", "OpenCLKraskovCMI", 
+    "CudaKraskovCMI", "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI", 
+    "JidtKraskovCTE","JidtGaussianCTE"]
+AIS_estimators = ["ActiveInformationStorage", "PythonKraskovAIS", 
+    "PythonGaussianAIS", "PythonDiscreteAIS", "JidtKraskovAIS", 
+    "JidtGaussianAIS", "JidtDiscreteAIS", "OptimizationRudelt", 
     "RudeltShufflingEstimator"]
 AIS_CMI_estimators = CMI_estimators
 PID_estimators = ["I_BROJA(via_permutation)", 
@@ -88,15 +93,20 @@ Estimator_dict = {
     "I_BROJA(via_convex_optimization)": "TartuPID",
     "I_sx(multivariate)": "SxPID",
 }
-Multivariate_estimators = ["JidtKraskovCMI", "JidtDiscreteCMI", 
-    "JidtGaussianCMI", "OpenCLKraskovCMI", "CudaKraskovCMI", "PythonKraskovCMI"]
-Nonlinear_analysis = ["JidtGaussianCMI"]
+Multivariate_estimators = ["PythonKraskovCMI", "PythonGaussianCMI", 
+    "PythonDiscreteCMI", "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI", 
+     "OpenCLKraskovCMI", "CudaKraskovCMI"]
+Nonlinear_analysis = ["PythonGaussianCMI", "JidtGaussianCMI"]
 Nonlinear_BiMulti_type = ["MultivariateTE", "BivariateTE"]
-Network_analysis = ["JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI", 
-    "OpenCLKraskovCMI", "CudaKraskovCMI", "PythonKraskovCMI"]
+Network_analysis = ["PythonKraskovCMI", "PythonGaussianCMI", "PythonDiscreteCMI", 
+    "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI", 
+    "OpenCLKraskovCMI", "CudaKraskovCMI"]
 BiMulti_type = ["MultivariateMI", "MultivariateTE", 
     "BivariateMI", "BivariateTE"]
-MPI_estimators = ["JidtKraskovMI", "JidtDiscreteMI", "JidtGaussianMI",
+MPI_estimators = ["PythonKraskovMI", "PythonDiscreteMI", "PythonGaussianMI",
+    "PythonKraskovTE", "PythonDiscreteTE", "PythonGaussianTE",
+    "PythonKraskovCMI", "PythonDiscreteCMI", "PythonGaussianCMI",
+    "JidtKraskovMI", "JidtDiscreteMI", "JidtGaussianMI",
     "JidtKraskovTE", "JidtDiscreteTE", "JidtGaussianTE",
     "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI"]
 
@@ -108,6 +118,26 @@ data_order_2dx = ["ps", "s"]
 
 # define estimator sources (files in which estimators are stored)
 estimator_source = {
+    "PythonKraskovMI": "estimators_python",
+    "PythonDiscreteMI": "estimators_python",
+    "PythonGaussianMI": "estimators_python",
+    "PythonBayesianDiscreteMI": "estimators_python",
+    "PythonKraskovTE": "estimators_python", 
+    "PythonDiscreteTE": "estimators_python",
+    "PythonGaussianTE": "estimators_python",
+    "PythonKraskovCMI": "estimators_python",
+    "PythonDiscreteCMI": "estimators_python",
+    "PythonGaussianCMI": "estimators_python",
+    "PythonBayesianDiscreteCMI": "estimators_python",
+    "PythonKraskovAIS": "estimators_python",
+    "PythonDiscreteAIS": "estimators_python",
+    "PythonGaussianAIS": "estimators_python",
+    "PythonKraskovCTE": "estimators_python",
+    "PythonGaussianCTE": "estimators_python",
+    
+    "JidtKraskovCTE": "estimators_jidt",
+    "JidtGaussianCTE": "estimators_jidt",
+
     "JidtKraskovMI": "estimators_jidt",
     "JidtDiscreteMI": "estimators_jidt",
     "JidtGaussianMI": "estimators_jidt",
@@ -121,7 +151,6 @@ estimator_source = {
     "JidtGaussianCMI": "estimators_jidt",
     "OpenCLKraskovCMI": "estimators_opencl",
     "CudaKraskovCMI": "estimators_cuda",
-    "PythonKraskovCMI": "estimators_python",
     "JidtKraskovAIS": "estimators_jidt",
     "JidtDiscreteAIS": "estimators_jidt",
     "JidtGaussianAIS": "estimators_jidt",
@@ -146,6 +175,27 @@ estimator_source = {
 
 # define estimator tooltips
 estimator_tooltips = {
+    
+    "PythonKraskovMI": "Estimate MI with Python Kraskov implementation.\n Calculate the MI between two variables.",
+    "PythonDiscreteMI": "Estimate MI with Python Discrete implementation.\n Calculate the MI between two variables.",
+    "PythonGaussianMI": "Estimate MI with Python Gaussian implementation.\n Calculate the MI between two variables.",
+    "PythonBayesianDiscreteMI": "Estimate MI with Python Bayesian Discrete implementation.\n Calculate the MI between two variables.",
+    "PythonKraskovTE": "Estimate TE with Python Kraskov implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
+    "PythonDiscreteTE": "Estimate TE with Python Discrete implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
+    "PythonGaussianTE": "Estimate TE with Python Gaussian implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
+    "PythonKraskovCMI": "Estimate CMI with Python Kraskov implementation.\n Calculate the CMI between two variables given the third.",
+    "PythonDiscreteCMI": "Estimate CMI with Python Discrete implementation.\n Calculate the CMI between two variables given the third.",
+    "PythonGaussianCMI": "Estimate CMI with Python Gaussian implementation.\n Calculate the CMI between two variables given the third.",
+    "PythonBayesianDiscreteCMI": "Estimate CMI with Python Bayesian Discrete implementation.\n Calculate the CMI between two variables given the third.",
+    "PythonKraskovAIS": "Estimate AIS with Python Kraskov implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
+    "PythonDiscreteAIS": "Estimate AIS with Python Discrete implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
+    "PythonGaussianAIS": "Estimate AIS with Python Gaussian implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
+    "PythonKraskovCTE": "Estimate CTE with Python Kraskov implementation.\n Calculate the CTE between two variables given the third.",
+    "PythonGaussianCTE": "Estimate CTE with Python Gaussian implementation.\n Calculate the CTE between two variables given the third.",
+    "JidtKraskovCTE": "Estimate CTE with JIDT's Kraskov implementation.\n Calculate the CTE between two variables given the third.",
+    "JidtGaussianCTE": "Estimate CTE with JIDT's Gaussian implementation.\n Calculate the CTE between two variables given the third.",
+
+    
     "JidtKraskovMI": "Estimate MI with JIDT's Kraskov implementation.\n Calculate the MI between two variables.",
     "JidtDiscreteMI": "Estimate MI with JIDT's discrete-variable implementation.\n Calculate the MI between two variables.",
     "JidtGaussianMI": "Estimate MI with JIDT's Gaussian implementation.\n Calculate the MI between two variables.",
@@ -159,7 +209,6 @@ estimator_tooltips = {
     "JidtGaussianCMI": "Calculate CMI with JIDT's Gaussian implementation.\n Computes the differential CMI of two multivariate sets of observations, conditioned on another, assuming that the probability distribution function for these observations is a multivariate Gaussian distribution.",
     "OpenCLKraskovCMI": "Estimate CMI with OpenCL Kraskov implementation.\n Calculate the CMI between two variables given the third.",
     "CudaKraskovCMI": "Estimate CMI with Cuda Kraskov implementation.\n Calculate the CMI between two variables given the third.",
-    "PythonKraskovCMI": "Estimate CMI with Kraskov (1) implementation.\n Calculate the CMI between two variables given the third.",
     "JidtKraskovAIS": "Estimate AIS with JIDT's Kraskov implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
     "JidtDiscreteAIS": "Estimate AIS with JIDT's discrete-variable implementation.\n Calculate the AIS for some processes using JIDT's implementation of the discrtete estimator. AIS is defined as the mutual information between the processes' past state and current value.",
     "JidtGaussianAIS": "Estimate AIS with JIDT's Gaussian implementation.\n Calculate AIS for some processes using JIDT's implementation of the Gaussian estimator. AIS is defined as the mutual information between the processes' past state and current value.",
@@ -184,11 +233,15 @@ gen_att = "ATTENTION: In case of 'list' or 'list of lists': \nDO NOT the enter o
 
 # define parameter tooltips
 parameter_tooltips =  {
+
     "history_target": "[int] number of samples in the target's past used as embedding",
     "history_source": "[int] number of samples in the source's past used as embedding (default = same as the target history)",
+    "history_conditional": "[int] number of samples in the conditional's past used as embedding (default = same as the target history)",
     "tau_source": "[int] [optional] source's embedding delay (default=1)",
     "tau_target": "[int] [optional] target's embedding delay (default=1)",
+    "tau_conditional": "[int] [optional] conditional's embedding delay (default=1)",
     "source_target_delay": "[int] [optional] information transfer delay between source and target (default=1)",
+    "conditional_target_delay": "[int] [optional] information transfer delay between conditional and target (default=1)",
     "algorithm_num": "[int] [optional] which Kraskov algorithm (1 or 2) to use (default=1)",
     "local_values": "[optional] [bool] return local TE instead of average TE (default=False)",
     "debug": "[bool] [optional] return debug information when calling JIDT (default=False)",
@@ -290,6 +343,173 @@ parameter_tooltips =  {
 
 # define parameters and defaults for each estimator
 parameters = {}
+
+parameters["PythonKraskovMI"] = {
+    "kraskov_k" : 4,
+    "theiler_t": 0,
+    "lag_mi" : 0,
+    "knn_finder": "scipy_kdtree",
+    "noise_level": 1e-8,
+    "rng_seed": None,
+    "normalise": False,
+    "local_values": False,
+    "num_threads": "USE_ALL",
+    "base": np.e,
+}
+parameters["PythonKraskovCMI"] = {
+    "kraskov_k" : 4,
+    "theiler_t": 0,
+    "knn_finder": "scipy_kdtree",
+    "noise_level": 1e-8,
+    "rng_seed": None,
+    "normalise": False,
+    "local_values": False,
+    "num_threads": "USE_ALL",
+    "base": np.e,
+}   
+parameters["PythonKraskovAIS"] = {
+    "history": "",
+    "tau": 1,
+    "kraskov_k" : 4,
+    "theiler_t": 0,
+    "knn_finder": "scipy_kdtree",
+    "noise_level": 1e-8,
+    "rng_seed": None,
+    "normalise": False,
+    "local_values": False,
+    "num_threads": "USE_ALL",
+    "base": np.e,
+}   
+
+parameters["PythonKraskovTE"] = {
+    "kraskov_k" : 4,
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "theiler_t": 0,
+    "knn_finder": "scipy_kdtree",
+    "num_threads": "USE_ALL",
+    "local_values": False,
+    "debug": False
+}
+parameters["PythonKraskovCTE"] = {
+    "kraskov_k" : 4,
+    "history_target" : "",
+    "history_source" : "",
+    "history_conditional" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "tau_conditional" : 1,
+    "source_target_delay" : 1,
+    "conditional_target_delay" : 1,
+    "theiler_t": 0,
+    "knn_finder": "scipy_kdtree",
+    "num_threads": "USE_ALL",
+    "local_values": False,
+}
+parameters["PythonGaussianMI"] = {
+    "lag_mi" : 1,
+    "local_values": False,
+}
+parameters["PythonGaussianCMI"] = {
+    "local_values": False,
+}
+parameters["PythonGaussianAIS"] = {
+    "history": "",
+    "tau": 1,
+    "local_values": False,
+}
+parameters["PythonGaussianTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "local_values": False,
+}
+parameters["PythonGaussianCTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "history_conditional" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "tau_conditional" : 1,
+    "source_target_delay" : 1,
+    "conditional_target_delay" : 1,
+    "local_values": False,
+}
+parameters["PythonDiscreteMI"] = {
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "lag_mi": 0,
+    "local_values": False,
+}
+parameters["PythonDiscreteCMI"] = {
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "alphc": 2,
+    "local_values": False,
+}
+parameters["PythonDiscreteAIS"] = {
+    "history": "",
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph": 2,
+    "debug": False,
+    "local_values": False,
+}
+parameters["PythonDiscreteTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "local_values": False,
+}
+
+parameters["JidtKraskovMI"] = {
+    "kraskov_k" : 4,
+    "theiler_t": 1,
+    "lag_mi" : 0,
+    "noise_level": 1e-8,
+    "algorithm_num": 1,
+    "normalise": False,
+    "local_values": False,
+    "debug": False,
+    "num_threads": 0,
+}
+parameters["JidtKraskovCMI"] = {
+    "kraskov_k" : 4,
+    "theiler_t": 1,
+    "noise_level": 1e-8,
+    "algorithm_num": 1,
+    "normalise": False,
+    "local_values": False,
+    "debug": False,
+    "num_threads": "USE_ALL",
+}
+parameters["JidtKraskovAIS"] = {
+    "history": "",
+    "kraskov_k": 4,
+    "tau": 1,
+    "theiler_t": 1,
+    "noise_level": 1e-8,
+    "normalise": False,
+    "debug": False,
+    "local_values": False,
+    "num_threads": "USE_ALL",
+    "algorithm_num": 1,
+}
 parameters["JidtKraskovTE"] = {
     "history_target" : "",
     "history_source" : "",
@@ -299,6 +519,85 @@ parameters["JidtKraskovTE"] = {
     "algorithm_num": 1,
     "local_values": False,
     "debug": False
+}
+parameters["JidtKraskovCTE"] = {
+    "kraskov_k" : 4,
+    "history_target" : "",
+    "history_source" : "",
+    "history_conditional" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "tau_conditional" : 1,
+    "source_target_delay" : 1,
+    "conditional_target_delay" : 1,
+    "theiler_t": 0,
+    "knn_finder": "scipy_kdtree",
+    "local_values": False,
+    "debug": False
+}
+parameters["JidtGaussianMI"] = {
+    "lag_mi" : 1,
+    "local_values": False,
+    "debug": False
+}
+parameters["JidtGaussianCMI"] = {
+    "local_values": False,
+    "debug": False
+}
+parameters["JidtGaussianAIS"] = {
+    "history": "",
+    "tau": 1,
+    "local_values": False,
+    "debug": False,
+}
+parameters["JidtGaussianTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "local_values": False,
+    "debug": False
+}
+
+parameters["JidtGaussianCTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "history_conditional" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "tau_conditional" : 1,
+    "source_target_delay" : 1,
+    "conditional_target_delay" : 1,
+    "local_values": False,
+}
+
+
+parameters["JidtDiscreteMI"] = {
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "lag_mi": 0,
+    "local_values": False,
+    "debug": False
+}
+parameters["JidtDiscreteCMI"] = {
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "alphc": 2,
+    "local_values": False,
+    "debug": False
+}
+parameters["JidtDiscreteAIS"] = {
+    "history": "",
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph": 2,
+    "debug": False,
+    "local_values": False,
 }
 parameters["JidtDiscreteTE"] = {
     "history_target" : "",
@@ -313,40 +612,7 @@ parameters["JidtDiscreteTE"] = {
     "local_values": False,
     "debug": False
 }
-parameters["JidtGaussianTE"] = {
-    "history_target" : "",
-    "history_source" : "",
-    "tau_source" : 1,
-    "tau_target" : 1,
-    "source_target_delay" : 1,
-    "local_values": False,
-    "debug": False
-}
-parameters["JidtKraskovMI"] = {
-    "kraskov_k" : 4,
-    "theiler_t": 1,
-    "lag_mi" : 0,
-    "noise_level": 1e-8,
-    "algorithm_num": 1,
-    "normalise": False,
-    "local_values": False,
-    "debug": False,
-    "num_threads": 0,
-}
-parameters["JidtDiscreteMI"] = {
-    "discretise_method": "none",
-    "n_discrete_bins": 2,
-    "alph1": 2,
-    "alph2": 2,
-    "lag_mi": 0,
-    "local_values": False,
-    "debug": False
-}
-parameters["JidtGaussianMI"] = {
-    "lag_mi" : 1,
-    "local_values": False,
-    "debug": False
-}
+
 parameters["OpenCLKraskovMI"] = {
     "gpuid": 0,
     "kraskov_k" : 4,
@@ -369,31 +635,6 @@ parameters["CudaKraskovMI"] = {
     "return_counts": False,
     "debug": False,
 }
-parameters["JidtKraskovCMI"] = {
-    "kraskov_k" : 4,
-    "theiler_t": 1,
-    "lag_mi" : 0,
-    "noise_level": 1e-8,
-    "algorithm_num": 1,
-    "normalise": False,
-    "local_values": False,
-    "debug": False,
-    "num_threads": "USE_ALL",
-}
-parameters["JidtDiscreteCMI"] = {
-    "discretise_method": "none",
-    "n_discrete_bins": 2,
-    "alph1": 2,
-    "alph2": 2,
-    "alphc": 2,
-    "local_values": False,
-    "debug": False
-}
-parameters["JidtGaussianCMI"] = {
-    "lag_mi" : 1,
-    "local_values": False,
-    "debug": False
-}
 parameters["OpenCLKraskovCMI"] = {
     "gpuid": 0,
     "kraskov_k" : 4,
@@ -414,17 +655,6 @@ parameters["CudaKraskovCMI"] = {
     "normalise": False,
     "return_counts": False,
     "debug": False,
-}
-parameters["PythonKraskovCMI"] = {
-    "kraskov_k" : 4,
-    "base": np.e,
-    "knn_finder": "scipy_kdtree",
-    "noise_level": 1e-8,
-    "normalise": False,
-    "rng_seed": None,
-    "local_values": False,
-    "debug": False,
-    "num_threads": "USE_ALL",
 }
 parameters["BivariateTE"] = {
     "max_lag_sources" : "",
@@ -489,32 +719,6 @@ parameters["permutations"] = {
     "n_perm_min_stat": 200,
     "n_perm_omnibus": 500,
     "n_perm_max_seq": 500,
-}
-parameters["JidtKraskovAIS"] = {
-    "history": "",
-    "kraskov_k": 4,
-    "tau": 1,
-    "theiler_t": 1,
-    "noise_level": 1e-8,
-    "normalise": False,
-    "debug": False,
-    "local_values": False,
-    "num_threads": "USE_ALL",
-    "algorithm_num": 1,
-}
-parameters["JidtDiscreteAIS"] = {
-    "history": "",
-    "discretise_method": "none",
-    "n_discrete_bins": 2,
-    "alph": 2,
-    "debug": False,
-    "local_values": False,
-}
-parameters["JidtGaussianAIS"] = {
-    "history": "",
-    "tau": 1,
-    "debug": False,
-    "local_values": False,
 }
 parameters["ActiveInformationStorage"] = {
     "max_lag": "",
@@ -2456,7 +2660,7 @@ class MainWindow(QMainWindow):
         te_button.pressed.connect(self.te_button)
 
         # cmi button
-        cmi_button = QPushButton("Conditional Mutual Information")
+        cmi_button = QPushButton("Conditional Mutual Information (CMI)")
         cmi_button.setFixedHeight(40)
         cmi_button.setStyleSheet(f"background-color: {lightblue};")
         cmi_button.pressed.connect(self.cmi_button)
@@ -2474,13 +2678,13 @@ class MainWindow(QMainWindow):
         net_button.pressed.connect(self.net_button)
 
         # ais button
-        ais_button = QPushButton("Active Information Storage")
+        ais_button = QPushButton("Active Information Storage (AIS)")
         ais_button.setFixedHeight(40)
         ais_button.setStyleSheet(f"background-color: {lightblue};")
         ais_button.pressed.connect(self.ais_button)
 
         # pid button
-        pid_button = QPushButton("Partial Information Decomposition")
+        pid_button = QPushButton("Partial Information Decomposition (PID)")
         pid_button.setFixedHeight(40)
         pid_button.setStyleSheet(f"background-color: {lightblue};")
         pid_button.pressed.connect(self.pid_button)
