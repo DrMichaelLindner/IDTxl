@@ -172,7 +172,7 @@ class PythonKraskov(PythonEstimator):
         settings.setdefault('noise_level', 1e-8)
         settings.setdefault('num_threads', 'USE_ALL')
         settings.setdefault('knn_finder', 'scipy_ckdtree')
-        settings.setdefault('lag_mi', 0)
+        #settings.setdefault('lag_mi', 0)
         settings.setdefault('local_values', False)
         settings.setdefault('algorithm_num', 1)
         
@@ -186,7 +186,10 @@ class PythonKraskov(PythonEstimator):
             if settings['knn_finder'] == 'numba_brute':
                 raise ValueError('Theiler_t correction is not supproted for knn_finder numba_brute.')
 
-        
+        if self.settings['noise_level'] > 0:
+            rng_seed = settings.get("rng_seed", None)
+            self._rng = np.random.default_rng(rng_seed)
+
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
         
         # Set number of threads
@@ -317,12 +320,12 @@ class PythonKraskovMI(PythonKraskov):
 
             - kraskov_k : int [optional] - no. nearest neighbours for KNN
               search (default=4)
-            - base : float - base of returned values (default=np=e)
+            - base : float - base of returned values (default=np.e)
+            - theiler_t : int [optional] - no. next temporal neighbours ignored
+              in KNN and range searches (default=0)
             - normalise : bool [optional] - z-standardise data (default=False)
             - noise_level : float [optional] - random noise added to the data
               (default=1e-8)
-            - theiler_t : int [optional] - no. next temporal neighbours ignored
-              in KNN and range searches (default=0)
             - rng_seed : int | None [optional] - random seed if noise level > 0
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
@@ -338,8 +341,6 @@ class PythonKraskovMI(PythonKraskov):
             ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
-            
-
     """
 
     def __init__(self, settings=None):
@@ -352,12 +353,7 @@ class PythonKraskovMI(PythonKraskov):
         if self.settings.get('algorithm_num', 1) != 1:
             raise ValueError('This estimator currently does not support algorithm_num arguments.')
         
-
-        if self.settings['noise_level'] > 0:
-            rng_seed = settings.get("rng_seed", None)
-            self._rng = np.random.default_rng(rng_seed)
-        
-    
+            
     def calculateLocalMI(self, var1, var2):
         """calculate lokal Kraskov MI"""
 
@@ -480,7 +476,7 @@ class PythonKraskovCMI(PythonKraskov):
 
             - kraskov_k : int [optional] - no. nearest neighbours for KNN
               search (default=4)
-            - base : float - base of returned values (default=np=e)
+            - base : float - base of returned values (default=np.e)
             - normalise : bool [optional] - z-standardise data (default=False)
             - noise_level : float [optional] - random noise added to the data
               (default=1e-8)
@@ -510,10 +506,6 @@ class PythonKraskovCMI(PythonKraskov):
         if self.settings.get('algorithm_num', 1) != 1:
             raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
-        if self.settings['noise_level'] > 0:
-            rng_seed = settings.get("rng_seed", None)
-            self._rng = np.random.default_rng(rng_seed)
-        
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
         
         # Set number of threads
@@ -689,11 +681,13 @@ class PythonKraskovAIS(PythonKraskov):
             - tau : int [optional] - the processes' embedding delay (default=1)
             - kraskov_k : int [optional] - no. nearest neighbours for KNN
               search (default=4)
+            - base : float - base of returned values (default=np.e)
             - normalise : bool [optional] - z-standardise data (default=False)
             - theiler_t : int [optional] - no. next temporal neighbours ignored
               in KNN and range searches (default=0)
             - noise_level : float [optional] - random noise added to the data
               (default=1e-8)
+            - rng_seed : int | None [optional] - random seed if noise level > 0
             - num_threads : int | str [optional] - number of threads used for
               estimation (default='USE_ALL', note that this uses *all*
               available threads on the current machine)
@@ -745,6 +739,17 @@ class PythonKraskovAIS(PythonKraskov):
 
         # Check if number of points is sufficient for estimation.
         self._check_number_of_points(process.shape[0])
+
+        # Normalise data
+        if self.settings['normalise']:
+            var1 = self._normalise_data(var1)
+            var2 = self._normalise_data(var2)
+
+        # Add noise to avoid duplicate points
+        # Do not add noise inplace, because it would change the input data
+        if self.settings['noise_level'] > 0:
+            var1 = var1 + self._rng.normal(0, self.settings['noise_level'], var1.shape)
+            var2 = var2 + self._rng.normal(0, self.settings['noise_level'], var2.shape)
 
         startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
 
@@ -824,10 +829,6 @@ class PythonKraskovTE(PythonKraskov):
         # Check for currently unsupported settings
         if self.settings.get('algorithm_num', 1) != 1:
             raise ValueError('This estimator currently does not support algorithm_num argument.')
-
-        if self.settings['noise_level'] > 0:
-            rng_seed = settings.get("rng_seed", None)
-            self._rng = np.random.default_rng(rng_seed)
         
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
         
@@ -996,11 +997,13 @@ class PythonKraskovCTE(PythonKraskov):
               between source and target (default=1)
             - conditional_target_delay : int [optional] - information transfer delay
               between conditional and target (default=1)
-            - local_values : bool [optional] - return local TE instead of
-              average TE (default=False)
+            - theiler_t : int [optional] - no. next temporal neighbours ignored
+              in KNN and range searches (default=0)
             - knn_finder : str [optional] - knn algorithm to use, can be
               'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
               'sklearn_balltree'
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
             
             ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
@@ -2503,8 +2506,6 @@ class PythonDiscreteCMI(PythonDiscrete):
         settings : dict [optional]
             sets estimation parameters:
 
-            - local_values : bool [optional] - return local TE instead of
-              average TE (default=False)
             - discretise_method : str [optional] - if and how to discretise
               incoming continuous data, can be 'max_ent' for maximum entropy
               binning, 'equal' for equal size bins, and or 'none' if no binning is
@@ -2519,6 +2520,8 @@ class PythonDiscreteCMI(PythonDiscrete):
               (default=2, or the value set for n_discrete_bins)
             - alphc : int [optional] - number of discrete bins/levels for
               conditional (default=2, or the value set for n_discrete_bins)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
     """
 
     def __init__(self, settings=None):
@@ -3082,6 +3085,10 @@ class PythonBayesian(PythonEstimator):
         settings.setdefault('local_values', False)
         super().__init__(settings)
 
+    ################################################################# TODO
+    def is_analytic_null_estimator(self):
+        return False
+
 
 class PythonBayesianDiscreteMI(PythonBayesian, PythonDiscrete):
     """Calculate MI with Python Baysian implementation using dirichlet prior method 
@@ -3098,7 +3105,7 @@ class PythonBayesianDiscreteMI(PythonBayesian, PythonDiscrete):
             - approach : string [optional] - 'analytical' for using fast dirichlet prior 
               method or 'numerical' for using the posterior Monte Carlo method
               if 'numerical' is used additionally
-              - nsamples : int [optional] - numper of Monte Carlo repetitions (default=4000)
+              - nsamples : int [optional] - number of Monte Carlo repetitions (default=4000)
             - dprior : float [optional] - Dirichlet prior strength (defaults: 'analytical': Laplace smoothing 
               dprior=1.0 'numerical': dprior=0.5).
             - discretise_method : str [optional] - if and how to discretise
@@ -3345,7 +3352,7 @@ class PythonBayesianDiscreteCMI(PythonBayesian, PythonDiscrete):
             - approach : string [optional] - 'analytical' (default) for using fast dirichlet prior 
               method or 'numerical' for using the posterior Monte Carlo method
               if 'numerical' is used additionally
-              - nsamples : int [optional] - numper of Monte Carlo repetitions (default=4000)
+              - nsamples : int [optional] - number of Monte Carlo repetitions (default=4000)
               - return_full_res : bool [optional] - If True an additional result output
                 dictionary will be created including (default = False): 
                     - "posterior_samples": local cmi values
