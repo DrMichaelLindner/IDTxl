@@ -14,7 +14,6 @@ import math
 import scipy as sp
 from scipy.stats import multivariate_normal, chi2, norm, kstest
 from scipy.spatial import distance_matrix
-from scipy.fft import fft, fftfreq
 from scipy.linalg import cholesky, solve_triangular, cho_solve
 
 from idtxl.measurement_distributions_python import EmpiricalMeasurementDistribution, AnalyticalMeasurementDistribution, ChiSquareMeasurementDistribution
@@ -23,6 +22,9 @@ import multiprocessing
 import random
 
 from typing import Tuple, Optional
+
+from idtxl.estimators_jidt import JidtKraskovMI, JidtKraskovCMI, JidtKraskovAIS, JidtKraskovTE, JidtKraskovCTE
+
 
 
 class PythonEstimator(Estimator):
@@ -71,9 +73,6 @@ class PythonEstimator(Estimator):
                 embedded_vector[t - startFirstPoint, i] = ts[t - i]
 
         return embedded_vector
-
-    
-    ################################################################ TODO e.g. kraskov and theiler str to int
 
     def _set_te_defaults(self, settings):
         """Set defaults for transfer entropy estimation."""
@@ -172,13 +171,11 @@ class PythonKraskov(PythonEstimator):
         settings.setdefault('noise_level', 1e-8)
         settings.setdefault('num_threads', 'USE_ALL')
         settings.setdefault('knn_finder', 'scipy_ckdtree')
-        #settings.setdefault('lag_mi', 0)
         settings.setdefault('local_values', False)
         settings.setdefault('algorithm_num', 1)
         
         super().__init__(settings)
 
-        ############################################################################# TODO check
         self.settings['kraskov_k'] = int(self.settings['kraskov_k'])
         self.settings['theiler_t'] = int(self.settings['theiler_t'])
 
@@ -202,105 +199,54 @@ class PythonKraskov(PythonEstimator):
         self._knn_finder_name = settings.get("knn_finder", "scipy_kdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
 
-
-    def _compute_epsilon(self, data: np.ndarray, k: int, return_index=False):
+    def _compute_epsilon(self, data: np.ndarray, k: int):
         """Compute the distance to the kth nearest neighbor for each point in x."""
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.find_kth_neighbor(k, return_index)
+        #return knn_finder.find_kth_neighbor(k, self.settings['theiler_t'])
+        return knn_finder.find_all_dist_to_kth_neighbor(k)
 
-    def _compute_all_epsilon_idx(self, data: np.ndarray, k: int, return_index=False):
-        """Compute the distance to the kth nearest neighbor for each point in x."""
-        #self._knn_finder_settings['metric'] = 'euclidean'
-        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.find_all_neighbors(k, return_index)
-    
-    def _compute_n(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
+    def _compute_n(self, data: np.ndarray, r: np.ndarray):
         """Count the number of neighbors within a given radius r for each point in x.
         Returns the number of neighbors plus one, because the point itself is included in the data.
         """
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors(r, self.settings['theiler_t'], alg)
+        #return knn_finder.count_all_neighbors(r, self.settings['theiler_t'], alg)
+        return knn_finder.count_all_neighbors(r)
     
-    def _compute_n_within(self, data: np.ndarray, r: np.ndarray, theiler_t=0, alg=1):
+    def _compute_n_within(self, data: np.ndarray, r: np.ndarray):
         """Count the number of neighbors strictly within a given radius <= r for each point in x.
         Returns the number of neighbors plus one, because the point itself is included in the data.
         """
         knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors_within(r, self.settings['theiler_t'], alg)
-    
-    def _compute_n_theiler(self, data: np.ndarray, r: np.ndarray):
-        """Count the number of neighbors strictly within a given radius r for each point in x.
-        Returns the number of neighbors plus one, because the point itself is included in the data.
-        """
-        knn_finder = self._knn_finder_class(data, **self._knn_finder_settings)
-        return knn_finder.count_all_neighbors_theiler(r, self.settings['theiler_t'])
-    
-        
+        #return knn_finder.count_all_neighbors_within(r, self.settings['theiler_t'], alg)
+        return knn_finder.count_all_neighbors_within(r)
+            
     def getCountsMI(self, var1, var2):
         """get all Counts for Kraskov MI calculation"""
             
-        if self.settings['algorithm_num'] == 1: 
-            
-            # Compute distances to kth nearest neighbors in the joint space
-            epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            )
-        
-            # Count neighbors stricly within eps in marginal spaces X, Y 
-            n_c_var1 = self._compute_n_within(var1, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c_var2 = self._compute_n_within(var2, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-        
-        else:
-            # Compute indices to all neighbors in the joint space
-            #idxs = self._compute_all_epsilon_idx(
-            #    np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            #)
+        # Compute distances to kth nearest neighbors in the joint space
+        epsilon = self._compute_epsilon(
+            np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
+        )   
 
-            # Count neighbors within eps in marginal spaces X, Y 
-            #n_c_var1 = self._compute_n(var1, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
-            #n_c_var2 = self._compute_n(var2, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
-            
-            # Compute distances to kth nearest neighbors in the joint space
-            epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2), axis=1), self.settings['kraskov_k']
-            )
+        # Count neighbors stricly within eps in marginal spaces X, Y 
+        n_c_var1 = self._compute_n_within(var1, epsilon)
+        n_c_var2 = self._compute_n_within(var2, epsilon)
         
-            # Count neighbors within eps in marginal spaces X, Y 
-            n_c_var1 = self._compute_n(var1, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c_var2 = self._compute_n(var2, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            
-
         return n_c_var1, n_c_var2
 
     def getCountsCMI(self, var1, var2, conditional):
         """get digamma values for CMI estimation"""
         
-        if self.settings['algorithm_num'] == 1: 
-            # Compute distances to kth nearest neighbors in the joint space
-            epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-            )
-            # Count neighbors strictly within eps in marginal spaces X, Y and Z    
-            n_c_var1 = self._compute_n_within(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c_var2 = self._compute_n_within(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c = self._compute_n_within(conditional, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-        else:
-            ## Compute distances to kth nearest neighbors in the joint space
-            #idxs = self._compute_all_epsilon_idx(
-            #    np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-            #)
-            #n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
-            #n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
-            #n_c = self._compute_n(conditional, idxs[:, self.settings['kraskov_k']], self.settings['theiler_t'], self.settings['algorithm_num'])
+        # Compute distances to kth nearest neighbors in the joint space
+        epsilon = self._compute_epsilon(
+            np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k'])
 
-            # Compute distances to kth nearest neighbors in the joint space
-            epsilon = self._compute_epsilon(
-                np.concatenate((var1, var2, conditional), axis=1), self.settings['kraskov_k']
-            )
-            # Count neighbors within eps in marginal spaces X, Y and Z    
-            n_c_var1 = self._compute_n(np.concatenate((var1, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c_var2 = self._compute_n(np.concatenate((var2, conditional), axis=1), epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
-            n_c = self._compute_n(conditional, epsilon, self.settings['theiler_t'], self.settings['algorithm_num'])
+        # Count neighbors strictly within eps in marginal spaces X, Y and Z    
+        n_c_var1 = self._compute_n_within(np.concatenate((var1, conditional), axis=1), epsilon)
+        n_c_var2 = self._compute_n_within(np.concatenate((var2, conditional), axis=1), epsilon)
+        n_c = self._compute_n_within(conditional, epsilon)
+        
         return n_c_var1, n_c_var2, n_c
 
     def is_analytic_null_estimator(self):
@@ -337,50 +283,27 @@ class PythonKraskovMI(PythonKraskov):
               'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
-
-            ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
-              to use (default=1)
+              to use (default=1)            
     """
 
     def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
+        settings.setdefault('lag_mi', 0)
         super().__init__(settings)
-
-        ################################################################################### TODO
-        # Check for currently unsupported settings
-        if self.settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num arguments.')
         
-            
     def calculateLocalMI(self, var1, var2):
         """calculate lokal Kraskov MI"""
 
         n_c_var1, n_c_var2 = self.getCountsMI(var1, var2)
 
-        if self.settings['algorithm_num'] == 1:
-            mi = (digamma(self.settings['kraskov_k']) 
-                    + digamma(len(var1))
-                    - digamma(n_c_var1 + 1)
-                    - digamma(n_c_var2 + 1)
-                ) / np.log(self.settings['base'])
-        else:
-            ####################################################################### TODO KSG 2
-            
-            mi = (digamma(self.settings['kraskov_k']) 
-                    + digamma(len(var1))
-                    - digamma(n_c_var1)
-                    - digamma(n_c_var2)
-                ) / np.log(self.settings['base'])
-
-            #mi = (digamma(self.settings['kraskov_k']) 
-            #        - 1.0 / self.settings['kraskov_k']
-            #        + digamma(len(var1))
-            #        - digamma(n_c_var1)
-            #        - digamma(n_c_var2)
-            #    ) / np.log(self.settings['base'])
-
+        mi = (digamma(self.settings['kraskov_k']) 
+                + digamma(len(var1))
+                - digamma(n_c_var1 + 1)
+                - digamma(n_c_var2 + 1)
+            ) / np.log(self.settings['base'])
+    
         return mi
     
     def calculateAverageMI(self, var1, var2):
@@ -388,26 +311,11 @@ class PythonKraskovMI(PythonKraskov):
 
         n_c_var1, n_c_var2 = self.getCountsMI(var1, var2)
 
-        if self.settings['algorithm_num'] == 1:
-            mi = (digamma(self.settings['kraskov_k']) 
-                    + digamma(len(var1))
-                    - np.mean(digamma(n_c_var1 + 1) + digamma(n_c_var2 + 1))
-                ) / np.log(self.settings['base'])
-        else:
-            ################################################################### TODO KSG 2
-            
-            
-            mi = (digamma(self.settings['kraskov_k']) 
-                    + digamma(len(var1))
-                    - np.mean(digamma(n_c_var1) + digamma(n_c_var2))
-                ) / np.log(self.settings['base'])
-            
-            #mi = (digamma(self.settings['kraskov_k']) 
-            #        - 1.0 / self.settings['kraskov_k']
-            #        + digamma(len(var1))
-            #        - np.mean( digamma(n_c_var1) + digamma(n_c_var2))
-            #    ) / np.log(self.settings['base'])
-            
+        mi = (digamma(self.settings['kraskov_k']) 
+                + digamma(len(var1))
+                - np.mean(digamma(n_c_var1 + 1) + digamma(n_c_var2 + 1))
+            ) / np.log(self.settings['base'])
+
         return mi
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray):
@@ -427,6 +335,13 @@ class PythonKraskovMI(PythonKraskov):
                 samples if 'local_values'=True
         """
 
+        # Pass to JidtKraskovMI if theiler_t != 0 or KSG2 is used
+        if self.settings['algorithm_num'] != 1 or self.settings['theiler_t'] > 0: 
+            print("PythonKraskovMI does not support algorithm_num=2 and theiler_t>0.")
+            print("The data is passed to JidtKraskovMI.")
+            est = JidtKraskovMI(self.settings)
+            return est.estimate(var1, var2)
+     
         # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
@@ -458,6 +373,8 @@ class PythonKraskovMI(PythonKraskov):
         if self.settings["local_values"]:
             return self.calculateLocalMI(var1, var2)
         else:
+
+            #return np.mean(lmi)
             return self.calculateAverageMI(var1, var2)
 
 
@@ -491,20 +408,14 @@ class PythonKraskovCMI(PythonKraskov):
               'sklearn_balltree'
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
-
-            ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
-              to use (default=1)
+              to use (default=1)            
     """
 
     def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         super().__init__(settings)
-
-        # Check for currently unsupported settings
-        if self.settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
         
@@ -522,69 +433,26 @@ class PythonKraskovCMI(PythonKraskov):
         """calculate local Kraskov CMI"""
         n_c_var1, n_c_var2, n_c = self.getCountsCMI(var1, var2, conditional)
             
-        if self.settings['algorithm_num'] == 1:
-
-            cmi =(digamma(self.settings['kraskov_k'])
-                + digamma(n_c + 1)
-                - digamma(n_c_var1 + 1)
-                - digamma(n_c_var2 + 1)
-                ) / np.log(self.settings['base'])     
-
-        else:
-            ################################################## TODO KSG 2
-
-            cmi = (
-                digamma(self.settings['kraskov_k'])
-                + digamma(n_c + 1)
-                - digamma(n_c_var1 + 1)
-                - digamma(n_c_var2 + 1)
-                ) / np.log(self.settings['base'])
-
-            #cmi = (digamma(self.settings['kraskov_k'])
-            #    - (1.0/self.settings['kraskov_k'])
-            #    + digamma(n_c)
-            #    - digamma(n_c_var1)
-            #    - digamma(n_c_var2)
-            #    ) / np.log(self.settings['base'])
+        cmi =(digamma(self.settings['kraskov_k'])
+            + digamma(n_c + 1)
+            - digamma(n_c_var1 + 1)
+            - digamma(n_c_var2 + 1)
+            ) / np.log(self.settings['base'])     
 
         return cmi
     
     def calculateAverageCMI(self, var1, var2, conditional):
         """calculate Average Kraskov CMI"""
-        
         n_c_var1, n_c_var2, n_c = self.getCountsCMI(var1, var2, conditional)
         
-        if self.settings['algorithm_num'] == 1:
-            cmi = (
-                digamma(self.settings['kraskov_k'])
-                + np.mean(digamma(n_c + 1))
-                - np.mean(digamma(n_c_var1 + 1))
-                - np.mean(digamma(n_c_var2 + 1))
-                ) / np.log(self.settings['base'])
-        else:
-            ################################################## TODO KSG 2
-
-
-            cmi = (
-                digamma(self.settings['kraskov_k'])
-                + np.mean(digamma(n_c))
-                - np.mean(digamma(n_c_var1))
-                - np.mean(digamma(n_c_var2))
-                ) / np.log(self.settings['base'])
-            
-            #n_c  = np.maximum(n_c, 1)
-            #n_c_var1 = np.maximum(n_c_var1, 1)
-            #n_c_var2 = np.maximum(n_c_var2, 1)
-            #cmi = (
-            #    digamma(self.settings['kraskov_k'])
-            #    - (1.0/self.settings['kraskov_k'])
-            #    + np.mean(digamma(n_c))
-            #    - np.mean(digamma(n_c_var1))
-            #    - np.mean(digamma(n_c_var2))
-            #    ) / np.log(self.settings['base'])
-            
-        return cmi
+        cmi = (
+            digamma(self.settings['kraskov_k'])
+            + np.mean(digamma(n_c + 1))
+            - np.mean(digamma(n_c_var1 + 1))
+            - np.mean(digamma(n_c_var2 + 1))
+            ) / np.log(self.settings['base'])
     
+        return cmi    
 
     def estimate(self, var1: np.ndarray, var2: np.ndarray, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
@@ -615,6 +483,13 @@ class PythonKraskovCMI(PythonKraskov):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
+        # Pass to JidtKraskovCMI if theiler_t != 0 or KSG2 is used
+        if self.settings['algorithm_num'] != 1 or self.settings['theiler_t'] > 0: 
+            print("PythonKraskovCMI does not support algorithm_num=2 and theiler_t>0.")
+            print("The data is passed to JidtKraskovCMI.")
+            est = JidtKraskovCMI(self.settings)
+            return est.estimate(var1, var2)
+     
         # Check the input data
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
@@ -696,12 +571,8 @@ class PythonKraskovAIS(PythonKraskov):
             - knn_finder : str [optional] - knn algorithm to use, can be
               'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
               'sklearn_balltree'
-            
-            ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
-              to use (default=1)
-            
-            
+              to use (default=1)            
     """
     def __init__(self, settings):
         settings = self._check_settings(settings)
@@ -717,9 +588,6 @@ class PythonKraskovAIS(PythonKraskov):
         
         super().__init__(settings)
         
-        if self.settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num arguments.')
-
     def estimate(self, process):
         """Estimate active information storage.
 
@@ -734,6 +602,13 @@ class PythonKraskovAIS(PythonKraskov):
                 average AIS over all samples or local AIS for individual
                 samples if 'local_values'=True
         """
+        # Pass to JidtKraskovAIS if theiler_t != 0 or KSG2 is used
+        if self.settings['algorithm_num'] != 1 or self.settings['theiler_t'] > 0: 
+            print("PythonKraskovAIS does not support algorithm_num=2 and theiler_t>0.")
+            print("The data is passed to JidtKraskovAIS.")
+            est = JidtKraskovAIS(self.settings)
+            return est.estimate(process)
+     
         # Check the input data
         process = self._ensure_one_dim_input(process)
 
@@ -742,14 +617,12 @@ class PythonKraskovAIS(PythonKraskov):
 
         # Normalise data
         if self.settings['normalise']:
-            var1 = self._normalise_data(var1)
-            var2 = self._normalise_data(var2)
+            process = self._normalise_data(process)
 
         # Add noise to avoid duplicate points
         # Do not add noise inplace, because it would change the input data
         if self.settings['noise_level'] > 0:
-            var1 = var1 + self._rng.normal(0, self.settings['noise_level'], var1.shape)
-            var2 = var2 + self._rng.normal(0, self.settings['noise_level'], var2.shape)
+            process = process + self._rng.normal(0, self.settings['noise_level'], process.shape)
 
         startFirstPoint = (self.settings['history']-1) * self.settings['tau'] 
 
@@ -814,21 +687,14 @@ class PythonKraskovTE(PythonKraskov):
             - knn_finder : str [optional] - knn algorithm to use, can be
               'scipy_ckdtree' (default), 'scipy_kdtree' , 'sklearn_kdtree', or 
               'sklearn_balltree'
-            
-            ###################################################################### TODO 
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
-
     """
     def __init__(self, settings):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         settings = self._set_te_defaults(settings)
         super().__init__(settings)
-
-        # Check for currently unsupported settings
-        if self.settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num argument.')
         
         self._knn_finder_settings = settings.get("knn_finder_settings", {})
         
@@ -859,6 +725,13 @@ class PythonKraskovTE(PythonKraskov):
                 samples if 'local_values'=True
 
         """
+        # Pass to JidtKraskovTE if theiler_t != 0 or KSG2 is used
+        if self.settings['algorithm_num'] != 1 or self.settings['theiler_t'] > 0: 
+            print("PythonKraskovTE does not support algorithm_num=2 and theiler_t>0.")
+            print("The data is passed to JidtKraskovAIS.")
+            est = JidtKraskovTE(self.settings)
+            return est.estimate(source, target)
+     
         # Check the input data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
@@ -917,43 +790,6 @@ class PythonKraskovTE(PythonKraskov):
             te = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, target_past)
             
         return te
-        ######################################################################################################## TODO algorithm 2
-        # algorithm 2
-        """
-        #eps_cor = 1e-14
-        epsi=epsilon+1e-15
-        #n_xy2 = self._compute_n(np.concatenate((target_pastX, source_pastX), axis=1), epsilon-eps_cor)
-        n_xy2 = self._compute_n(np.concatenate((target_pastX, source_pastX), axis=1), epsi)
-        
-        #n_yf2 = self._compute_n(np.concatenate((target_currentX, target_pastX), axis=1), epsilon-eps_cor)
-        n_yf2 = self._compute_n(np.concatenate((target_currentX, target_pastX), axis=1), epsi)
-
-        #n_y2 = self._compute_n(target_pastX, epsilon-eps_cor)
-        n_y2 = self._compute_n(target_pastX, epsi)
-
-        #I2 = digamma(k) + digamma(len(target_pastX)) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) )
-        #I2 = digamma(k) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) )
-        I2 = digamma(k) - digamma(len(target_pastX)) - np.mean( digamma(n_yf2) + digamma(n_y2) - digamma(n_xy2) )
-        
-        print("alg 2: ", I2)
-
-        ## I = digamma(k) + <digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1)>  (some variants)
-        ## We'll follow the commonly used expression:
-        ## I = digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(N)
-        ##print(digamma(k) - (1/k) * sum( digamma(n_xy + 1) + digamma(n_yf + 1) - digamma(n_y + 1) ) + digamma(mn))
-        print(digamma(k) - (1/k) * sum( digamma(n_xy2 + 1) + digamma(n_yf2 + 1) - digamma(n_y2 + 1) ) + digamma(N))
-        ## However typical KSG form for conditional MI (see Frenzel & Pompe 2007) is:
-        ## I = digamma(k) + <digamma(n_y) - digamma(n_xy) - digamma(n_yf)>    (with counts strictly within eps)
-        print(digamma(k) + np.mean(digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2)))
-        ## To avoid off-by-one differences, we'll implement the widely used form:
-        ## I = digamma(k) + (1/L) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) 
-        ##print(digamma(k) + (1/mn) * sum( digamma(n_y + 1) - digamma(n_xy + 1) - digamma(n_yf + 1) ) )
-        print(digamma(k) + (1/N) * sum( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
-
-        print(digamma(k) + digamma(len(target_pastX)) - sum( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
-        print(digamma(k) + digamma(len(target_pastX)) - np.mean( digamma(n_y2) - digamma(n_xy2) - digamma(n_yf2) ) )
-
-        """
         
 
 class PythonKraskovCTE(PythonKraskov):
@@ -1004,8 +840,6 @@ class PythonKraskovCTE(PythonKraskov):
               'sklearn_balltree'
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
-            
-            ########################################################################################################## TODO algorithm number
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)
     """
@@ -1015,11 +849,6 @@ class PythonKraskovCTE(PythonKraskov):
         settings = self._set_te_defaults(settings)
         settings = self._set_cte_defaults(settings)
         super().__init__(settings)
-
-        ####################################################### TODO alg2 ?
-        # Check for currently unsupported settings
-        if self.settings.get('algorithm_num', 1) != 1:
-            raise ValueError('This estimator currently does not support algorithm_num arguments.')
 
     def estimate(self, source: np.ndarray, target: np.ndarray, conditional=None):
         """Estimate conditional transfer entropy from a source to a target variable
@@ -1038,6 +867,7 @@ class PythonKraskovCTE(PythonKraskov):
                 average TE over all samples
         
         """
+
         # Return TE if no conditioning variable was provided.
         if conditional is None:
             self.est_mi = PythonKraskovTE(self.settings)
@@ -1045,6 +875,13 @@ class PythonKraskovCTE(PythonKraskov):
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
+        # Pass to JidtKraskovCTE if theiler_t != 0 or KSG2 is used
+        if self.settings['algorithm_num'] != 1 or self.settings['theiler_t'] > 0: 
+            print("PythonKraskovCTE does not support algorithm_num=2 and theiler_t>0.")
+            print("The data is passed to JidtKraskovCTE.")
+            est = JidtKraskovCTE(self.settings)
+            return est.estimate(source, target, conditional)
+     
         # check the imput data
         source = self._ensure_one_dim_input(source)
         target = self._ensure_one_dim_input(target)
@@ -2054,174 +1891,35 @@ class PythonDiscrete(PythonEstimator):
         else:
             return var1
 
-    def getCountsMI(self, var1, var2):
-        """get all counts for MI for discrete data"""
-        
-        n = var1.shape[0]
-    
-        counts_xy = defaultdict(int)
-        counts_x = defaultdict(int)
-        counts_y = defaultdict(int)
-    
-        for i in range(n):
-            vals1 = tuple(var1[i,:])
-            vals2 = tuple(var2[i,:])
-            
-            vals12 = tuple(np.concatenate([var1[i,:], var2[i,:]]))
 
-            counts_xy[vals12] += 1
-            counts_x[vals1] += 1
-            counts_y[vals2] += 1
-    
-        return counts_xy, counts_x, counts_y
-    
-    def getProbsCMI(self, var1, var2, conditional):
-        """get all counts and probs for CMI for discrete data"""
-        counts_xyz = defaultdict(int)
-        counts_xz = defaultdict(int)
-        counts_yz = defaultdict(int)
-        counts_z = defaultdict(int)
-
-        for xi, yi, zi in zip(var1, var2, conditional):
-            counts_xyz[(xi, yi, zi)] += 1
-            counts_z[zi] += 1
-        
-        n_var1 = var1.shape[0]
-        counts_xyz = {k: v / n_var1 for k, v in counts_xyz.items()}
-        counts_z = {k: v / n_var1 for k, v in counts_z.items()}
-
-        for (x, y, z), p_xyz in counts_xyz.items():
-            if counts_z[z] > 0:
-                counts_xz[(z,x)] += p_xyz / counts_z[z]
-                counts_yz[(z,y)] += p_xyz / counts_z[z]
-
-        return counts_xyz, counts_xz, counts_yz, counts_z
-    
     def _encode_multidim_states(self, arr):
         """
         Map each row of an integer-valued array to a single integer state.
-        arr: shape (n_samples,) or (n_samples, d)
-             values must be non-negative integers or can be shifted to that.
-        Returns: states (n_samples,), n_states
+        Optimized: uses intp dtype, vectorized stride computation, dot product.
         """
-        arr = np.asarray(arr)
+        arr = np.asarray(arr, dtype=np.intp)  # Use platform-native int for indexing
+        
         if arr.ndim == 1:
-            # Already a single discrete variable
-            # shift to start at 0
             mn = arr.min()
-            codes = (arr - mn).astype(np.int64)
-            n_states = int(codes.max()) + 1
+            codes = arr - mn  # Avoid explicit astype
+            n_states = codes.max() + 1
             return codes, n_states
 
-        if arr.ndim != 2:
-            raise ValueError("arr must be 1D or 2D")
-
-        # shift each column to start at 0
         mn = arr.min(axis=0)
-        col = (arr - mn).astype(np.int64)
-
-        # base-mixed encoding: state = c0 + C0*(c1 + C1*(c2 + ...))
-        max_per_col = col.max(axis=0)
-        bases = max_per_col + 1   # number of distinct values per column
-        multipliers = np.empty_like(bases)
-        # mixed radix multipliers from right to left
-        acc = 1
-        for i in range(col.shape[1]-1, -1, -1):
-            multipliers[i] = acc
-            acc *= bases[i]
-
-        codes = (col * multipliers).sum(axis=1)
-        n_states = int(codes.max()) + 1
+        col = arr - mn
+        bases = col.max(axis=0) + 1
+        
+        # Vectorized stride computation (replaces Python loop)
+        strides = np.empty(len(bases), dtype=np.intp)
+        strides[-1] = 1
+        if len(bases) > 1:
+            strides[:-1] = np.cumprod(bases[:0:-1])[::-1]
+        
+        codes = col @ strides  # Dot product instead of sum
+        n_states = codes.max() + 1
         return codes, n_states
 
-    def entropy(self, X):
-        """
-        Calculate Shannon entropy H(X) for discrete data.
     
-        H(X) = -sum(p(x) * log2(p(x)))
-    
-        Returns entropy in bits
-        """
-
-        print(type(X))
-
-        counts = Counter(X)
-        n = len(X)
-        
-        entropy_val = 0.0
-        for count in counts.values():
-            if count > 0:
-                p = count / n
-                entropy_val -= p * math.log2(p)
-        
-        return entropy_val
-
-    def joint_entropy(self, X, Y):
-        """
-        Calculate joint entropy H(X, Y) for two discrete datasets.
-        
-        H(X,Y) = -sum(p(x,y) * log2(p(x,y)))
-        
-        Returns entropy in bits
-        """
-        
-        joint_counts = Counter(zip(X, Y))
-        n = len(X)
-        
-        joint_entropy_val = 0.0
-        for count in joint_counts.values():
-            if count > 0:
-                p = count / n
-                joint_entropy_val -= p * math.log2(p)
-        
-        return joint_entropy_val
-
-    def prob_count_joint(self, n, X, Y):
-        counts = defaultdict(int)
-
-        if X.ndim > 1:
-            joint = zip(X[:,0], X[:,1], Y[:,0])
-        else:
-            joint = zip(X,Y)
-
-        for combo in joint: #zip(*arrays):
-            counts[combo] += 1
-        
-        probs = {obs: count / n for obs, count in counts.items()}
-        return probs, counts
-
-    def conditional_entropy(self, X, Z):
-        """
-        Compute conditional entropy H(X|Z) for discrete data.
-        H(X|Z) = sum_z P(z) * H(X|Z=z) = - sum_x,z P(x,z) * log(P(x|z))
-        """
-        
-        n = X.shape[0]
-        prob_joint, counts_joint = self.prob_count_joint(n, X, Z)
-        
-        # Count Z frequencies
-        z_counts = defaultdict(int)
-        for row in counts_joint.keys():
-            z_counts[row[1]] += counts_joint[row]
-
-        h_xz = 0.0
-        try:
-            for (x, z), prob in prob_joint.items():
-                if prob > 0:
-                    p_z = z_counts[z] / n
-                    p_x_given_z = prob / p_z
-                    if p_x_given_z > 0:
-                        h_xz -= prob * np.log2(p_x_given_z)
-        except:
-            for (x, y, z), prob in prob_joint.items():
-                if prob > 0:
-                    p_z = z_counts[z] / n
-                    p_xy_given_z = prob / p_z
-                    if p_xy_given_z > 0:
-                        h_xz -= prob * np.log2(p_xy_given_z)
-
-        return h_xz
-
     def is_analytic_null_estimator(self):
         return True
 
@@ -2291,13 +1989,6 @@ class PythonDiscreteMI(PythonDiscrete):
               the lagged MI between processes (default=0)
             - local_values : bool [optional] - return local TE instead of
               average TE (default=False)
-
-
-            #################################################################################### TODO
-            - base : float [optiona] - 2.0 for returning cmi in bits (default) or
-              np.e for returning nats
-
-            
     """
 
     def __init__(self, settings=None):
@@ -2316,95 +2007,98 @@ class PythonDiscreteMI(PythonDiscrete):
         self.settings.setdefault('alph1', int(2))
         self.settings.setdefault('alph2', int(2))
     
-    def calculateAverageMIviaEntropy(self, var1, var2, conditional):
-        # calculate average CMI using entropies
-        h_x = self.entropy(list(X))
-        h_y = self.entropy(list(Y))
-        h_xy = self.joint_entropy(list(X), list(Y))
-        
-        return h_x + h_y - h_xy
-
     def calculateAverageMI(self, var1, var2):
-        """Calculate average mutual information for discrete data """
-        counts_xy, counts_x, counts_y = self.getCountsMI(var1, var2)
+        """Calculate average mutual information for discrete data."""
 
-        n = var1.shape[0]   
-        d1 = var1.shape[1]
-        d2 = var2.shape[1]
+        var1 = np.asarray(var1)
+        var2 = np.asarray(var2)
 
-        # Calculate mutual information:
-        mi = 0.0
-        for comb, count in counts_xy.items():
-            
-            p_xy = count / n
-            p_x = counts_x[comb[:d1]] / n
-            p_y = counts_y[comb[d1:]] / n
-            if p_xy > 0 and p_x > 0 and p_y > 0:
-                lc = math.log(p_xy / (p_x * p_y)) / math.log(2.0)
-                micont = p_xy * lc
-            else:
-                micont = 0.0
-            
-            mi += micont;
+        n = var1.shape[0]
+        if n == 0:
+            return 0.0
 
-        return mi
+        _, x_labels, x_counts = np.unique(
+            var1, axis=0, return_inverse=True, return_counts=True
+        )
+        _, y_labels, y_counts = np.unique(
+            var2, axis=0, return_inverse=True, return_counts=True
+        )
 
+        nx = x_counts.size
+
+        # Use int64 unless nx * number_of_y_categories can overflow.
+        joint_labels = x_labels.astype(np.int64) * y_counts.size + y_labels
+
+        _, _, joint_counts = np.unique(
+            joint_labels,
+            return_inverse=True,
+            return_counts=True,
+        )
+
+        # Recover x/y labels for each unique joint label.
+        joint_unique = np.unique(joint_labels)
+        joint_x = joint_unique // y_counts.size
+        joint_y = joint_unique % y_counts.size
+
+        p_xy = joint_counts.astype(np.float64) / n
+        p_x = x_counts[joint_x].astype(np.float64) / n
+        p_y = y_counts[joint_y].astype(np.float64) / n
+
+        return np.sum(p_xy * np.log2(p_xy / (p_x * p_y)))
+
+    
     def calculateLocalMI(self, X, Y):
-        """calculate local mutual information for dscrete data"""
-
+        """Calculate average mutual information for discrete data."""
         X = np.asarray(X)
         Y = np.asarray(Y)
         if X.shape != Y.shape:
             raise ValueError(f"Shape mismatch: X.shape={X.shape}, Y.shape={Y.shape}")
 
-        # Flatten to 1D
+        # Flatten once, keep original shape
+        orig_shape = X.shape
         x_flat = X.ravel()
         y_flat = Y.ravel()
         n = x_flat.size
 
-        # Relabel arbitrary discrete values to integer indices
+        # Relabel to contiguous integer indices
         x_vals, x_idx = np.unique(x_flat, return_inverse=True)
         y_vals, y_idx = np.unique(y_flat, return_inverse=True)
-
         nx = x_vals.size
         ny = y_vals.size
 
-        # Joint counts via 2D histogram on indices
-        joint_idx = x_idx * ny + y_idx  # unique index for each (x,y)
+        # Joint counts via 1D bincount on combined index
+        joint_idx = x_idx * ny + y_idx
         joint_counts = np.bincount(joint_idx, minlength=nx * ny).reshape(nx, ny)
 
-        # Marginal counts
-        px_counts = joint_counts.sum(axis=1)      # shape (nx,)
-        py_counts = joint_counts.sum(axis=0)      # shape (ny,)
+        # Marginals
+        px_counts = joint_counts.sum(axis=1)
+        py_counts = joint_counts.sum(axis=0)
 
-        # Convert to probabilities
+        # Probabilities
         n_float = float(n)
-        px = px_counts / n_float                  # p(x)
-        py = py_counts / n_float                  # p(y)
-        pxy = joint_counts / n_float              # p(x,y)
+        px = px_counts / n_float
+        py = py_counts / n_float
+        pxy = joint_counts / n_float
 
-        # Avoid log of zero: mask zero joint probabilities
-        # Local MI defined only where pxy > 0; elsewhere set to 0.
-        eps = np.finfo(float).eps
-        pxy_safe = np.where(pxy > 0, pxy, eps)
-        px_safe = np.where(px > 0, px, eps)
-        py_safe = np.where(py > 0, py, eps)
+        # Precompute log terms only where needed
+        # pxy > 0 mask
+        mask = pxy > 0
+        if not np.any(mask):
+            # All joint probs zero → MI zero everywhere
+            return np.zeros(orig_shape, dtype=float)
 
-        # Compute local MI on the alphabet grid
-        # i_grid[x_idx, y_idx] = log( pxy / (px * py) )
-        log_base = np.log(2.0)
-        i_grid = np.log(pxy_safe / (px_safe[:, None] * py_safe[None, :])) / log_base
+        # Compute log(pxy / (px * py)) only on support
+        px_grid = px[:, None]
+        py_grid = py[None, :]
 
-        # Zero out entries where pxy == 0 to keep them neutral
-        i_grid[pxy == 0] = 0.0
+        # Avoid division by zero; but px, py are > 0 wherever pxy > 0 by construction
+        denom = px_grid * py_grid
+        i_grid = np.zeros_like(pxy, dtype=float)
+        i_grid[mask] = np.log(pxy[mask] / denom[mask]) / np.log(2.0)
 
-        # Map back to each sample (x_k, y_k)
+        # Map back to samples
         i_flat = i_grid[x_idx, y_idx]
-
-        # Reshape to original
-        i_xy = i_flat.reshape(X.shape)
-
-        return i_xy
+        return i_flat.reshape(orig_shape)
 
     def estimate(self, var1, var2):
         """Estimate mutual information.
@@ -2443,7 +2137,6 @@ class PythonDiscreteMI(PythonDiscrete):
         
         self.n_samples = var1.shape[0]
         
-
         # Shift variables to calculate a lagged MI.
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi']]
@@ -2541,104 +2234,50 @@ class PythonDiscreteCMI(PythonDiscrete):
         settings.setdefault('alphc', int(2))
         super().__init__(settings)
 
-    def calculateAverageCMIviaEntropy(self, var1, var2, conditional):
-        # calculate average CMI using entropies
-        h_x_z = self.conditional_entropy(var1, conditional)
-        h_y_z = self.conditional_entropy(var2, conditional)
-        h_xy_z = self.conditional_entropy(np.column_stack([var1, var2]), conditional[:,None])
-        cmi = h_x_z + h_y_z - h_xy_z
-        return cmi
-    
-    def calculateAverageCMI(self, var1, var2, conditional):
-        # Calculate avarage CMI using the formula: sum P(x,y,z) * log( P(x,y|z) / (P(x|z) * P(y|z)) )
-        counts_xyz, counts_xz, counts_yz, counts_z = self.getProbsCMI(var1, var2, conditional)
-        
-        cmi = 0.0
-        for (x, y, z), p_xyz in counts_xyz.items():
-
-            if p_xyz > 0 and counts_z[z] > 0:
-                p_xy_z = p_xyz / counts_z[z]
-                p_x_z = counts_xz[(z,x)]
-                p_y_z = counts_yz[(z,y)]
-
-                if p_x_z > 0 and p_y_z > 0:
-                    logterm = p_xy_z / (p_x_z * p_y_z)
-                    cmi += p_xyz * np.log(logterm) / np.log(2.0)
-                else:
-                    cmi += 0.0
-        
-        return cmi
     
     def calculateLocalCMI(self, var1, var2, conditional):
-        """calculate local conditional mutual information for discrete data"""
-        n = var1.shape[0]
+        """Local conditional mutual information for discrete data.
 
-        # Encode multivariate X,Y,Z into single discrete state indices
-        x_codes, nx = self._encode_multidim_states(var1)
-        y_codes, ny = self._encode_multidim_states(var2)
-        z_codes, nz = self._encode_multidim_states(conditional)
+        Returns local values in bits.
+        Assumes _encode_multidim_states returns:
+            codes: integer array of shape (n,)
+            nstates: number of encoded states
+        """
+        x, nx = self._encode_multidim_states(var1)
+        y, ny = self._encode_multidim_states(var2)
+        z, nz = self._encode_multidim_states(conditional)
 
-        # joint (X,Y,Z) encoding
-        # Here we treat (x_code, y_code, z_code) as columns and re-use encoder
-        joint_xyz = np.stack([x_codes, y_codes, z_codes], axis=1)
-        xyz_codes, nxyz = self._encode_multidim_states(joint_xyz)
+        n = x.size
 
-        # (X,Z) and (Y,Z) joints
-        joint_xz = np.stack([x_codes, z_codes], axis=1)
-        xz_codes, nxz = self._encode_multidim_states(joint_xz)
+        # Use mixed-radix encoding directly.
+        # Cast before multiplication to avoid integer overflow.
+        x = np.asarray(x, dtype=np.int64)
+        y = np.asarray(y, dtype=np.int64)
+        z = np.asarray(z, dtype=np.int64)
 
-        joint_yz = np.stack([y_codes, z_codes], axis=1)
-        yz_codes, nyz = self._encode_multidim_states(joint_yz)
+        xz = x * nz + z
+        yz = y * nz + z
+        xyz = (x * ny + y) * nz + z
 
-        # Histograms (empirical counts)
-        # We size bins from max code + 1 rather than using nx,ny,... to avoid
-        # any mismatch due to mixed-radix encoding.
-        n_xyz_bins = xyz_codes.max() + 1
-        n_xz_bins  = xz_codes.max()  + 1
-        n_yz_bins  = yz_codes.max()  + 1
-        n_z_bins   = z_codes.max()   + 1
+        # These encodings are dense if x, y, and z are dense.
+        c_xyz = np.bincount(xyz)
+        c_xz = np.bincount(xz)
+        c_yz = np.bincount(yz)
+        c_z = np.bincount(z)
 
-        # compute counts
-        c_xyz = np.bincount(xyz_codes, minlength=n_xyz_bins).astype(float)
-        c_xz  = np.bincount(xz_codes,  minlength=n_xz_bins).astype(float)
-        c_yz  = np.bincount(yz_codes,  minlength=n_yz_bins).astype(float)
-        c_z   = np.bincount(z_codes,   minlength=n_z_bins).astype(float)
+        num = c_xyz[xyz] * c_z[z]
+        den = c_xz[xz] * c_yz[yz]
 
-        # optional pseudocount smoothing
-        eps = 0.0
-        if eps > 0.0:
-            c_xyz += eps
-            c_xz  += eps
-            c_yz  += eps
-            c_z   += eps * (len(c_z) > 0)
+        local_cmi = np.zeros(n, dtype=np.float64)
+        valid = (num > 0) & (den > 0)
 
-        # convert to probabilities
-        p_xyz = c_xyz / c_xyz.sum()
-        p_xz  = c_xz  / c_xz.sum()
-        p_yz  = c_yz  / c_yz.sum()
-        p_z   = c_z   / c_z.sum()
-
-        # look up probabilities for each sample
-        p_xyz_t = p_xyz[xyz_codes]
-        p_xz_t  = p_xz[xz_codes]
-        p_yz_t  = p_yz[yz_codes]
-        p_z_t   = p_z[z_codes]
-
-        # avoid log(0): mask where any probability is zero
-        # (these samples contribute 0 to local CMI by definition or due to smoothing)
-        mask = (p_xyz_t > 0) & (p_xz_t > 0) & (p_yz_t > 0) & (p_z_t > 0)
-
-        base=2.0
-        log_fn = np.log if base == np.e else (lambda u: np.log(u) / np.log(base))
-
-        local_cmi = np.zeros(n, dtype=float)
-        # i(x;y|z) = log p(x,y,z) + log p(z) - log p(x,z) - log p(y,z)
-        local_cmi[mask] = (
-            log_fn(p_xyz_t[mask]) + log_fn(p_z_t[mask])
-            - log_fn(p_xz_t[mask]) - log_fn(p_yz_t[mask])
+        local_cmi[valid] = np.log2(
+            num[valid].astype(np.float64) /
+            den[valid].astype(np.float64)
         )
 
         return local_cmi
+
 
     def estimate(self, var1, var2, conditional=None):
         """Estimate conditional mutual information.
@@ -2694,12 +2333,11 @@ class PythonDiscreteCMI(PythonDiscrete):
 
         self.n_samples = var1.shape[0]
 
-        if self.settings['local_values']:
-            cmi = self.calculateLocalCMI(var1, var2, conditional)
-            self.actualValue = np.mean(cmi)
-        else:
-            cmi = self.calculateAverageCMI(var1, var2, conditional)
-            self.actualValue = cmi
+        cmi = self.calculateLocalCMI(var1, var2, conditional)
+        self.actualValue = np.mean(cmi)
+
+        if not self.settings['local_values']:
+            cmi = np.mean(cmi)
         
         return cmi
 
@@ -3010,14 +2648,14 @@ class PythonDiscreteTE(PythonDiscrete):
         
         self.n_samples = source_past.shape[0]
 
+        te = PythonDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+        self.actualValue = np.mean(te)
+
         if self.settings['local_values']:
-            te = PythonDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
             # correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
-            self.actualValue = np.mean(te)
         else:
-            te = PythonDiscreteCMI.calculateAverageCMI(self, source_past, target_current, target_past)
-            self.actualValue = te
+            te = np.mean(te)
         
         return te
 
@@ -3052,8 +2690,6 @@ class PythonDiscreteTE(PythonDiscrete):
         # Make one estimate to prepare the calculator:
         self.estimate(source, target)
         return self.computeSignificance()
-
-
 
 
 def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):
