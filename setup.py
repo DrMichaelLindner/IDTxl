@@ -12,10 +12,6 @@ extensions = [
         "idtxl.hde_fast_embedding",
         ["idtxl/hde_fast_embedding.pyx"], include_dirs=[numpy.get_include()],
     ),
-    Extension(
-        "idtxl.gaussian_fast_estimation",
-        ["idtxl/gaussian_fast_estimation.pyx"], include_dirs=[numpy.get_include()],
-    ),
 ]
 
 setup(
