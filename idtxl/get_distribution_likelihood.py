@@ -223,7 +223,7 @@ class get_distribution_likelihood():
                 .results: List
                     Depending on the used mode this functions returns a list of size
                         nr data processes (mode="over_all_replications")
-                        nr [data processes][nr data replications] (mode="per_replications")
+                        [nr data processes][nr data replications] (mode="per_replications")
 
                     Each element of the list contains a structure containing the following information:
                         "params" - fitted parameters
