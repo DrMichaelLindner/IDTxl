@@ -712,76 +712,6 @@ def test_discrete_ais():
     _assert_result(mi_d, 0, 'PythonDiscreteAIS', 'MI (no memory)')
     _assert_result(mi_g, 0, 'PythonGaussianAIS', 'MI (no memory)')
 
-def test_kraskov_alg1And2():
-    """Test that Python Kraskov estimate changes properly when we change KSG algorithm"""
-    n = 100
-    source = [sum(pair) for pair in zip(
-                        [y for y in range(n)],
-                        [rn.normalvariate(0, 0.000001) for r in range(n)])]
-    source = np.array(source)
-    target = np.array(source)  # Target copies source on purpose
-    # We've generated simple data 0:99, plus a little noise to ensure
-    #  we only even get K nearest neighbours in each space.
-    # So result should be:
-    settings = {
-        'lag': 0,
-        'kraskov_k': 4,
-        'noise_level': 0,
-        'algorithm_num': 1}
-    for k in range(4, 16):
-        settings['kraskov_k'] = k
-        settings['algorithm_num'] = 1
-        est1 = PythonKraskovMI(settings)
-        mi_alg1 = est1.estimate(source, target)
-        # Neighbour counts n_x and n_y will be k-1 because they are
-        #  *strictly* within the boundary
-        expected_alg1 = digamma(k) - 2*digamma((k-1)+1) + digamma(n)
-        _compare_result(mi_alg1, expected_alg1, 'PythonKraskovMI_alg1',
-                        'Analytic', 'MI', tol=0.00001)
-        settings['algorithm_num'] = 2
-        est2 = PythonKraskovMI(settings)
-        mi_alg2 = est2.estimate(source, target)
-        expected_alg2 = digamma(k) - 1/k - 2*digamma(k) + digamma(n)
-        _compare_result(mi_alg2, expected_alg2, 'PythonKraskovMI_alg2',
-                        'Analytic', 'MI', tol=0.00001)
-        # And now check that it doesn't work for algorithm "3"
-        settings['algorithm_num'] = 3
-        caughtAssertionError = False
-        try:
-            PythonKraskovMI(settings)
-        except AssertionError:
-            caughtAssertionError = True
-        assert caughtAssertionError, 'Assertion error not raised for KSG algorithm 3 request'
-
-"""
-def test_discrete_mi_memerror():
-    #Test exception handling for memory exhausted exceptions.
-    var1, var2 = _get_mem_binary_data()
-
-    # Check that we catch instantiation error for an enormous history:
-    caughtException = False
-    settings = {'n_discrete_bins': 1000000000}
-    result = -1
-    try:
-        mi_estimator = JidtDiscreteMI(settings=settings)
-        result = mi_estimator.estimate(var1, var2)
-        print('Result of MI calc (which should not have completed) was ', result)
-    except ex.JidtOutOfMemoryError:
-        caughtException = True
-        print('ex.JidtOutOfMemoryError caught as required')
-    assert caughtException, 'No exception instantiating MI calculator with 10^18 bins'
-    # Check that we instantiate correctly for a small history, even after
-    #  the error encountered above:
-    caughtException = False
-    settings = {'n_discrete_bins': 2}
-    try:
-        mi_estimator = JidtDiscreteMI(settings=settings)
-        mi_estimator.estimate(var1, var2)
-        print('Subsequent JIDT calculation worked OK')
-    except ex.JidtOutOfMemoryError:
-        caughtException = True
-    assert not(caughtException), 'Unable to instantiate MI calculator with 2 bins'
-"""
 
 
 if __name__ == '__main__':
@@ -802,15 +732,5 @@ if __name__ == '__main__':
     test_invalid_settings_input()
     test_invalid_history_parameters()
     test_insufficient_no_points()    
-    
-    
-    #test_discrete_mi_memerror()
-    
-    #test_kraskov_alg1And2()
-    
-    
-    
-
-
     
     
