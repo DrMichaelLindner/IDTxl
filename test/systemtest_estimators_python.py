@@ -1,5 +1,19 @@
 """
 Provide tests to compare Jidt and Python estimators
+
+THIS TEST DOES NOT RUN WITHOUT PRESELECTING TESTS!
+
+Hences, you should run appropriate parts of it separately 
+(by uncommenting them in the main section at the end) and 
+pype the output to a text file:
+
+e.g.
+python systemtest_estimators_python.py > your_output_file.txt
+
+BE AWARE:
+Running all tests in one go will take several hours and will 
+produce a very long output! 
+
 """
 
 import numpy as np
@@ -4856,17 +4870,17 @@ if __name__ == '__main__':
 	# Kraskov CMI
 	"""
 	testhead("BivariateMI KraskovCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateMI","Kraskov", samples=1000)
+	test_single_target_analysis("BivariateMI","Kraskov", samples=500)
 
 	testhead("BivariateTE KraskovCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateTE","Kraskov", samples=1000)
-
+	test_single_target_analysis("BivariateTE","Kraskov", samples=500)
+	"""
 	testhead("MultivariateMI KraskovCMI (analyse_single_target)")
-	test_single_target_analysis("MultivariateMI","Kraskov", samples=1000)
+	test_single_target_analysis("MultivariateMI","Kraskov", samples=100)
 
 	testhead("MultivariateTE KraskovCMI (analyse_single_target)")
-	test_single_target_analysis("MultivariateTE","Kraskov", samples=1000)
-	"""
+	test_single_target_analysis("MultivariateTE","Kraskov", samples=100)
+	
 
 	# Gaussian CMI
 	"""
@@ -4900,7 +4914,7 @@ if __name__ == '__main__':
 
 	#### Test network analysis CMI
 	# Kraskov
-	
+	"""
 	testhead("network analysis BivariateMI KraskovCMI")
 	test_network_analysis("BivariateMI","Kraskov", numperm=21, samples=100, reps=3)
 
@@ -4912,7 +4926,7 @@ if __name__ == '__main__':
 
 	testhead("network analysis MultivariateTE KraskovCMI")
 	test_network_analysis("MultivariateTE","Kraskov", numperm=21, samples=100, reps=3)
-	
+	"""
 
 	# Gaussian
 	"""
