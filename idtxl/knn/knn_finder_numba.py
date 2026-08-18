@@ -16,8 +16,8 @@ class NumbaBruteForceKNNFinder(KnnFinder):
         
         assert self._metric == 'chebyshev', 'Only chebyshev metric is supported by BruteForceKNNFinder'
     
-    def find_all_dists_to_kth_neighbor(self, k: int) -> ndarray:
-        return _find_all_dists_to_kth_neighbor(self._data, k)
+    def find_all_dist_to_kth_neighbor(self, k: int) -> ndarray:
+        return _find_all_dist_to_kth_neighbor(self._data, k)
     
     def count_all_neighbors(self, r: float) -> np.ndarray:
         return _count_all_neighbors(self._data, r)
@@ -26,7 +26,7 @@ class NumbaBruteForceKNNFinder(KnnFinder):
         return _count_all_neighbors_within(self._data, r)
 
 @njit
-def _find_all_dists_to_kth_neighbor(data: np.ndarray, k: int) -> np.ndarray:
+def _find_all_dist_to_kth_neighbor(data: np.ndarray, k: int) -> np.ndarray:
 
     distances = np.empty(data.shape[0])
     distances_i = np.empty(k)
