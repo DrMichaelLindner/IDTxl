@@ -1,4 +1,4 @@
-"""Provide unit tests for nonlinear granger analysis for JidtGaussianCMI."""
+"""Provide unit tests for nonlinear granger analysis for PythonGaussianCMI."""
 
 import numpy as np
 import pytest
@@ -9,8 +9,7 @@ from idtxl.bivariate_te import BivariateTE
 
 SEED = 0
 
-
-def test_gauss_data():
+def test_gauss_data_python():
     """Test nonlinear granger estimation from correlated Gaussians."""
     # Generate data and add a delay one one sample.
     expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
@@ -21,11 +20,11 @@ def test_gauss_data():
         np.hstack((source, source_uncorr, target)), dim_order="sp", normalise=False
     )
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 2,
         "min_lag_sources": 1,
         'noise_level': 0
@@ -92,7 +91,7 @@ def test_gauss_data():
     #    "sources of standard TE estimation {0:0.0f} differs from sources of nonlinear TE estimation {1:0.0f}."
     #        .format(sources1[0], sources2[0]))
 
-def test_flags_and_result_output_multivariate():
+def test_flags_and_result_output_multivariate_python():
     """Test nonlinear granger estimation from nonlinear coupled AR processes."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -100,11 +99,11 @@ def test_flags_and_result_output_multivariate():
     # prepare settings
     settings = {
         "target": 1,  # mandatory for analyse_single_target (nonlinear granger)
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_omnibus": 50,
-        "n_perm_max_seq": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_omnibus": 100,
+        "n_perm_max_seq": 100,
         "max_lag_sources": 3,
         "min_lag_sources": 1,
     }
@@ -152,7 +151,26 @@ def test_flags_and_result_output_multivariate():
     assert single_target.selected_vars_sources_type[0] == "squared",\
         "Nonlinear source was not detected in nonlinear data"
 
-def test_flags_and_result_output_bivariate():
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def test_flags_and_result_output_bivariate_python():
     """Test nonlinear granger estimation from nonlinear coupled AR processes."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -160,11 +178,11 @@ def test_flags_and_result_output_bivariate():
     # prepare settings
     settings = {
         "target": 1,  # mandatory for analyse_single_target (nonlinear granger)
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_omnibus": 50,
-        "n_perm_max_seq": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 200,
+        "n_perm_min_stat": 200,
+        "n_perm_omnibus": 200,
+        "n_perm_max_seq": 200,
         "max_lag_sources": 3,
         "min_lag_sources": 1,
     }
@@ -311,7 +329,7 @@ def test_check_target_and_source_set():
     assert nonlin_sources[len(nonlin_sources) // 2:] == [i+int(data.n_processes/2) for i in [1, 2, 3, 4]]
     # no need to nw_0._check_source_set("all", data.n_processes) - can not happen in nonlinear analysis
 
-def test_nonlinear_result_functions_multivariate():
+def test_nonlinear_result_functions_multivariate_python():
     """Test nonlinear results function for nonlinear granger analysis."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -322,11 +340,11 @@ def test_nonlinear_result_functions_multivariate():
     # prepare settings
     settings = {
         "target": target,  # mandatory for analyse_single_target (nonlinear granger)
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_omnibus": 50,
-        "n_perm_max_seq": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_omnibus": 100,
+        "n_perm_max_seq": 100,
         "max_lag_sources": 3,
         "min_lag_sources": 1,
     }
@@ -361,7 +379,7 @@ def test_nonlinear_result_functions_multivariate():
         assert adj_mat.type_matrix[0][1] > 0
         assert adj_mat.edge_matrix[0][1]
 
-def test_nonlinear_result_functions_bivariate():
+def test_nonlinear_result_functions_bivariate_python():
     """Test nonlinear results function for nonlinear granger analysis."""
     data = Data(normalise=False)  # initialise an empty data object
     data.generate_nonlinear_data(n_samples=1000, n_replications=1)
@@ -372,11 +390,11 @@ def test_nonlinear_result_functions_bivariate():
     # prepare settings
     settings = {
         "target": target,  # mandatory for analyse_single_target (nonlinear granger)
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_omnibus": 50,
-        "n_perm_max_seq": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 200,
+        "n_perm_min_stat": 200,
+        "n_perm_omnibus": 200,
+        "n_perm_max_seq": 200,
         "max_lag_sources": 3,
         "min_lag_sources": 1,
     }
@@ -411,7 +429,7 @@ def test_nonlinear_result_functions_bivariate():
         assert adj_mat.type_matrix[0][1] > 0
         assert adj_mat.edge_matrix[0][1]
 
-def test_nonlinear_network_analysis_multivariate():
+def test_nonlinear_network_analysis_multivariate_python():
     """Test method for full network analysis."""
 
     # Test all to all analysis
@@ -419,11 +437,11 @@ def test_nonlinear_network_analysis_multivariate():
     data = Data(seed=SEED, normalise=False)
     data.generate_mute_data(10, 5)
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -454,11 +472,11 @@ def test_nonlinear_network_analysis_multivariate():
     data.generate_mute_data(10, 5)
     target_list = [1, 2, 3]
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -489,11 +507,11 @@ def test_nonlinear_network_analysis_multivariate():
     source_list = [1, 2, 3]
     target_list = [0, 4]
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -517,7 +535,7 @@ def test_nonlinear_network_analysis_multivariate():
                 source_list + [i+int(data.n_processes/2) for i in source_list])
         ), f"Network analysis did not run on the correct subset of sources for target {t}"
 
-def test_nonlinear_network_analysis_bivariate():
+def test_nonlinear_network_analysis_bivariate_python():
     """Test method for full network analysis."""
 
     # Test all to all analysis
@@ -525,11 +543,11 @@ def test_nonlinear_network_analysis_bivariate():
     data = Data(seed=SEED, normalise=False)
     data.generate_mute_data(10, 5)
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -560,11 +578,11 @@ def test_nonlinear_network_analysis_bivariate():
     data.generate_mute_data(10, 5)
     target_list = [1, 2, 3]
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -595,11 +613,11 @@ def test_nonlinear_network_analysis_bivariate():
     source_list = [1, 2, 3]
     target_list = [0, 4]
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "cmi_estimator": "PythonGaussianCMI",
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": 5,
         "min_lag_sources": 4,
         "max_lag_target": 5,
@@ -623,7 +641,7 @@ def test_nonlinear_network_analysis_bivariate():
                 source_list + [i+int(data.n_processes/2) for i in source_list])
         ), f"Network analysis did not run on the correct subset of sources for target {t}"
 
-def test_return_local_values_multivariate():
+def test_return_local_values_multivariate_python():
     """Test estimation of local values."""
     max_lag = 5
     data = Data(seed=SEED, normalise=False)
@@ -633,13 +651,13 @@ def test_return_local_values_multivariate():
     sources = 0
 
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
+        "cmi_estimator": "PythonGaussianCMI",
         "noise_level": 0,
         "local_values": True,  # request calculation of local values
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": max_lag,
         "min_lag_sources": 4,
         "max_lag_target": max_lag,
@@ -718,7 +736,7 @@ def test_return_local_values_multivariate():
             " deviate.".format(te_single_link[i1], np.mean(lte[i2, :, :]))
         )
 
-def test_return_local_values_bivariate():
+def test_return_local_values_bivariate_python():
     """Test estimation of local values."""
     max_lag = 5
     data = Data(seed=SEED, normalise=False)
@@ -728,13 +746,13 @@ def test_return_local_values_bivariate():
     sources = 0
 
     settings = {
-        "cmi_estimator": "JidtGaussianCMI",
+        "cmi_estimator": "PythonGaussianCMI",
         "noise_level": 0,
         "local_values": True,  # request calculation of local values
-        "n_perm_max_stat": 50,
-        "n_perm_min_stat": 50,
-        "n_perm_max_seq": 50,
-        "n_perm_omnibus": 50,
+        "n_perm_max_stat": 100,
+        "n_perm_min_stat": 100,
+        "n_perm_max_seq": 100,
+        "n_perm_omnibus": 100,
         "max_lag_sources": max_lag,
         "min_lag_sources": 4,
         "max_lag_target": max_lag,
@@ -813,7 +831,7 @@ def test_return_local_values_bivariate():
             " deviate.".format(te_single_link[i1], np.mean(lte[i2, :, :]))
         )
 
-def test_add_conditional_multivariate():
+def test_add_conditional_multivariate_python():
     """Enforce the conditioning on additional variables.
     Adding valid conditionals and test if they were added correctly (incl. nonlinear conds) in the network analysis
     """
@@ -823,7 +841,7 @@ def test_add_conditional_multivariate():
 
     settings = {"target": 0,
                 "sources": [1, 2],
-                "cmi_estimator": "JidtGaussianCMI",
+                "cmi_estimator": "PythonGaussianCMI",
                 "max_lag_sources": 5,
                 "min_lag_sources": 3,
                 "max_lag_target": 7,
@@ -851,7 +869,7 @@ def test_add_conditional_multivariate():
     assert (settings["add_conditionals"][3] in cond_list), \
         "Second nonlinear enforced conditional is missing from results."
 
-def test_add_conditional_bivariate():
+def test_add_conditional_bivariate_python():
     """Enforce the conditioning on additional variables.
     Adding valid conditionals and test if they were added correctly (incl. nonlinear conds) in the network analysis
     """
@@ -861,7 +879,7 @@ def test_add_conditional_bivariate():
 
     settings = {"target": 0,
                 "sources": [1, 2],
-                "cmi_estimator": "JidtGaussianCMI",
+                "cmi_estimator": "PythonGaussianCMI",
                 "max_lag_sources": 5,
                 "min_lag_sources": 3,
                 "max_lag_target": 7,
@@ -891,16 +909,16 @@ def test_add_conditional_bivariate():
 
 
 if __name__ == '__main__':
-    test_gauss_data()
-    test_flags_and_result_output_multivariate()
-    test_flags_and_result_output_bivariate()
+    test_gauss_data_python()
+    test_flags_and_result_output_multivariate_python()
+    test_flags_and_result_output_bivariate_python()
     test_check_target_and_source_set()
-    test_nonlinear_result_functions_multivariate()
-    test_nonlinear_result_functions_bivariate()
-    test_nonlinear_network_analysis_multivariate()
-    test_nonlinear_network_analysis_bivariate()
-    test_return_local_values_multivariate()
-    test_return_local_values_bivariate()
-    test_add_conditional_multivariate()
-    test_add_conditional_bivariate()
+    test_nonlinear_result_functions_multivariate_python()
+    test_nonlinear_result_functions_bivariate_python()
+    test_nonlinear_network_analysis_multivariate_python()
+    test_nonlinear_network_analysis_bivariate_python()
+    test_return_local_values_multivariate_python()
+    test_return_local_values_bivariate_python()
+    test_add_conditional_multivariate_python()
+    test_add_conditional_bivariate_python()
 
