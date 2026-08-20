@@ -303,9 +303,9 @@ class MultivariateTE(NetworkInferenceTE, NetworkInferenceMultivariate):
         # Main algorithm.
         print("\n---------------------------- (1) include target candidates")
         if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
-            if settings["cmi_estimator"] not in  ['JidtGaussianCMI', 'PythonGaussianCMI']:
+            if settings["cmi_estimator"] not in  ['JidtGaussianCMI', 'PythonGaussianCMI', 'OpenCLGaussianCMI']:
                 raise RuntimeError(
-                    "For nonlinear analysis only the JidtGaussianCMI or PythonGaussianCMI estimator can be used!"
+                    "For nonlinear analysis only the JidtGaussianCMI, PythonGaussianCMI or OpenCLGaussianCMI estimator can be used!"
                 )
             print("                                  using original and nonlinear target candidates")
             self._include_lin_and_nonlin_target_candidates(data)

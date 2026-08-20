@@ -26,18 +26,19 @@ from typing import Tuple, Optional
 from idtxl.estimators_jidt import JidtKraskovMI, JidtKraskovCMI, JidtKraskovAIS, JidtKraskovTE, JidtKraskovCTE
 
 
-
 class PythonEstimator(Estimator):
     """Abstract class for implementation of Python estimators
 
     Abstract class for implementation of Python estimators, child classes
     implement estimators for mutual information (MI), conditional mutual
-    information (CMI), active information storage (AIS) and
-    transfer entropy (TE)
+    information (CMI), active information storage (AIS), transfer entropy (TE)
+    and conditional transfer entropy (CTE)
     
     using the Kraskov-Grassberger-Stoegbauer estimator for continuous data,
     plug-in estimators for discrete data, and Gaussian estimators for
     continuous Gaussian data.
+
+    implemented in idtxl by Michael Lindner, 2026
     """
 
     def __init__(self, settings=None):
@@ -140,6 +141,8 @@ class PythonKraskov(PythonEstimator):
     information (CMI), actice information storage (AIS)
     and transfer entropy (TE) 
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             set estimator parameters:
@@ -260,6 +263,8 @@ class PythonKraskovMI(PythonKraskov):
 
     Results are returned in nats.
     
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             set estimator parameters:
@@ -285,6 +290,7 @@ class PythonKraskovMI(PythonKraskov):
               average MI/TE (default=False)
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)            
+    
     """
 
     def __init__(self, settings=None):
@@ -410,6 +416,8 @@ class PythonKraskovCMI(PythonKraskov):
               average MI/TE (default=False)
             - algorithm_num : int [optional] - which Kraskov algorithm (1 or 2)
               to use (default=1)            
+    
+    modified by Michael Lindner, 2026
     """
 
     def __init__(self, settings=None):
@@ -547,6 +555,8 @@ class PythonKraskovAIS(PythonKraskov):
 
     Results are returned in nats.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:
@@ -664,6 +674,8 @@ class PythonKraskovTE(PythonKraskov):
     
     Results are returned in nats.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict 
             set estimator parameters:
@@ -811,6 +823,8 @@ class PythonKraskovCTE(PythonKraskov):
 
     Results are returned in nats.        
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:
@@ -956,6 +970,8 @@ class PythonGaussian(PythonEstimator):
               (default=0)
             - local_values : bool [optional] - return local MI/TE instead of
               average MI/TE (default=False)
+    
+    implemented in idtxl by Michael Lindner, 2026
     """
 
     def __init__(self, settings):
@@ -1025,6 +1041,8 @@ class PythonGaussianMI(PythonGaussian):
 
     Results are returned in nats.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             set estimator parameters:
@@ -1188,6 +1206,8 @@ class PythonGaussianCMI(PythonGaussian):
 
     Results are returned in nats.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             sets estimation parameters:
@@ -1387,6 +1407,8 @@ class PythonGaussianAIS(PythonGaussian):
 
     Results are returned in nats.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:
@@ -1494,7 +1516,7 @@ class PythonGaussianTE(PythonGaussian):
     """Calculate transfer entropy with Python Gaussian implementation.
 
     Calculate transfer entropy between a source and a target variable using
-    Pathon implementation of the Gaussian estimator. Transfer entropy is
+    Python implementation of the Gaussian estimator. Transfer entropy is
     defined as the conditional mutual information between the source's past
     state and the target's current value, conditional on the target's past.
 
@@ -1506,6 +1528,8 @@ class PythonGaussianTE(PythonGaussian):
 
     Results are returned in nats.        
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:
@@ -1654,6 +1678,8 @@ class PythonGaussianCTE(PythonGaussian):
 
     Results are returned in nats.        
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:
@@ -1818,6 +1844,8 @@ class PythonDiscrete(PythonEstimator):
     mutual information (CMI), active information storage (AIS), transfer
     entropy (TE) using python Gaussian estimator for continuous data. 
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             set estimator parameters:
@@ -1969,6 +1997,8 @@ class PythonDiscreteMI(PythonDiscrete):
 
     Results are returned in bits.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             sets estimation parameters:
@@ -2195,6 +2225,8 @@ class PythonDiscreteCMI(PythonDiscrete):
 
     Results are returned in bits.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict [optional]
             sets estimation parameters:
@@ -2388,6 +2420,8 @@ class PythonDiscreteAIS(PythonDiscrete):
 
     Results are returned in bits.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             set estimator parameters:
@@ -2520,6 +2554,8 @@ class PythonDiscreteTE(PythonDiscrete):
     
     Results are returned in bits.
 
+    implemented in idtxl by Michael Lindner, 2026
+    
     Args:
         settings : dict
             sets estimation parameters:

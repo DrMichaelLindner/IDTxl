@@ -4874,13 +4874,13 @@ if __name__ == '__main__':
 
 	testhead("BivariateTE KraskovCMI (analyse_single_target)")
 	test_single_target_analysis("BivariateTE","Kraskov", samples=500)
-	"""
+	
 	testhead("MultivariateMI KraskovCMI (analyse_single_target)")
 	test_single_target_analysis("MultivariateMI","Kraskov", samples=100)
 
 	testhead("MultivariateTE KraskovCMI (analyse_single_target)")
 	test_single_target_analysis("MultivariateTE","Kraskov", samples=100)
-	
+	"""
 
 	# Gaussian CMI
 	"""
