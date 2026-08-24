@@ -262,7 +262,7 @@ class get_distribution_likelihood():
         self.processes = self._check_processes(processes)
 
         # initialise distribution likelihood output
-        dl = distribution_likelihoods_results(n_processes=self.n_processes,
+        dl = ResultsDistributionLikelihood(n_processes=self.n_processes,
                                               n_replications=self.n_replications,
                                               mode=mode)
 
@@ -432,7 +432,7 @@ class get_distribution_likelihood():
             return async_result.get(timeout=timeout)
 
 
-class distribution_likelihoods_results():
+class ResultsDistributionLikelihood():
     """provides output class for the results of the distribution fits
     This class is only called from the data function get_distribution_likelihood
     """
