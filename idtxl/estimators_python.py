@@ -104,7 +104,6 @@ class PythonEstimator(Estimator):
         assert settings['source_target_delay'] >= 0, (
             'Source-target delay must be >= 0')
         return settings
-    
 
     def _set_cte_defaults(self, settings):
         """Set defaults for conditional transfer entropy estimation."""
@@ -1837,12 +1836,12 @@ class PythonGaussianCTE(PythonGaussian):
 ###############################
 
 class PythonDiscrete(PythonEstimator):
-    """Abstract class for implementation of Python Gaussian-estimators.
+    """Abstract class for implementation of Python Discrete-estimators.
 
-    Abstract class for implementation of Python Gaussian-estimators, child
+    Abstract class for implementation of Python Discrete-estimators, child
     classes implement estimators for mutual information (MI), conditional
     mutual information (CMI), active information storage (AIS), transfer
-    entropy (TE) using python Gaussian estimator for continuous data. 
+    entropy (TE) using Python estimator for discrete data.
 
     implemented in idtxl by Michael Lindner, 2026
     

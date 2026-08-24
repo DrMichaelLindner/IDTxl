@@ -3423,10 +3423,10 @@ def test_discrete_ais_local_values():
 			count += 1
 		
 	print("\nmean calculation times:")
-	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
-	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
+	print(" JidtDiscreteAIS (with history): ", np.mean(time_jidt_cor) )
+	print(" PythonDiscreteAIS (with history): ", np.mean(time_python_cor) )
+	print(" JidtDiscreteAIS (noise): ", np.mean(time_jidt_uncor) )
+	print(" PythonDiscreteAIS (noise): ", np.mean(time_python_uncor) )
 
 def test_discrete_te():
 
@@ -4633,8 +4633,10 @@ def test_network_analysis(analysis, est_type, numperm=300, samples=1000, reps=3)
 			equal = np.allclose(target_delays_jidt[t], target_delays_python[t], atol=atol)
 		else:
 			equal = False
-		
-		print(f"{t}\t{jidt_estimator}  :\t{target_delays_jidt[t]}{"\t" if len(target_delays_jidt[t])>1 else "\t\t"}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
+
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t{jidt_estimator}  :\t{target_delays_jidt[t]}{t1 if len(target_delays_jidt[t])>1 else t2}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
 	
 	print(f"\nselected sources {measure.upper()}:\n")
 	print(f"target\tclose {atol}")
@@ -4742,8 +4744,9 @@ def test_nonlinear_granger(analysis, est_type, numperm=300, samples=1000, reps=6
 			equal_tt = tt_jidt==tt_python
 		except:
 			equal_tt = False
-
-		print(f"{t}\t\t{ts_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{tt_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{ts_python}{"\t\t" if len(ts_python)<=1 else "\t"}{tt_python}\t\t{equal_ts}{"\t\t" if len(tt_python)<=1 else "\t"}{equal_tt}")
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t\t{ts_jidt}{t2 if len(ts_jidt)<=1 else t1}{tt_jidt}{t2 if len(ts_jidt)<=1 else t1}{ts_python}{t2 if len(ts_python)<=1 else t1}{tt_python}\t\t{equal_ts}{t2 if len(tt_python)<=1 else t1}{equal_tt}")
 
 	print("\n calculation times:")
 	print(f" nonlinear Granger via {analysis} {jidt_estimator}: ", np.mean(time_jidt) )
