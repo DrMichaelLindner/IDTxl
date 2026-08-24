@@ -16,15 +16,23 @@ from idtxl.estimators_python import (PythonKraskovMI,
 									PythonGaussianCMI,
 									PythonGaussianAIS,
 									PythonGaussianTE,
-									PythonGaussianCTE)
+									PythonGaussianCTE,
+									PythonDiscreteMI,
+									PythonDiscreteCMI,
+									PythonDiscreteAIS,
+									PythonDiscreteTE)
 
-from idtxl.estimators_opencl import (OpenCLKraskovMI, 
+from idtxl.estimators_opencl import (OpenCLKraskovMI,
 									OpenCLKraskovCMI,
 									OpenCLGaussianMI,
 									OpenCLGaussianCMI,
 									OpenCLGaussianAIS,
 									OpenCLGaussianTE,
-									OpenCLGaussianCTE)
+									OpenCLGaussianCTE,
+									OpenCLDiscreteMI,
+									OpenCLDiscreteCMI,
+									OpenCLDiscreteAIS,
+									OpenCLDiscreteTE)
 
 from idtxl.estimators_jidt import (JidtKraskovMI,
 									JidtKraskovCMI,
@@ -40,17 +48,15 @@ import random as rn
 import itertools
 from generate_test_data import (_get_gauss_data,
 								_generate_mute_data,
-								_get_ar_data)
+								_get_ar_data,
+								_get_mem_binary_data)
 
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.bivariate_te import BivariateTE
 from idtxl.multivariate_mi import MultivariateMI
 from idtxl.bivariate_mi import BivariateMI
 
-
-
 SEED = 42
-
 
 def verbose(res_jidt, res_python, values, est, rtol=1e-04, atol=1e-04, local=False):
 
@@ -107,10 +113,9 @@ def testhead(est):
 	print("#######################################################################")
 
 
-
-
 n_samples = 10000
 
+#### Test Gaussian estimators
 def test_gaussian_mi():
 
 	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=True, seed=SEED)
@@ -894,7 +899,7 @@ def test_gaussian_ais_local_values():
 		for t in vals:
 
 			settings = {}
-			settings_j = {'history': h, 
+			settings_j = {'history': h,
 						'tau': t,
 						'local_values': True}
 			settings_p = {'history': h, 
@@ -1231,6 +1236,998 @@ def test_gaussian_cte_local_values():
 	print(" OpenCLGaussianCTE (uncorrelated conditional): ", np.mean(time_opencl_nocond) )
 	print(" PythonGaussianCTE (uncorrelated conditional): ", np.mean(time_python_nocond) )
 
+
+#### Test Discrete estimators
+def test_discrete_mi():
+	vals = [2, 5, 8, 32]
+	lvals = [0, 1, 2, 3]
+
+	# test 1D gaussian
+	print(f"\n\nTesting average MI using 1D gaussian data with covariance 0.4 - correlated and uncorrelated")
+	print(f"testing settings lag_mi {lvals}, n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=True, seed=SEED)
+
+	for m in ['max_ent', 'equal']:
+		print(f"\n--- discretise_method: {m}\n")
+		mi_opencl_cor = np.zeros(np.power(len(vals), 2))
+		mi_python_cor = np.zeros(np.power(len(vals), 2))
+		time_opencl_cor = np.zeros(np.power(len(vals), 2))
+		time_python_cor = np.zeros(np.power(len(vals), 2))
+
+		mi_opencl_uncor = np.zeros(np.power(len(vals), 2))
+		mi_python_uncor = np.zeros(np.power(len(vals), 2))
+		time_opencl_uncor = np.zeros(np.power(len(vals), 2))
+		time_python_uncor = np.zeros(np.power(len(vals), 2))
+
+		conds = np.empty((np.power(len(vals), 2), 2))
+
+		count = 0
+		for l in lvals:
+			for i in vals:
+				conds[count, :] = [l, i]
+				settings = {'discretise_method': m,
+							'n_discrete_bins': i,
+							'lag_mi': l}
+
+				opencl_estimator = OpenCLDiscreteMI(settings=settings)
+				itic = time.perf_counter()
+				mi_opencl_cor[count] = opencl_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_opencl_cor[count] = itoc - itic
+
+				python_estimator = PythonDiscreteMI(settings=settings)
+				itic = time.perf_counter()
+				mi_python_cor[count] = python_estimator.estimate(source1, target)
+				itoc = time.perf_counter()
+				time_python_cor[count] = itoc - itic
+
+				opencl_estimator = OpenCLDiscreteMI(settings=settings)
+				itic = time.perf_counter()
+				mi_opencl_uncor[count] = opencl_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_opencl_uncor[count] = itoc - itic
+
+				python_estimator = PythonDiscreteMI(settings=settings)
+				itic = time.perf_counter()
+				mi_python_uncor[count] = python_estimator.estimate(source2, target)
+				itoc = time.perf_counter()
+				time_python_uncor[count] = itoc - itic
+
+				count += 1
+
+		atol = 1e-03
+		print(f"Summary OpenCL vs Python DiscreteMI discretised 1D gaussian data using {m}:")
+		print(f"lags, nbins\tOpenCLDiscreteMI\t\tPythonDiscreteMI\tclose {atol}")
+		print("correlated data:")
+		for i in range(count):
+			print(
+				f"{conds[i]}   \t{mi_opencl_cor[i]}\t{mi_python_cor[i]}\t{np.isclose(mi_opencl_cor[i], mi_python_cor[i], atol=atol)}")
+
+		print("\nuncorrelated data:")
+		for i in range(count):
+			print(
+				f"{conds[i]}   \t{mi_opencl_uncor[i]}\t{mi_python_uncor[i]}\t{np.isclose(mi_opencl_uncor[i], mi_python_uncor[i], atol=atol)}")
+
+		verbose(mi_opencl_cor, mi_python_cor, "correlated", "MI", local=False, atol=1e-03)
+		verbose(mi_opencl_uncor, mi_python_uncor, "uncorrelated", "MI", local=False, atol=1e-03)
+
+		print("\nmean calculation times:")
+		print(" OpenCLDiscreteMI (correlated): ", np.mean(time_opencl_cor))
+		print(" PythonDiscreteMI (correlated): ", np.mean(time_python_cor))
+		print(" OpenCLDiscreteMI (uncorrelated): ", np.mean(time_opencl_uncor))
+		print(" PythonDiscreteMI (uncorrelated): ", np.mean(time_python_uncor))
+
+	print("\n=========================================================================")
+
+	# test 1D bin data
+	print(f"\n\n\nTesting average MI using 1D binary data with memory and discrete_method none")
+	print(f"n_samples = {n_samples}\n")
+
+	varx, vary = _get_mem_binary_data(n=n_samples, expand=True)
+	settings = {'discretise_method': 'none'}
+	est = OpenCLDiscreteMI(settings)
+	itic = time.perf_counter()
+	mi_opencl = est.estimate(varx, vary)
+	itoc = time.perf_counter()
+	print(f"OpenCLDiscreteMI: Estimated MI: {mi_opencl} - took: {itoc - itic}")
+	est = PythonDiscreteMI(settings)
+	itic = time.perf_counter()
+	mi_python = est.estimate(varx, vary)
+	itoc = time.perf_counter()
+	print(f"PythonDiscreteMI: Estimated MI: {mi_python} - took: {itoc - itic}")
+	verbose(mi_opencl, mi_python, "", "MI", atol=1e-03)
+
+	print("\n=========================================================================")
+
+	# test 2D
+	lvals = [0, 1, 2, 3]
+
+	print(f"\n\nTesting average MI using 2D mute data - correlated and uncorrelated")
+	print(f"testing settings lag_mi {lvals}, n_discrete_bins 2 and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	data = _generate_mute_data(n_samples=n_samples, n_replications=2)
+	source1 = data[0, :, :]
+	target = data[2, :, :]
+	source2 = data[4, :, :]
+
+	for m in ['max_ent', 'equal']:
+
+		print(f"\n--- discrete_method: {m}\n")
+
+		mi_opencl_cor = np.zeros(len(vals))
+		mi_python_cor = np.zeros(len(vals))
+		time_opencl_cor = np.zeros(len(vals))
+		time_python_cor = np.zeros(len(vals))
+		mi_opencl_uncor = np.zeros(len(vals))
+		mi_python_uncor = np.zeros(len(vals))
+		time_opencl_uncor = np.zeros(len(vals))
+		time_python_uncor = np.zeros(len(vals))
+
+		count = 0
+		for l in lvals:
+			settings = {'discretise_method': m,
+						'n_discrete_bins': 2,
+						'lag_mi': l}
+
+			opencl_estimator = OpenCLDiscreteMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_cor[count] = opencl_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_opencl_cor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_cor[count] = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			opencl_estimator = OpenCLDiscreteMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_uncor[count] = opencl_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_opencl_uncor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_uncor[count] = python_estimator.estimate(source2, target)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+		print(f"Summary OpenCL vs Python DiscreteMI discretised 2D mute data using {m}:")
+
+		print("lags\tOpenCLDiscreteMI\t\tPythonDiscreteMI")
+		print("correlated data:")
+		for i in range(len(vals)):
+			print(f"{lvals[i]}   \t{mi_opencl_cor[i]}\t{mi_python_cor[i]}")
+
+		print("\nuncorrelated data:")
+		for i in range(len(vals)):
+			print(f"{lvals[i]}   \t{mi_opencl_uncor[i]}\t{mi_python_uncor[i]}")
+
+		verbose(mi_opencl_cor, mi_python_cor, "correlated", "MI", local=False, atol=1e-03)
+		verbose(mi_opencl_uncor, mi_python_uncor, "uncorrelated", "MI", local=False, atol=1e-03)
+
+		print("\nmean calculation times:")
+		print(" OpenCLDiscreteMI (correlated): ", np.mean(time_opencl_cor))
+		print(" PythonDiscreteMI (correlated): ", np.mean(time_python_cor))
+		print(" OpenCLDiscreteMI (uncorrelated): ", np.mean(time_opencl_uncor))
+		print(" PythonDiscreteMI (uncorrelated): ", np.mean(time_python_uncor))
+
+	print("\n=========================================================================")
+
+	# test mixed dimension input
+	d = [1, 2, 3, 5]
+
+	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1 and var2 each")
+	print(f"n_samples = {n_samples}\n")
+
+	print("Shapes:")
+
+	data = _generate_mute_data(n_samples=n_samples, n_replications=5)
+	source_o = data[0, :, :]
+	target_o = data[2, :, :]
+
+	settings = {'discretise_method': 'equal',
+				'n_discrete_bins': 2,
+				'lag_mi': 2}
+
+	d = [1, 2, 3, 5]
+
+	for s in d:
+		for t in d:
+			source1 = source_o[:, :s]
+			target = target_o[:, :t]
+
+			cond = f"var1: {source1.shape}\tvar2: {target.shape}"
+
+			opencl_estimator = OpenCLDiscreteMI(settings=settings)
+			python_estimator = PythonDiscreteMI(settings=settings)
+
+			itic = time.perf_counter()
+			mi_opencl_cor = opencl_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_opencl_cor = itoc - itic
+
+			itic = time.perf_counter()
+			mi_python_cor = python_estimator.estimate(source1, target)
+			itoc = time.perf_counter()
+			time_python_cor = itoc - itic
+
+			verbose(mi_opencl_cor, mi_python_cor, cond, "MI")
+
+def test_discrete_mi_local_values():
+	atol = 1e-03
+
+	vals = [0, 1, 2, 3]
+	print(f"\n\nTesting local MI using 1D gaussian data with covariance 0.4 - correlated and uncorrelated")
+	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent")
+	print(f"n_samples = {n_samples}\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=True, seed=SEED)
+
+	vals = [0, 1, 2, 3]
+
+	opencl_time = 0.0
+	python_time = 0.0
+
+	mi_opencl_cor = np.zeros(4)
+	mi_opencl_uncor = np.zeros(4)
+	mi_python_cor = np.zeros(4)
+	mi_python_uncor = np.zeros(4)
+
+	print("lags")
+	count = 0
+	for lags in vals:
+		settings = {}
+		settings = {'lag_mi': lags,
+					'local_values': True,
+					'discretise_method': 'max_ent',
+					'n_discrete_bins': 2}
+
+		opencl_estimator = OpenCLDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		opencl_time += itoc - itic
+
+		python_estimator = PythonDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		python_time += itoc - itic
+
+		verbose(mi_opencl, mi_python, f"{lags}", "MI (correlated)  ", local=True, atol=atol)
+
+		opencl_estimator = OpenCLDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		opencl_time += itoc - itic
+
+		python_estimator = PythonDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		python_time += itoc - itic
+
+		verbose(mi_opencl, mi_python, f"{lags}", "MI (uncorrelated)", local=True, atol=atol)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteMI: ", np.mean(opencl_time))
+	print(" PythonDiscreteMI: ", np.mean(python_time))
+
+	print("\n=========================================================================")
+
+	# test 2D
+	vals = [0, 1, 2, 3]
+
+	print(f"\n\nTesting local MI using 2D mute data - correlated and uncorrelated")
+	print(f"testing settings lag_mi {vals}, n_discrete_bins 2 and discrete_method max_ent")
+	print(f"n_samples = {n_samples}\n")
+
+	data = _generate_mute_data(n_samples=n_samples)
+
+	source1 = data[0, :, :]
+	target = data[2, :, :]
+	source2 = data[4, :, :]
+
+	time_opencl_cor = np.zeros(len(vals))
+	time_opencl_uncor = np.zeros(len(vals))
+	time_python_cor = np.zeros(len(vals))
+	time_python_uncor = np.zeros(len(vals))
+
+	print("lags")
+	for lags in vals:
+		settings = {}
+		settings = {"lag_mi": lags,
+					'local_values': True,
+					'discretise_method': 'max_ent'}
+
+		# cor
+		opencl_estimator = OpenCLDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_opencl_cor = opencl_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		time_opencl_cor[lags] = itoc - itic
+
+		python_estimator = PythonDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_python_cor = python_estimator.estimate(source1, target)
+		itoc = time.perf_counter()
+		time_python_cor[lags] = itoc - itic
+
+		verbose(mi_opencl_cor, mi_python_cor, lags, "MI (correlated)   2D input", local=True, atol=atol)
+
+		# uncor
+		opencl_estimator = OpenCLDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_opencl_uncor = opencl_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		time_opencl_uncor[lags] = itoc - itic
+
+		python_estimator = PythonDiscreteMI(settings)
+		itic = time.perf_counter()
+		mi_python_uncor = python_estimator.estimate(source2, target)
+		itoc = time.perf_counter()
+		time_python_uncor[lags] = itoc - itic
+
+		verbose(mi_opencl_uncor, mi_python_uncor, lags, "MI (uncorrelated) 2D input", local=True, atol=atol)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscrete (cor): ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteMI (cor): ", np.mean(time_python_cor))
+	print(" OpenCLDiscreteMI (uncor): ", np.mean(time_opencl_uncor))
+	print(" PythonDiscreteMI (uncor): ", np.mean(time_python_uncor))
+
+def test_discrete_cmi():
+	vals = [2, 5, 8]
+
+	print(
+		f"\n\nTesting average CMI using 1D gaussian data with covariance 0.4 - uncorrelated \nconditional and uncorrelated source")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=True, seed=SEED)
+
+	for m in ['max_ent', 'equal']:
+		print(f"\n--- discrete_method: {m}\n")
+
+		mi_opencl_cor = np.zeros(len(vals))
+		mi_python_cor = np.zeros(len(vals))
+		time_opencl_cor = np.zeros(len(vals))
+		time_python_cor = np.zeros(len(vals))
+
+		mi_opencl_uncor = np.zeros(len(vals))
+		mi_python_uncor = np.zeros(len(vals))
+		time_opencl_uncor = np.zeros(len(vals))
+		time_python_uncor = np.zeros(len(vals))
+
+		count = 0
+		for i in vals:
+			settings = {'discretise_method': m,
+						'n_discrete_bins': i,
+						'noise_level': 0,
+						'normalise': False, }
+
+			opencl_estimator = OpenCLDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_cor[count] = opencl_estimator.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_opencl_cor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			opencl_estimator = OpenCLDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_uncor[count] = opencl_estimator.estimate(source2, target, source1)
+			itoc = time.perf_counter()
+			time_opencl_uncor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+		print(f"Summary OpenCL vs Python DiscreteCMI discretised 1D gaussian data using {m}:")
+
+		print("nbins\tOpenCLDiscreteCMI\t\tPythonDiscreteCMI")
+		print("uncorrelated conditional:")
+		for i in range(len(vals)):
+			print(f"{vals[i]}\t{mi_opencl_cor[i]}\t{mi_python_cor[i]}")
+
+		print("\nuncorrelated source:")
+		for i in range(len(vals)):
+			print(f"{vals[i]}\t{mi_opencl_uncor[i]}\t{mi_python_uncor[i]}")
+
+		verbose(mi_opencl_cor, mi_python_cor, "", "CMI (uncorrelated conditional)", local=False)
+		verbose(mi_opencl_uncor, mi_python_uncor, "", "CMI (uncorrelated source)", local=False)
+
+		print("\nmean calculation times:")
+		print(" OpenCLDiscreteCMI(uncorrelated conditional): ", np.mean(time_opencl_cor))
+		print(" PythonDiscreteCMI(uncorrelated conditional): ", np.mean(time_python_cor))
+		print(" OpenCLDiscreteCMI (uncorrelated source): ", np.mean(time_opencl_uncor))
+		print(" PythonDiscreteCMI (uncorrelated source): ", np.mean(time_python_uncor))
+
+	print("\n=========================================================================")
+
+	# test bin data
+	print(f"\n\n\nTesting average CMI using 1D binary data with memory and discrete_method none")
+	print(f"n_samples = {n_samples}\n")
+
+	varx, vary = _get_mem_binary_data(n=n_samples, expand=True)
+	varz, _ = _get_mem_binary_data(n=n_samples, expand=True)
+	varx = varx[:10000]
+	vary = vary[:10000]
+	varz = varz[:10000]
+	settings = {'discretise_method': 'none'}
+	est = OpenCLDiscreteCMI(settings)
+	itic = time.perf_counter()
+	mi_opencl = est.estimate(varx, vary, varz)
+	itoc = time.perf_counter()
+	print(f"OpenCLDiscreteCMI: Estimated MI: {mi_opencl} - took: {itoc - itic}")
+	est = PythonDiscreteCMI(settings)
+	itic = time.perf_counter()
+	mi_python = est.estimate(varx, vary, varz)
+	itoc = time.perf_counter()
+	print(f"PythonDiscreteCMI: Estimated MI: {mi_python} - took: {itoc - itic}")
+
+	verbose(mi_opencl, mi_python, "", "CMI")
+
+	print("\n=========================================================================")
+
+	# test 2D
+	print(f"\n\nTesting average CMI using 2D mute data - uncorrelated conditional and uncorrelated source")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	data = _generate_mute_data(n_samples=n_samples, n_replications=2)
+	source1 = data[0, :, :]
+	target = data[2, :, :]
+	source2 = data[4, :, :]
+
+	for m in ['max_ent', 'equal']:
+		print(f"\n--- discrete_method: {m}\n")
+
+		mi_opencl_cor = np.zeros(len(vals))
+		mi_python_cor = np.zeros(len(vals))
+		time_opencl_cor = np.zeros(len(vals))
+		time_python_cor = np.zeros(len(vals))
+
+		mi_opencl_uncor = np.zeros(len(vals))
+		mi_python_uncor = np.zeros(len(vals))
+		time_opencl_uncor = np.zeros(len(vals))
+		time_python_uncor = np.zeros(len(vals))
+
+		count = 0
+		for i in vals:
+			settings = {'discretise_method': m,
+						'n_discrete_bins': i}
+
+			opencl_estimator = OpenCLDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_cor[count] = opencl_estimator.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_opencl_cor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_cor[count] = python_estimator.estimate(source1, target, source2)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			opencl_estimator = OpenCLDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_opencl_uncor[count] = opencl_estimator.estimate(source2, target, source1)
+			itoc = time.perf_counter()
+			time_opencl_uncor[count] = itoc - itic
+
+			python_estimator = PythonDiscreteCMI(settings=settings)
+			itic = time.perf_counter()
+			mi_python_uncor[count] = python_estimator.estimate(source2, target, source1)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+		print(f"Summary OpenCL vs Python DiscreteCMI discretised 1D gaussian data using {m}:")
+
+		print("nbins\tOpenCLDiscreteCMI\t\tPythonDiscreteCMI")
+		print("CMI values uncorrelated conditional:")
+		for i in range(len(vals)):
+			print(f"{vals[i]}\t{mi_opencl_cor[i]}\t{mi_python_cor[i]}")
+
+		print("\nMI values uncorrelated source:")
+		# print("nbins\tOpenCLDiscreteCMI\t\tPythonDiscreteCMI")
+		for i in range(len(vals)):
+			print(f"{vals[i]}\t{mi_opencl_uncor[i]}\t{mi_python_uncor[i]}")
+
+		verbose(mi_opencl_cor, mi_python_cor, "", "CMI (uncorrelated conditional)", local=False)
+		verbose(mi_opencl_uncor, mi_python_uncor, "", "CMI (uncorrelated source)", local=False)
+
+		print("\nmean calculation times:")
+		print(" OpenCLDiscreteCMI(uncorrelated conditional): ", np.mean(time_opencl_cor))
+		print(" PythonDiscreteCMI(uncorrelated conditional): ", np.mean(time_python_cor))
+		print(" OpenCLDiscreteCMI (uncorrelated source): ", np.mean(time_opencl_uncor))
+		print(" PythonDiscreteCMI (uncorrelated source): ", np.mean(time_python_uncor))
+
+	print("\n=========================================================================")
+
+	# test mixed dimension input
+	d = [1, 2, 3]
+
+	print(f"\n\nTesting average MI using mixed dimensions\ntesting dimensions {d} for var1, var2 and cond each")
+	print(f"n_samples = {n_samples}\n")
+
+	print("Shapes:")
+
+	data = _generate_mute_data(n_samples=n_samples, )
+
+	source_o = data[0, :, :]
+	target_o = data[2, :, :]
+	cond_o = data[4, :, :]
+
+	settings = {'discretise_method': 'max_ent',
+				'n_discrete_bins': 2}
+
+	for s in d:
+		for t in d:
+			for c in d:
+				source1 = source_o[:, :s]
+				target = target_o[:, :t]
+				conditional = cond_o[:, :c]
+
+				cond = f"var1: {source1.shape} var2: {target.shape} cond: {conditional.shape}"
+
+				opencl_estimator = OpenCLDiscreteCMI(settings)
+				python_estimator = PythonDiscreteCMI(settings)
+
+				itic = time.perf_counter()
+				mi_opencl_cor = opencl_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_opencl_cor = itoc - itic
+
+				itic = time.perf_counter()
+				mi_python_cor = python_estimator.estimate(source1, target, conditional)
+				itoc = time.perf_counter()
+				time_python_cor = itoc - itic
+
+				verbose(mi_opencl_cor, mi_python_cor, cond, "MI")
+
+def test_discrete_cmi_local_values():
+	vals = [2, 4, 10]
+
+	print(
+		f"\n\nTesting local CMI using 1D gaussian data with covariance 0.4 - uncorrelated \nconditional and uncorrelated source")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=True, seed=SEED)
+
+	time_opencl_cor = 0.0
+	time_opencl_uncor = 0.0
+	time_python_cor = 0.0
+	time_python_uncor = 0.0
+
+	print("bins")
+	for i in vals:
+		settings = {}
+		settings = {'local_values': True,
+					'discretise_method': 'max_ent',
+					'n_discrete_bins': 2}
+
+		opencl_estimator = OpenCLDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_opencl_cor += itoc - itic
+
+		python_estimator = PythonDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_python_cor += itoc - itic
+
+		verbose(mi_opencl, mi_python, i, "CMI (uncorrelated conditional)", local=True, atol=1e-03)
+
+		opencl_estimator = OpenCLDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_opencl_uncor += itoc - itic
+
+		python_estimator = PythonDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_python_uncor += itoc - itic
+
+		verbose(mi_opencl, mi_python, i, "CMI (uncorrelated source)     ", local=True, atol=1e-03)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteCMI: ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteCMI: ", np.mean(time_python_cor))
+
+	print("\n=========================================================================")
+
+	# test 2D data
+	print(f"\n\nTesting local CMI using 2D mute data  - uncorrelated \nconditional and uncorrelated source")
+	print(f"testing settings n_discrete_bins {vals} and discrete_method max_ent and equal")
+	print(f"n_samples = {n_samples}\n")
+
+	print("\nTest n_discrete_bins using 2D data input:")
+	data = _generate_mute_data(n_samples=n_samples, n_replications=2)
+	source1 = data[0, :, :]
+	target = data[1, :, :]
+	source2 = data[4, :, :]
+
+	time_opencl_cor = 0.0
+	time_opencl_uncor = 0.0
+	time_python_cor = 0.0
+	time_python_uncor = 0.0
+
+	print("bins")
+	for i in vals:
+		settings = {}
+		settings = {'local_values': True,
+					'discretise_method': 'max_ent',
+					'n_discrete_bins': 2, }
+
+		opencl_estimator = OpenCLDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_opencl_cor += itoc - itic
+
+		python_estimator = PythonDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source1, target, source2)
+		itoc = time.perf_counter()
+		time_python_cor += itoc - itic
+
+		verbose(mi_opencl, mi_python, i, "CMI (uncorrelated conditional)", local=True)
+
+		opencl_estimator = OpenCLDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_opencl = opencl_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_opencl_uncor += itoc - itic
+
+		python_estimator = PythonDiscreteCMI(settings)
+		itic = time.perf_counter()
+		mi_python = python_estimator.estimate(source2, target, source1)
+		itoc = time.perf_counter()
+		time_python_uncor += itoc - itic
+
+		verbose(mi_opencl, mi_python, i, "CMI (uncorrelated source)     ", local=True)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteCMI: ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteCMI: ", np.mean(time_python_cor))
+
+def test_discrete_ais():
+	atol = 1e-03
+	hvals = [1, 2, 3]
+	nvals = [2, 4, 8]
+
+	print(f"\n\nTesting average AIS using 1D AR with history and noise")
+	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent")
+	print(f"n_samples = {n_samples}\n")
+
+	source1, source2 = _get_ar_data(n=n_samples, seed=SEED)
+
+	time_opencl_cor = np.zeros(np.power(len(nvals), 2))
+	res_opencl_cor = np.zeros(np.power(len(nvals), 2))
+	time_python_cor = np.zeros(np.power(len(nvals), 2))
+	res_python_cor = np.zeros(np.power(len(nvals), 2))
+	time_opencl_uncor = np.zeros(np.power(len(nvals), 2))
+	res_opencl_uncor = np.zeros(np.power(len(nvals), 2))
+	time_python_uncor = np.zeros(np.power(len(nvals), 2))
+	res_python_uncor = np.zeros(np.power(len(nvals), 2))
+	conds = np.empty((np.power(len(nvals), 3), 2))
+
+	count = 0
+	for h in hvals:
+		for i in nvals:
+			conds[count, :] = [h, i]
+
+			settings_j = {'history': h,
+						  'discretise_method': 'max_ent',
+						  'n_discrete_bins': i}
+
+			settings_p = {'history': h,
+						  'discretise_method': 'max_ent',
+						  'n_discrete_bins': i}
+
+			opencl_estimator = OpenCLDiscreteAIS(settings=settings_j)
+			python_estimator = PythonDiscreteAIS(settings=settings_p)
+
+			itic = time.perf_counter()
+			res_opencl_cor[count] = opencl_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_opencl_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_opencl_uncor[count] = opencl_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_opencl_uncor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_python_cor[count] = python_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_python_uncor[count] = python_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			count += 1
+
+	print(f"Summary OpenCL vs Python DiscreteAIS discretised 1D gaussian data using max_ent:")
+
+	print(f"hist, bins\tOpenCLDiscreteAIS\t\tPythonDiscreteAIS\tclose {atol}")
+	print("with history")
+	count = 0
+	for i in range(len(res_opencl_cor)):
+		print(
+			f"{conds[i, :]}\t\t{res_opencl_cor[i]}\t{res_python_cor[i]}\t{np.isclose(res_opencl_cor[i], res_python_cor[i], atol=atol)}")
+		count += 1
+
+	print("noise")
+	count = 0
+	for i in range(len(res_opencl_uncor)):
+		print(
+			f"{conds[i, :]}\t\t{res_opencl_uncor[i]}\t{res_python_uncor[i]}\t{np.isclose(res_opencl_uncor[i], res_python_uncor[i], atol=atol)}")
+		count += 1
+
+	verbose(res_opencl_cor, res_python_cor, "with history", "AIS", atol=atol)
+	verbose(res_opencl_uncor, res_python_uncor, "noise", "AIS", atol=atol)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteAIS (with history): ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteAIS (with history): ", np.mean(time_python_cor))
+	print(" OpenCLDiscreteAIS (noise): ", np.mean(time_opencl_uncor))
+	print(" PythonDiscreteAIS (noise): ", np.mean(time_python_uncor))
+
+def test_discrete_ais_local_values():
+	atol = 1e-03
+
+	hvals = [1, 2, 3]
+	nvals = [2, 4, 6]
+
+	print(f"\n\nTesting local AIS using 1D AR with history and noise")
+	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent")
+	print(f"n_samples = {n_samples}\n")
+
+	source1, source2 = _get_ar_data(n=n_samples, seed=SEED + 1)
+
+	min_len = min(len(source1), len(source2))
+	source1 = source1[:min_len]
+	source2 = source2[:min_len]
+
+	time_opencl_cor = np.zeros(np.power(len(nvals), 2))
+	res_opencl_cor = np.zeros(np.power(len(nvals), 2))
+	time_python_cor = np.zeros(np.power(len(nvals), 2))
+	res_python_cor = np.zeros(np.power(len(nvals), 2))
+	time_opencl_uncor = np.zeros(np.power(len(nvals), 2))
+	res_opencl_uncor = np.zeros(np.power(len(nvals), 2))
+	time_python_uncor = np.zeros(np.power(len(nvals), 2))
+	res_python_uncor = np.zeros(np.power(len(nvals), 2))
+	conds = np.empty((np.power(len(nvals), 3), 2))
+
+	print("hist, bins\tOpenCLDiscreteAIS vs PythonDiscreteAIS")
+	count = 0
+	for h in hvals:
+		for i in nvals:
+			conds[count, :] = [h, i]
+			settings = {}
+			settings_j = {'history': h,
+						  'discretise_method': 'max_ent',
+						  'n_discrete_bins': i,
+						  'local_values': True}
+			settings_p = {'history': h,
+						  'discretise_method': 'max_ent',
+						  'n_discrete_bins': i,
+						  'local_values': True}
+
+			opencl_estimator = OpenCLDiscreteAIS(settings=settings_j)
+			python_estimator = PythonDiscreteAIS(settings=settings_p)
+
+			itic = time.perf_counter()
+			res_opencl_cor = opencl_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_opencl_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_opencl_uncor = opencl_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_opencl_uncor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_python_cor = python_estimator.estimate(source1)
+			itoc = time.perf_counter()
+			time_python_cor[count] = itoc - itic
+
+			itic = time.perf_counter()
+			res_python_uncor = python_estimator.estimate(source2)
+			itoc = time.perf_counter()
+			time_python_uncor[count] = itoc - itic
+
+			# print(res_opencl_cor[:20])
+			# print(res_python_cor[:20])
+
+			min_len = min(len(res_opencl_cor), len(res_python_cor))
+
+			verbose(res_opencl_cor, res_python_cor, f"{conds[count, :]} - with hist", "AIS", local=True, atol=atol)
+			verbose(res_opencl_uncor, res_python_uncor, f"{conds[count, :]} - noise    ", "AIS", local=True, atol=atol)
+
+			count += 1
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteAIS (with history): ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteAIS (with history): ", np.mean(time_python_cor))
+	print(" OpenCLDiscreteAIS (noise): ", np.mean(time_opencl_uncor))
+	print(" PythonDiscreteAIS (noise): ", np.mean(time_python_uncor))
+
+def test_discrete_te():
+	vals = [1, 3]
+	nvals = [2, 6]
+
+	print(f"\n\nTesting average TE using 1D gaussian data with covariance 0.4 and lag 1\n")
+	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each.\nand n_discrete_bins{nvals}")
+	print(f"n_samples = {n_samples}\n")
+
+	expected_mi, source1, source2, target = _get_gauss_data(n=n_samples, expand=False, seed=SEED)
+	# add delay of one sample
+	source1 = source1[1:]
+	source2 = source2[1:]
+	target = target[:-1]
+
+	time_opencl_cor = np.empty(np.power(len(vals), 6))
+	res_opencl_cor = np.empty(np.power(len(vals), 6))
+	time_python_cor = np.empty(np.power(len(vals), 6))
+	res_python_cor = np.empty(np.power(len(vals), 6))
+	time_opencl_uncor = np.empty(np.power(len(vals), 6))
+	res_opencl_uncor = np.empty(np.power(len(vals), 6))
+	time_python_uncor = np.empty(np.power(len(vals), 6))
+	res_python_uncor = np.empty(np.power(len(vals), 6))
+
+	conds = np.empty([np.power(len(vals), 6), 6])
+
+	print("hst,ht,tt,hs,ts\t\tOpenCLDiscreteTE\tPythonDiscreteTE\tclose 1e-03")
+
+	count = 0
+	for hst in vals:
+		for ht in vals:
+			for hs in vals:
+				for tt in vals:
+					for ts in vals:
+						for n in nvals:
+							conds[count, :] = [hst, ht, tt, hs, ts, n]
+							settings_j = {"history_target": ht,
+										  "history_source": hs,
+										  "tau_target": tt,
+										  "tau_source": ts,
+										  "source_target_delay": hst,
+										  'discretise_method': 'equal',
+										  'n_discrete_bins': n}
+
+							settings_p = {"history_target": ht,
+										  "history_source": hs,
+										  "tau_target": tt,
+										  "tau_source": ts,
+										  "source_target_delay": hst,
+										  'discretise_method': 'equal',
+										  'n_discrete_bins': n}
+
+							opencl_estimator = OpenCLDiscreteTE(settings_j)
+							python_estimator = PythonDiscreteTE(settings_p)
+
+							itic = time.perf_counter()
+							te_opencl_cor = opencl_estimator.estimate(source=source1, target=target)
+							itoc = time.perf_counter()
+							# time_opencl += itoc-itic
+							time_opencl_cor[count] = itoc - itic
+							res_opencl_cor[count] = te_opencl_cor
+
+							itic = time.perf_counter()
+							te_python_cor = python_estimator.estimate(source=source1, target=target)
+							itoc = time.perf_counter()
+							# time_python += itoc-itic
+							time_python_cor[count] = itoc - itic
+							res_python_cor[count] = te_python_cor
+
+							# verbose(te_opencl, te_python, f"{[hst, ht, tt, hs, ts, n]}", "TE")
+							print(
+								f"{[hst, ht, tt, hs, ts]}\t\t{te_opencl_cor}\t{te_python_cor}\t{np.isclose(te_opencl_cor, te_python_cor, rtol=1e-03, atol=1e-03)}")
+
+							count += 1
+
+	verbose(res_opencl_cor, res_python_cor, "", "TE", local=False)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteTE: ", np.mean(time_opencl_cor))
+	print(" PythonDiscreteTE: ", np.mean(time_python_cor))
+
+def test_discrete_te_local_values():
+	vals = [2, 4]
+
+	print(f"\n\nTesting average TE using 1D binary data with memory\n")
+	print(f"testing settings history_source (hs), tau_source (ts), history_target (ht), \ntau_target (tt), source_target_delay (std) with {vals} each,\nand n_discrete_bins 2")
+	print(f"n_samples = {n_samples}\n")
+
+	source1, target = _get_mem_binary_data(n=n_samples, expand=True)
+
+	time_opencl = np.empty(np.power(len(vals), 5))
+	res_opencl = np.empty(np.power(len(vals), 5))
+	time_python = np.empty(np.power(len(vals), 5))
+	res_python = np.empty(np.power(len(vals), 5))
+	conds = np.empty((np.power(len(vals), 5), 5))
+
+	print("hst,ht,tt,hs,ts\t\tOpenCLDiscreteTE vs PythonDiscreteTE")
+
+	count = 0
+	for hst in vals:
+		for ht in vals:
+			for tt in vals:
+				for hs in vals:
+					for ts in vals:
+						conds[count, :] = [hst, ht, tt, hs, ts]
+						settings_j = {"history_target": ht,
+									  "history_source": hs,
+									  "tau_target": tt,
+									  "tau_source": ts,
+									  "source_target_delay": hst,
+									  "local_values": True,
+									  'noise_level': 0,
+									  'n_discrete_bins': 2}
+
+						opencl_estimator = OpenCLDiscreteTE(settings_j)
+
+						itic = time.perf_counter()
+						te_opencl = opencl_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
+
+						time_opencl[count] = itoc - itic
+						res_opencl[count] = np.mean(te_opencl)
+
+						settings_p = {"history_target": ht,
+									  "history_source": hs,
+									  "tau_target": tt,
+									  "tau_source": ts,
+									  "source_target_delay": hst,
+									  "local_values": True,
+									  'noise_level': 0,
+									  'n_discrete_bins': 2}
+
+						python_estimator = PythonDiscreteTE(settings_p)
+
+						itic = time.perf_counter()
+						te_python = python_estimator.estimate(source=source1, target=target)
+						itoc = time.perf_counter()
+
+						time_python[count] = itoc - itic
+						res_python[count] = np.mean(te_python)
+
+						count += 1
+
+						verbose(te_opencl, te_python, f"{[hst, ht, tt, hs, ts]}\t", "local TE", local=True, atol=1e-03)
+
+	print("\nmean calculation times:")
+	print(" OpenCLDiscreteTE: ", np.mean(time_opencl))
+	print(" PythonDiscreteTE: ", np.mean(time_python))
 
 
 #### Test analytic distribution
@@ -1723,6 +2720,384 @@ def test_analytic_distribution_cte_nocond_gaussian():
     print("\n=========================================================================")
 
 
+def test_analytic_distribution_mi_discrete():
+	pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+	m = 'equal'
+	bins = 5
+
+	print(
+		f"\n\nTesting Discrete MI on discretized gaussian data with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+	print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+
+	expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+	source = source[1:]
+	source_uncorr = source_uncorr[1:]
+	target = target[:-1]
+
+	EoP_opencl = np.zeros(len(pvals))
+	EoP_python = np.zeros(len(pvals))
+
+	settings_opencl = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	settings_python = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	est_opencl = OpenCLDiscreteMI(settings_opencl)
+	est_python = PythonDiscreteMI(settings_python)
+
+	mi = est_opencl.estimate(source, target)
+	C_opencl = est_opencl.computeSignificance()
+
+	mi2 = est_python.estimate(source, target)
+	C_python = est_python.computeSignificance()
+
+	mean_opencl = C_opencl.getMeanOfDistribution()
+	mean_python = C_python.getMeanOfDistribution()
+
+	mean_uncorr_opencl = C_opencl.getMeanOfUncorrectedDistribution()
+	mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+
+	std_opencl = C_opencl.getStdOfDistribution()
+	std_python = C_python.getStdOfDistribution()
+
+	count = 0
+	for p in pvals:
+		EoP_opencl[count] = C_opencl.computeEstimateForGivenPValue(p)
+		EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+		count += 1
+
+	print(f"OpenCL computeSignificance object:\ntype: {type(C_opencl)}")
+	print(f"Python computeSignificance object:\ntype: {type(C_python)}")
+
+	atol = 1e-06
+	print(f"\nSummary OpenCL vs Python DiscreteMI discretised 1D gaussian data using {m}:\n")
+
+	print(f"\t\t\tOpenCL\t\t\tPython\t\t\tclose {atol}")
+	print(
+		f"actualValue:\n\t\t\t{C_opencl.actualValue}\t{C_python.actualValue}\t{np.isclose(C_opencl.actualValue, C_python.actualValue, atol=atol)}")
+	print(
+		f"pValue:\n\t\t\t{C_opencl.pValue}\t{C_python.pValue}\t{np.isclose(C_opencl.pValue, C_python.pValue, atol=atol)}")
+	print(
+		f"getMeanOfDistribution:\n\t\t\t{mean_opencl}\t{mean_python}\t{np.isclose(mean_opencl, mean_python, atol=atol)}")
+	print(
+		f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_opencl}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_opencl, mean_uncorr_python, atol=atol)}")
+	print(f"StdOfDistribution:\n\t\t\t{std_opencl}\t{std_python}\t{np.isclose(std_opencl, std_python, atol=atol)}")
+
+	print("\nEstimateForGivenPValue:")
+	print("p\tOpenCLDiscreteMI\t\tPythonDiscreteMI")
+	for i in range(len(pvals)):
+		print(f"{pvals[i]}   \t{EoP_opencl[i]}\t{EoP_python[i]}")
+	verbose(EoP_opencl, EoP_python, "", "Estimate for given PValue")
+
+	print("\n=========================================================================")
+
+def test_analytic_distribution_cmi_discrete():
+	pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+	m = 'equal'
+	bins = 5
+
+	print(
+		f"\n\nTesting Discrete CMI on discretized gaussian data with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+	print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+
+	expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+	source = source[1:]
+	source_uncorr = source_uncorr[1:]
+	target = target[:-1]
+
+	EoP_opencl = np.zeros(len(pvals))
+	EoP_python = np.zeros(len(pvals))
+
+	settings_opencl = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	settings_python = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	est_opencl = OpenCLDiscreteCMI(settings_opencl)
+	est_python = PythonDiscreteCMI(settings_python)
+
+	mi = est_opencl.estimate(source, target, source_uncorr)
+	C_opencl = est_opencl.computeSignificance()
+
+	mi2 = est_python.estimate(source, target, source_uncorr)
+	C_python = est_python.computeSignificance()
+
+	mean_opencl = C_opencl.getMeanOfDistribution()
+	mean_python = C_python.getMeanOfDistribution()
+
+	mean_uncorr_opencl = C_opencl.getMeanOfUncorrectedDistribution()
+	mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+
+	std_opencl = C_opencl.getStdOfDistribution()
+	std_python = C_python.getStdOfDistribution()
+
+	count = 0
+	for p in pvals:
+		EoP_opencl[count] = C_opencl.computeEstimateForGivenPValue(p)
+		EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+		count += 1
+
+	print(f"OpenCL computeSignificance object:\ntype: {type(C_opencl)}")
+	print(f"Python computeSignificance object:\ntype: {type(C_python)}")
+
+	atol = 1e-06
+	print(f"\nSummary OpenCL vs Python DiscreteCMI discretised 1D gaussian data using {m}:\n")
+
+	print(f"\t\t\tOpenCL\t\t\tPython\t\t\tclose {atol}")
+	print(
+		f"actualValue:\n\t\t\t{C_opencl.actualValue}\t{C_python.actualValue}\t{np.isclose(C_opencl.actualValue, C_python.actualValue, atol=atol)}")
+	print(
+		f"pValue:\n\t\t\t{C_opencl.pValue}\t{C_python.pValue}\t{np.isclose(C_opencl.pValue, C_python.pValue, atol=atol)}")
+	print(
+		f"getMeanOfDistribution:\n\t\t\t{mean_opencl}\t{mean_python}\t{np.isclose(mean_opencl, mean_python, atol=atol)}")
+	print(
+		f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_opencl}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_opencl, mean_uncorr_python, atol=atol)}")
+	print(f"StdOfDistribution:\n\t\t\t{std_opencl}\t{std_python}\t{np.isclose(std_opencl, std_python, atol=atol)}")
+
+	print("\nEstimateForGivenPValue:")
+	print("p\tOpenCLDiscreteCMI\t\tPythonDiscreteCMI")
+	for i in range(len(pvals)):
+		print(f"{pvals[i]}   \t{EoP_opencl[i]}\t{EoP_python[i]}")
+	verbose(EoP_opencl, EoP_python, "", "Estimate for given PValue")
+
+	print("\n=========================================================================")
+
+def test_analytic_distribution_cmi_nocond_discrete():
+	pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+	m = 'equal'
+	bins = 5
+
+	print(
+		f"\n\nTesting Discrete CMI on discretized gaussian data (conditional=None) with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+	print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+
+	expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+	source = source[1:]
+	source_uncorr = source_uncorr[1:]
+	target = target[:-1]
+
+	EoP_opencl = np.zeros(len(pvals))
+	EoP_python = np.zeros(len(pvals))
+
+	settings_opencl = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	settings_python = {"discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	est_opencl = OpenCLDiscreteCMI(settings_opencl)
+	est_python = PythonDiscreteCMI(settings_python)
+
+	mi = est_opencl.estimate(source, target)
+	C_opencl = est_opencl.get_analytic_distribution(source, target)
+
+	mi2 = est_python.estimate(source, target)
+	C_python = est_python.get_analytic_distribution(source, target)
+
+	mean_opencl = C_opencl.getMeanOfDistribution()
+	mean_python = C_python.getMeanOfDistribution()
+
+	mean_uncorr_opencl = C_opencl.getMeanOfUncorrectedDistribution()
+	mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+
+	std_opencl = C_opencl.getStdOfDistribution()
+	std_python = C_python.getStdOfDistribution()
+
+	count = 0
+	for p in pvals:
+		EoP_opencl[count] = C_opencl.computeEstimateForGivenPValue(p)
+		EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+		count += 1
+
+	print(f"OpenCL computeSignificance object:\ntype: {type(C_opencl)}")
+	print(f"Python computeSignificance object:\ntype: {type(C_python)}")
+
+	atol = 1e-06
+	print(f"\nSummary OpenCL vs Python DiscreteCMI (no cond) discretised 1D gaussian data using {m}:\n")
+
+	print(f"\t\t\tOpenCL\t\t\tPython\t\t\tclose {atol}")
+	print(
+		f"actualValue:\n\t\t\t{C_opencl.actualValue}\t{C_python.actualValue}\t{np.isclose(C_opencl.actualValue, C_python.actualValue, atol=atol)}")
+	print(
+		f"pValue:\n\t\t\t{C_opencl.pValue}\t{C_python.pValue}\t{np.isclose(C_opencl.pValue, C_python.pValue, atol=atol)}")
+	print(
+		f"getMeanOfDistribution:\n\t\t\t{mean_opencl}\t{mean_python}\t{np.isclose(mean_opencl, mean_python, atol=atol)}")
+	print(
+		f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_opencl}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_opencl, mean_uncorr_python, atol=atol)}")
+	print(f"StdOfDistribution:\n\t\t\t{std_opencl}\t{std_python}\t{np.isclose(std_opencl, std_python, atol=atol)}")
+
+	print("\nEstimateForGivenPValue:")
+	print("p\tOpenCLDiscreteCMI\t\tPythonDiscreteCMI")
+	for i in range(len(pvals)):
+		print(f"{pvals[i]}   \t{EoP_opencl[i]}\t{EoP_python[i]}")
+	verbose(EoP_opencl, EoP_python, "", "Estimate for given PValue")
+
+	print("\n=========================================================================")
+
+def test_analytic_distribution_ais_discrete():
+	pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+	m = 'equal'
+	bins = 5
+
+	print(f"\n\nTesting Discrete AIS using 1D AR with history \n using discretise_method {m} - {bins} bins\n")
+	print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+
+	source1, source2 = _get_ar_data(seed=SEED)
+
+	EoP_opencl = np.zeros(len(pvals))
+	EoP_python = np.zeros(len(pvals))
+
+	settings_opencl = {'history': 2,
+					   "discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	settings_python = {'history': 2,
+					   "discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	est_opencl = OpenCLDiscreteAIS(settings_opencl)
+	est_python = PythonDiscreteAIS(settings_python)
+
+	mi = est_opencl.estimate(source1)
+	C_opencl = est_opencl.computeSignificance()
+
+	mi2 = est_python.estimate(source1)
+	C_python = est_python.computeSignificance()
+
+	mean_opencl = C_opencl.getMeanOfDistribution()
+	mean_python = C_python.getMeanOfDistribution()
+
+	mean_uncorr_opencl = C_opencl.getMeanOfUncorrectedDistribution()
+	mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+
+	std_opencl = C_opencl.getStdOfDistribution()
+	std_python = C_python.getStdOfDistribution()
+
+	count = 0
+	for p in pvals:
+		EoP_opencl[count] = C_opencl.computeEstimateForGivenPValue(p)
+		EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+		count += 1
+
+	print(f"OpenCL computeSignificance object:\ntype: {type(C_opencl)}")
+	print(f"Python computeSignificance object:\ntype: {type(C_python)}")
+
+	atol = 1e-06
+	print(f"\nSummary OpenCL vs Python DiscreteAIS on AR data with history using {m}:\n")
+	print(f"\t\t\tOpenCL\t\t\tPython\t\t\tclose {atol}")
+	print(
+		f"actualValue:\n\t\t\t{C_opencl.actualValue}\t{C_python.actualValue}\t{np.isclose(C_opencl.actualValue, C_python.actualValue, atol=atol)}")
+	print(
+		f"pValue:\n\t\t\t{C_opencl.pValue}\t{C_python.pValue}\t{np.isclose(C_opencl.pValue, C_python.pValue, atol=atol)}")
+	print(
+		f"getMeanOfDistribution:\n\t\t\t{mean_opencl}\t{mean_python}\t{np.isclose(mean_opencl, mean_python, atol=atol)}")
+	print(
+		f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_opencl}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_opencl, mean_uncorr_python, atol=atol)}")
+	print(f"StdOfDistribution:\n\t\t\t{std_opencl}\t{std_python}\t{np.isclose(std_opencl, std_python, atol=atol)}")
+
+	print("\nEstimateForGivenPValue:")
+	print("p\tOpenCLDiscreteAIS\t\tPythonDiscreteAIS")
+	for i in range(len(pvals)):
+		print(f"{pvals[i]}   \t{EoP_opencl[i]}\t{EoP_python[i]}")
+	verbose(EoP_opencl, EoP_python, "", "Estimate for given PValue")
+
+	print("\n=========================================================================")
+
+def test_analytic_distribution_te_discrete():
+	pvals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+	m = 'equal'
+	bins = 5
+
+	print(
+		f"\n\nTesting Discrete TE on discretized gaussian data with cov=0.4\n using discretise_method {m} - {bins} bins\n")
+	print(f"testing computeEstimateForGivenPValue for:\n\t{pvals}")
+
+	expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+	source = source[1:]
+	source_uncorr = source_uncorr[1:]
+	target = target[:-1]
+
+	EoP_opencl = np.zeros(len(pvals))
+	EoP_python = np.zeros(len(pvals))
+
+	settings_opencl = {'history_target': 1,
+					   "discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	settings_python = {'history_target': 1,
+					   "discretise_method": m,
+					   "n_discrete_bins": bins,
+					   'noise_level': 0,
+					   'normalise': False, }
+
+	est_opencl = OpenCLDiscreteTE(settings_opencl)
+	est_python = PythonDiscreteTE(settings_python)
+
+	mi = est_opencl.estimate(source, target)
+	C_opencl = est_opencl.computeSignificance()
+
+	mi2 = est_python.estimate(source, target)
+	C_python = est_python.computeSignificance()
+
+	mean_opencl = C_opencl.getMeanOfDistribution()
+	mean_python = C_python.getMeanOfDistribution()
+
+	mean_uncorr_opencl = C_opencl.getMeanOfUncorrectedDistribution()
+	mean_uncorr_python = C_python.getMeanOfUncorrectedDistribution()
+
+	std_opencl = C_opencl.getStdOfDistribution()
+	std_python = C_python.getStdOfDistribution()
+
+	count = 0
+	for p in pvals:
+		EoP_opencl[count] = C_opencl.computeEstimateForGivenPValue(p)
+		EoP_python[count] = C_python.computeEstimateForGivenPValue(p)
+		count += 1
+
+	print(f"OpenCL computeSignificance object:\ntype: {type(C_opencl)}")
+	print(f"Python computeSignificance object:\ntype: {type(C_python)}")
+
+	atol = 1e-06
+	print(f"\nSummary OpenCL vs Python DiscreteTE discretised 1D gaussian data using {m}:\n")
+
+	print(f"\t\t\tOpenCL\t\t\tPython\t\t\tclose {atol}")
+	print(
+		f"actualValue:\n\t\t\t{C_opencl.actualValue}\t{C_python.actualValue}\t{np.isclose(C_opencl.actualValue, C_python.actualValue, atol=atol)}")
+	print(
+		f"pValue:\n\t\t\t{C_opencl.pValue}\t{C_python.pValue}\t{np.isclose(C_opencl.pValue, C_python.pValue, atol=atol)}")
+	print(
+		f"getMeanOfDistribution:\n\t\t\t{mean_opencl}\t{mean_python}\t{np.isclose(mean_opencl, mean_python, atol=atol)}")
+	print(
+		f"getMeanOfUncorrectedDistribution:\n\t\t\t{mean_uncorr_opencl}\t{mean_uncorr_python}\t{np.isclose(mean_uncorr_opencl, mean_uncorr_python, atol=atol)}")
+	print(f"StdOfDistribution:\n\t\t\t{std_opencl}\t{std_python}\t{np.isclose(std_opencl, std_python, atol=atol)}")
+
+	print("\nEstimateForGivenPValue:")
+	print("p\tOpenCLDiscreteTE\t\tPythonDiscreteTE")
+	for i in range(len(pvals)):
+		print(f"{pvals[i]}   \t{EoP_opencl[i]}\t{EoP_python[i]}")
+	verbose(EoP_opencl, EoP_python, "", "Estimate for given PValue")
+
+	print("\n=========================================================================")
 
 
 #### Test bi- and multivariate analysis (single target)
@@ -1833,7 +3208,6 @@ def test_single_target_analysis(analysis, est_type, numperm=500, samples=10000):
     print(f"single target analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
 
 
-
 #### Test network analysis
 def test_network_analysis(analysis, est_type, numperm=300, samples=1000, reps=3):
 	
@@ -1930,8 +3304,9 @@ def test_network_analysis(analysis, est_type, numperm=300, samples=1000, reps=3)
 			equal = np.allclose(target_delays_opencl[t], target_delays_python[t], atol=atol)
 		else:
 			equal = False
-		
-		print(f"{t}\t{opencl_estimator}  :\t{target_delays_opencl[t]}{"\t" if len(target_delays_opencl[t])>1 else "\t\t"}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t{opencl_estimator}  :\t{target_delays_opencl[t]}{t1 if len(target_delays_opencl[t])>1 else t2}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
 	
 	print(f"\nselected sources {measure.upper()}:\n")
 	print(f"target\tclose {atol}")
@@ -1955,7 +3330,6 @@ def test_network_analysis(analysis, est_type, numperm=300, samples=1000, reps=3)
 	print("\n calculation times:")
 	print(f" network_analysis {analysis} {opencl_estimator} nperms {numperm}: ", np.mean(time_opencl) )
 	print(f" network_analysis {analysis} {python_estimator} nperms {numperm}: ", np.mean(time_python) )
-
 
 
 #### test nonlinear granger
@@ -2041,7 +3415,9 @@ def test_nonlinear_granger(analysis, est_type, numperm=300, samples=1000, reps=6
 		except:
 			equal_tt = False
 
-		print(f"{t}\t\t{ts_opencl}{"\t\t" if len(ts_opencl)<=1 else "\t"}{tt_opencl}{"\t\t" if len(ts_opencl)<=1 else "\t"}{ts_python}{"\t\t" if len(ts_python)<=1 else "\t"}{tt_python}\t\t{equal_ts}{"\t\t" if len(tt_python)<=1 else "\t"}{equal_tt}")
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t\t{ts_opencl}{t2 if len(ts_opencl)<=1 else t1}{tt_opencl}{t2 if len(ts_opencl)<=1 else t1}{ts_python}{t2 if len(ts_python)<=1 else t1}{tt_python}\t\t{equal_ts}{t2 if len(tt_python)<=1 else t1}{equal_tt}")
 
 	print("\n calculation times:")
 	print(f" nonlinear Granger via {analysis} {opencl_estimator}: ", np.mean(time_opencl) )
@@ -2084,6 +3460,32 @@ if __name__ == '__main__':
 	test_gaussian_cte_local_values()
 	"""
 
+	#### Test Discrete estimators
+	"""
+	testhead("DiscreteMI")
+	test_discrete_mi()
+
+	testhead("DiscreteMI local values")
+	test_discrete_mi_local_values()
+
+	testhead("DiscreteCMI")
+	test_discrete_cmi()
+
+	testhead("DiscreteCMI local values")
+	test_discrete_cmi_local_values()
+
+	testhead("DiscreteAIS")
+	test_discrete_ais()
+
+	testhead("DiscreteAIS local values")
+	test_discrete_ais_local_values()
+
+	testhead("DiscreteTE")
+	test_discrete_te()
+
+	testhead("DiscreteTE local values")
+	test_discrete_te_local_values()
+	"""
 	#### Test analytic distributions
 	"""
 	testhead("analytic distribution Gaussian")
@@ -2095,23 +3497,45 @@ if __name__ == '__main__':
 	test_analytic_distribution_cte_gaussian()
 	test_analytic_distribution_cte_nocond_gaussian()
 	"""
+	"""
+	testhead("analytic distribution Discrete")
+	test_analytic_distribution_mi_discrete()
+	test_analytic_distribution_cmi_discrete()
+	test_analytic_distribution_cmi_nocond_discrete()
+	test_analytic_distribution_ais_discrete()
+	test_analytic_distribution_te_discrete()
+	"""
 
 	#### Test bi- and multivariate analysis (single target)
 	# Gaussian CMI
 	"""
 	testhead("BivariateMI GaussianCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateMI","Gaussian",samples=10000)
+	test_single_target_analysis("BivariateMI","Gaussian", samples=10000)
 	
 	testhead("BivariateTE GaussianCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateTE","Gaussian",samples=10000)
+	test_single_target_analysis("BivariateTE","Gaussian", samples=10000)
 	
 	testhead("MultivariateMI GaussianCMI (analyse_single_target)")
-	test_single_target_analysis("MultivariateMI","Gaussian",samples=10000)
+	test_single_target_analysis("MultivariateMI","Gaussian", samples=10000)
 
 	testhead("MultivariateTE GaussianCMI (analyse_single_target)")
-	test_single_target_analysis("MultivariateTE","Gaussian",samples=10000)
+	test_single_target_analysis("MultivariateTE","Gaussian", samples=10000)
 	"""
 
+	# Discrete CMI
+	"""
+	testhead("BivariateMI DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateMI","Discrete", samples=100000)
+
+	testhead("BivariateTE DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("BivariateTE","Discrete", samples=100000)
+
+	testhead("MultivariateMI DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateMI","Discrete", samples=100000)
+
+	testhead("MultivariateTE DiscreteCMI (analyse_single_target)")
+	test_single_target_analysis("MultivariateTE","Discrete", samples=100000)
+	"""
 
 	#### Test network analysis CMI
 	
@@ -2130,14 +3554,26 @@ if __name__ == '__main__':
 	test_network_analysis("MultivariateTE","Gaussian", numperm=500, samples=10000, reps=3)
 	"""
 
-	# Test nonlinear Granger analysis
+	# Discrete
+
+	testhead("network analysis BivariateMI DiscreteCMI")
+	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=10000, reps=3)
 	
+	testhead("network analysis BivariateTE DiscreteCMI")
+	test_network_analysis("BivariateTE","Discrete", numperm=300, samples=10000, reps=3)
+	
+	testhead("network analysis MultivariateMI DiscreteCMI")
+	test_network_analysis("MultivariateMI","Discrete", numperm=300, samples=10000, reps=3)
+	
+	testhead("network analysis MultivariateTE DiscreteCMI")
+	test_network_analysis("MultivariateTE","Discrete", numperm=300, samples=10000, reps=3)
+
+
+	# Test nonlinear Granger analysis
+	"""
 	testhead("nonlinear granger network analysis BivariateTE GaussianCMI") 
-	test_nonlinear_granger("BivariateTE", "GaussianCMI", numperm=500, samples=10000, reps=3)
+	test_nonlinear_granger("BivariateTE", "GaussianCMI", numperm=500, samples=100000, reps=3)
 	
 	testhead("nonlinear granger network analysis MultivariateTE GaussianCMI")
-	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=500, samples=10000, reps=3)
-	
-
-
-
+	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=500, samples=100000, reps=3)
+	"""
