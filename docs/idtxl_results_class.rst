@@ -27,3 +27,10 @@ Results node dynamics
 .. autoclass:: idtxl.results.ResultsSingleProcessRudelt
     :members:
     :noindex:
+
+Results distribution likelihood
+-------------------------
+.. autoclass:: idtxl.get_distribution_likelihood.ResultsDistributionLikelihood()
+    :members:
+    :noindex:
+

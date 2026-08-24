@@ -62,16 +62,16 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "IDTxl"
+project = "IDTxl 2.0"
 copyright = "2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
-author = "Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
+author = "Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = "1.6.0"
+version = "2.0.0"
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -145,7 +145,7 @@ latex_documents = [
         master_doc,
         "IDTxl.tex",
         "IDTxl Documentation",
-        "Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
+        "Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
         "manual",
     ),
 ]
