@@ -3428,7 +3428,7 @@ def test_nonlinear_granger(analysis, est_type, numperm=300, samples=1000, reps=6
 if __name__ == '__main__':
 
 	#### Test Gaussian OpenCL estimators
-	"""
+
 	testhead("GaussianMI")
 	test_gaussian_mi()
 
@@ -3440,7 +3440,7 @@ if __name__ == '__main__':
 	
 	testhead("GaussianCMI local values")
 	test_gaussian_cmi_local_values()
-	
+	"""
 	testhead("GaussianAIS")
 	test_gaussian_ais()
 	
@@ -3555,7 +3555,7 @@ if __name__ == '__main__':
 	"""
 
 	# Discrete
-
+	"""
 	testhead("network analysis BivariateMI DiscreteCMI")
 	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=10000, reps=3)
 	
@@ -3567,7 +3567,7 @@ if __name__ == '__main__':
 	
 	testhead("network analysis MultivariateTE DiscreteCMI")
 	test_network_analysis("MultivariateTE","Discrete", numperm=300, samples=10000, reps=3)
-
+	"""
 
 	# Test nonlinear Granger analysis
 	"""
