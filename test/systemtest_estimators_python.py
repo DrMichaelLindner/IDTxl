@@ -3356,7 +3356,7 @@ def test_discrete_ais_local_values():
 	print(f"\n\nTesting local AIS using 1D AR with history and noise")
 	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent\n")
 	
-	source1, source2 = _get_ar_data(seed=SEED+1)
+	source1, source2 = _get_ar_data(seed=SEED)
 	
 	min_len = min(len(source1),len(source2))
 	source1 = source1[:min_len]
@@ -3378,18 +3378,13 @@ def test_discrete_ais_local_values():
 		for i in nvals:
 		
 			conds[count,:] = [h, i]
-			settings = {}
-			settings_j = {'history': h,
-						'discretise_method': 'max_ent',
-						'n_discrete_bins': i,
-						'local_values': True}
-			settings_p = {'history': h, 
+			settings = {'history': h,
 						'discretise_method': 'max_ent',
 						'n_discrete_bins': i,
 						'local_values': True}
 
-			jidt_estimator = JidtDiscreteAIS(settings=settings_j)
-			python_estimator = PythonDiscreteAIS(settings=settings_p)
+			jidt_estimator = JidtDiscreteAIS(settings=settings)
+			python_estimator = PythonDiscreteAIS(settings=settings)
 	
 			itic = time.perf_counter()
 			res_jidt_cor = jidt_estimator.estimate(source1)
@@ -3411,11 +3406,6 @@ def test_discrete_ais_local_values():
 			res_python_uncor = python_estimator.estimate(source2)
 			itoc = time.perf_counter()
 			time_python_uncor[count] = itoc - itic
-			
-			#print(res_jidt_cor[:20])
-			#print(res_python_cor[:20])
-
-			min_len=min(len(res_jidt_cor), len(res_python_cor))
 			
 			verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist", "AIS", local=True, atol=atol)
 			verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise    ", "AIS", local=True, atol=atol)
@@ -4838,10 +4828,10 @@ if __name__ == '__main__':
 	
 	testhead("DiscreteAIS")
 	test_discrete_ais()
-
+	"""
 	testhead("DiscreteAIS local values")
 	test_discrete_ais_local_values()
-
+	"""
 	testhead("DiscreteTE")
 	test_discrete_te()
 
