@@ -1,5 +1,6 @@
 """Provide OpenCL estimators."""
 import sys
+import copy
 import logging
 from pkg_resources import resource_filename
 from scipy.special import digamma
@@ -37,25 +38,6 @@ class OpenCLEstimator(Estimator):
         
         self.settings = settings.copy()
 
-    ################################################## TODO remove ????????
-    def _get_device_old(self, gpuid):
-        """Return GPU devices, context, and queue."""
-        all_platforms = cl.get_platforms()
-        platform = next((p for p in all_platforms if
-                         p.get_devices(device_type=cl.device_type.GPU) != []),
-                        None)
-        if platform is None:
-            raise RuntimeError('No OpenCL GPU device found.')
-        my_gpu_devices = platform.get_devices(device_type=cl.device_type.GPU)
-        context = cl.Context(devices=my_gpu_devices)
-        if gpuid > len(my_gpu_devices)-1:
-            raise RuntimeError(
-                'No device with gpuid {0} (available device IDs: {1}).'.format(
-                    gpuid, np.arange(len(my_gpu_devices))))
-        queue = cl.CommandQueue(context, my_gpu_devices[gpuid])
-        logger.debug("Selected Device: {}".format(my_gpu_devices[gpuid].name))
-        return my_gpu_devices, context, queue
-
     def _get_device(self, gpuid):
         """Return OpenCL devices, context, and queue.
         
@@ -63,55 +45,41 @@ class OpenCLEstimator(Estimator):
         """
         all_platforms = cl.get_platforms()
 
-        ###################################################### TODO remove force CPU
-        if gpuid == 99:
-            # Fallback to CPU
-            platform = next((p for p in all_platforms if
-                             p.get_devices(device_type=cl.device_type.CPU) != []),
-                            None)
-            if platform is None:
-                raise RuntimeError('No OpenCL GPU or CPU device found.')
-            my_devices = platform.get_devices(device_type=cl.device_type.CPU)
-            device_type_str = "CPU"
-
-            context = cl.Context(devices=my_devices)
-
-            queue = cl.CommandQueue(context, my_devices[0])
-
-        else:
-            # Try GPU first
-            platform = next((p for p in all_platforms if
-                             p.get_devices(device_type=cl.device_type.GPU) != []),
-                            None)
-
-            if platform is not None:
-                my_devices = platform.get_devices(device_type=cl.device_type.GPU)
-                device_type_str = "GPU"
-            else:
-                # Fallback to CPU
-                platform = next((p for p in all_platforms if
-                                 p.get_devices(device_type=cl.device_type.CPU) != []),
-                                None)
-                if platform is None:
-                    raise RuntimeError('No OpenCL GPU or CPU device found.')
-                my_devices = platform.get_devices(device_type=cl.device_type.CPU)
-                device_type_str = "CPU"
-
-            context = cl.Context(devices=my_devices)
-
+        # Try GPU first
+        platform = next((p for p in all_platforms if
+                         p.get_devices(device_type=cl.device_type.GPU) != []),
+                        None)
+        if platform is not None:
+            my_devices = platform.get_devices(device_type=cl.device_type.GPU)
             if gpuid > len(my_devices) - 1:
                 raise RuntimeError(
                     'No device with gpuid {0} (available device IDs: {1}).'.format(
                         gpuid, np.arange(len(my_devices))))
 
-            queue = cl.CommandQueue(context, my_devices[gpuid])
+            device_type_str = "GPU"
+        else:
+            # Fallback to CPU
+            platform = next((p for p in all_platforms if
+                             p.get_devices(device_type=cl.device_type.CPU) != []),
+                            None)
+            if platform is not None:
+                # get device and type
+                my_devices = platform.get_devices(device_type=cl.device_type.CPU)
+                device_type_str = "CPU"
+            else:
+                # if no GPU or CPU available
+                raise RuntimeError('No OpenCL GPU or CPU device found.')
 
-            logger.debug(
-                "Selected %s Device: %s (platform: %s)",
-                device_type_str,
-                my_devices[gpuid].name,
-                my_devices[gpuid].platform.name
-            )
+        # get context and queue
+        context = cl.Context(devices=my_devices)
+        queue = cl.CommandQueue(context, my_devices[gpuid])
+
+        logger.debug(
+            "Selected %s Device: %s (platform: %s)",
+            device_type_str,
+            my_devices[gpuid].name,
+            my_devices[gpuid].platform.name
+        )
 
         return my_devices, context, queue, device_type_str
 
@@ -991,7 +959,7 @@ class OpenCLGaussian(OpenCLEstimator):
     def __init__(self, settings=None):
         # Get defaults for estimator settings
         super().__init__(settings)
-        self.settings = settings.copy()
+        #self.settings = settings.copy()
         self.settings.setdefault('gpuid', int(0))
         self.settings.setdefault('normalise', False)
         self.settings.setdefault('noise_level', np.float32(1e-8))
@@ -1034,7 +1002,7 @@ class OpenCLGaussian(OpenCLEstimator):
 
         # get rng seed
         if self.settings['noise_level'] > 0:
-            rng_seed = settings.get("rng_seed", None)
+            rng_seed = self.settings.get("rng_seed", None)
             self._rng = np.random.default_rng(rng_seed)
 
         self.actualValue = None
@@ -1624,7 +1592,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
         lcmi = self.calculateLocalMI(var1, var2)
         return np.mean(lcmi)
 
-    #################################################### TODO
     def estimate(self, var1, var2):
         """Estimate mutual information.
 
@@ -1637,11 +1604,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
                 should be int32
             var2 : numpy array
                 realisations of the second variable (similar to var1)
-            
-            ############################################# TODO
-            n_chunks : int
-                number of data chunks, no. data points has to be the same for
-                each chunk
 
         Returns:
             float | numpy array
@@ -1662,11 +1624,11 @@ class OpenCLGaussianMI(OpenCLGaussian):
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
 
-
-        ####################################### TODO analytic dist
+        # for analystic distribution measurement
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
+
 
         if self.settings['local_values']:
             mi = self.calculateLocalMI(var1, var2)
@@ -2123,6 +2085,7 @@ class OpenCLGaussianCMI(OpenCLGaussian):
                 self.settings['noise_level'],
                 conditional.shape)
 
+        # for analystic distribution measurement
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
@@ -2339,7 +2302,7 @@ class OpenCLGaussianTE(OpenCLGaussian):
 
 
     """
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         settings = self._set_te_defaults(settings)
