@@ -1,6 +1,21 @@
 """
-	#################################################### TODO
+Provide tests to compare OpenCL and Python estimators
+
+THIS TEST DOES NOT RUN WITHOUT PRESELECTING TESTS!
+
+Hences, you should run appropriate parts of it separately
+(by uncommenting them in the main section at the end) and
+pype the output to a text file:
+
+e.g.
+python systemtest_estimators_opencl.py > your_output_file.txt
+
+BE AWARE:
+Running all tests in one go will take several hours and will
+produce a very long output!
+
 """
+
 
 
 import numpy as np
@@ -643,7 +658,7 @@ def test_gaussian_cmi():
 				source1 = source_o[:,:s]
 				target = target_o[:,:t]
 				conditional = cond_o[:,:c]
-				
+
 				cond = f"var1: {source1.shape} var2: {target.shape} cond: {conditional.shape}"
 
 				python_estimator = PythonGaussianCMI(settings)
@@ -3422,13 +3437,12 @@ def test_nonlinear_granger(analysis, est_type, numperm=300, samples=1000, reps=6
 	print("\n calculation times:")
 	print(f" nonlinear Granger via {analysis} {opencl_estimator}: ", np.mean(time_opencl) )
 	print(f" nonlinear Granger via {analysis} {python_estimator}: ", np.mean(time_python) )
-	
 
 
 if __name__ == '__main__':
 
 	#### Test Gaussian OpenCL estimators
-
+	"""
 	testhead("GaussianMI")
 	test_gaussian_mi()
 
@@ -3440,7 +3454,7 @@ if __name__ == '__main__':
 	
 	testhead("GaussianCMI local values")
 	test_gaussian_cmi_local_values()
-	"""
+
 	testhead("GaussianAIS")
 	test_gaussian_ais()
 	
@@ -3458,8 +3472,8 @@ if __name__ == '__main__':
 	
 	testhead("GaussianCTE local values")
 	test_gaussian_cte_local_values()
+	
 	"""
-
 	#### Test Discrete estimators
 	"""
 	testhead("DiscreteMI")
@@ -3506,12 +3520,14 @@ if __name__ == '__main__':
 	test_analytic_distribution_te_discrete()
 	"""
 
+
 	#### Test bi- and multivariate analysis (single target)
 	# Gaussian CMI
 	"""
 	testhead("BivariateMI GaussianCMI (analyse_single_target)")
 	test_single_target_analysis("BivariateMI","Gaussian", samples=10000)
-	
+"
+		
 	testhead("BivariateTE GaussianCMI (analyse_single_target)")
 	test_single_target_analysis("BivariateTE","Gaussian", samples=10000)
 	
@@ -3525,13 +3541,13 @@ if __name__ == '__main__':
 	# Discrete CMI
 	"""
 	testhead("BivariateMI DiscreteCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateMI","Discrete", samples=100000)
+	test_single_target_analysis("BivariateMI","Discrete", samples=10000)
 
 	testhead("BivariateTE DiscreteCMI (analyse_single_target)")
-	test_single_target_analysis("BivariateTE","Discrete", samples=100000)
+	test_single_target_analysis("BivariateTE","Discrete", samples=10000)
 
 	testhead("MultivariateMI DiscreteCMI (analyse_single_target)")
-	test_single_target_analysis("MultivariateMI","Discrete", samples=100000)
+	test_single_target_analysis("MultivariateMI","Discrete", samples=10000)
 
 	testhead("MultivariateTE DiscreteCMI (analyse_single_target)")
 	test_single_target_analysis("MultivariateTE","Discrete", samples=100000)
@@ -3572,8 +3588,8 @@ if __name__ == '__main__':
 	# Test nonlinear Granger analysis
 	"""
 	testhead("nonlinear granger network analysis BivariateTE GaussianCMI") 
-	test_nonlinear_granger("BivariateTE", "GaussianCMI", numperm=500, samples=100000, reps=3)
+	test_nonlinear_granger("BivariateTE", "GaussianCMI", numperm=500, samples=10000, reps=3)
 	
 	testhead("nonlinear granger network analysis MultivariateTE GaussianCMI")
-	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=500, samples=100000, reps=3)
+	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=500, samples=10000, reps=3)
 	"""

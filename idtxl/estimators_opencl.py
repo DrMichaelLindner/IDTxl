@@ -149,6 +149,69 @@ class OpenCLEstimator(Estimator):
 
         return embedded_vector
 
+    def set_data(self, flag, X, Y=None, Z=None):
+        """Set data to self for calculation of Local or Average XXX"""
+
+        if flag == "AIS":
+            self.flag = "AIS"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "MI":
+            self.flag = "MI"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "CMI":
+            self.flag = "CMI"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "TE":
+            self.flag = "TE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "CTE":
+            self.flag = "CTE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+
+    def get_data(self):
+        """get data in calculate functions"""
+        if self.flag == "MI":
+            return self.var1, self.var2
+        if self.flag == "CMI":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "AIS":
+            return self.var1, self.var2
+        if self.flag == "TE":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "CTE":
+            return self.var1, self.var2, self.conditional
+
+    def remove_data(self):
+        """Remove data from self after calculation"""
+        if self.flag == "MI":
+            del self.var1
+            del self.var2
+        if self.flag == "CMI":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "AIS":
+            del self.var1
+            del self.var2
+        if self.flag == "TE":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "CTE":
+            del self.var1
+            del self.var2
+            del self.conditional
+
+        del self.flag
+
 
 ###############################
 # Kraskov estimators
@@ -1478,8 +1541,16 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.settings.setdefault('lag_mi', 0)
 
         
-    def calculateLocalMI(self, var1, var2):
-        """calculate local mutual information for gaussian data"""
+    def calculateLocalMI(self):
+        """calculate local mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
 
         b = self._allocate_buffers(var1, var2)
 
@@ -1587,10 +1658,20 @@ class OpenCLGaussianMI(OpenCLGaussian):
 
         return (logpdf_xy - logpdf_x - logpdf_y)
 
-    def calculateAverageMI(self, var1, var2):
-        """calculate local mutual information for gaussian data"""
-        lcmi = self.calculateLocalMI(var1, var2)
+    """
+    def calculateAverageMI(self):
+        calculate local mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = False.
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = False!')
+
+        lcmi = self.calculateLocalMI()
+
         return np.mean(lcmi)
+    """
 
     def estimate(self, var1, var2):
         """Estimate mutual information.
@@ -1629,14 +1710,16 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
+        self.set_data("MI", var1, var2)
 
         if self.settings['local_values']:
-            mi = self.calculateLocalMI(var1, var2)
-            
+            mi = self.calculateLocalMI()
+            self.actualValue = np.mean(mi)
         else:
-            mi = np.mean(self.calculateAverageMI(var1, var2))
+            mi = np.mean(self.calculateLocalMI())
+            self.actualValue = mi
 
-        self.actualValue = np.mean(mi)
+        self.remove_data()
 
         return mi
 
@@ -1707,8 +1790,16 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         super().__init__(settings)
 
 
-    def calculateAverageCMI(self, var1, var2, conditional):
-        """calculate conditional mutual information for gaussian data """
+    def calculateAverageCMI(self):
+        """calculate conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = False!')
+
+        var1, var2, conditional = self.get_data()
 
         b = self._allocate_buffers_cmi(var1, var2, conditional)
 
@@ -1841,8 +1932,17 @@ class OpenCLGaussianCMI(OpenCLGaussian):
 
         return mi
         
-    def calculateLocalCMI(self, var1, var2, conditional):
-        """calculate local conditional mutual information for gaussian data """
+    def calculateLocalCMI(self):
+        """calculate local conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
         b = self._allocate_buffers_cmi(var1, var2, conditional)
 
         center_events = self._center_inputs_cmi(b)
@@ -2090,12 +2190,23 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
+        #print(var1.shape)
+        #print(var2.shape)
+        #print(conditional.shape)
+
+        var1 = np.ascontiguousarray(var1, dtype=np.float64)
+        var2 = np.ascontiguousarray(var2, dtype=np.float64)
+        conditional = np.ascontiguousarray(conditional, dtype=np.float64)
+        self.set_data("CMI", var1, var2, conditional)
+
         if self.settings['local_values']:
-            cmi = self.calculateLocalCMI(var1, var2, conditional)
+            cmi = self.calculateLocalCMI()
             self.actualValue = np.mean(cmi)
         else:
-            cmi = self.calculateAverageCMI(var1, var2, conditional)
+            cmi = np.mean(self.calculateLocalCMI())
             self.actualValue = cmi
+
+        self.remove_data()
 
         return cmi
 
@@ -2215,17 +2326,19 @@ class OpenCLGaussianAIS(OpenCLGaussian):
         self.process_current_dim = process_current.shape[1]
         self.process_past_dim = process_past.shape[1]
 
+        self.set_data("AIS", process_past, process_current)
+
         if self.settings['local_values']:
-            ais = OpenCLGaussianMI.calculateLocalMI(self, 
-                process_current, process_past)
+            ais = OpenCLGaussianMI.calculateLocalMI(self)
             # correction to compare with JidtGaussianTE results
             ais = np.hstack([np.zeros(startFirstPoint+1), ais])
             self.actualValue = np.mean(ais)
         else:
-            ais = np.mean(OpenCLGaussianMI.calculateLocalMI(self, 
-                process_current, process_past))
+            ais = np.mean(OpenCLGaussianMI.calculateLocalMI(self))
             self.actualValue = ais
-        
+
+        self.remove_data()
+
         return ais
 
     def computeSignificance(self):
@@ -2363,17 +2476,19 @@ class OpenCLGaussianTE(OpenCLGaussian):
         self.n_samples = source.shape[0]
         self.source_past_dim = source_past.shape[1]
         self.target_current_dim = target_current.shape[1]
-        #self.target_past_dim = target_past.shape[1]
+
+        self.set_data("TE", source_past, target_current, target_past)
 
         if self.settings['local_values']:
-            te = OpenCLGaussianCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            te = OpenCLGaussianCMI.calculateLocalCMI(self)
             ## correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
             self.actualValue = np.mean(te)
-
         else:
-            te = OpenCLGaussianCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            te = OpenCLGaussianCMI.calculateAverageCMI(self)
             self.actualValue = te
+
+        self.remove_data()
 
         return te
 
@@ -2536,16 +2651,18 @@ class OpenCLGaussianCTE(OpenCLGaussian):
         self.source_past_dim = source_past.shape[1]
         self.target_current_dim = target_current.shape[1]
 
+        self.set_data("CTE", source_past, target_current, condCombine)
+
         if self.settings['local_values']:
-            cte = OpenCLGaussianCMI.calculateLocalCMI(self, source_past, 
-                target_current, condCombine)
+            cte = OpenCLGaussianCMI.calculateLocalCMI(self)
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
             self.actualValue = np.mean(cte)
         else:
-            cte = OpenCLGaussianCMI.calculateAverageCMI(self, source_past, 
-                target_current, condCombine)
+            cte = OpenCLGaussianCMI.calculateAverageCMI(self)
             self.actualValue = cte
-            
+
+        self.remove_data()
+
         return cte
 
     def computeSignificance(self):
@@ -2886,7 +3003,16 @@ class OpenCLDiscreteMI(OpenCLDiscrete):
         self.settings.setdefault('alph1', int(2))
         self.settings.setdefault('alph2', int(2))
 
-    def calculateLocalMI(self, var1, var2):
+    def calculateLocalMI(self,):
+        """Calculate average mutual information for discrete data.
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                               'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
         X = np.asarray(var1)
         Y = np.asarray(var2)
 
@@ -3008,7 +3134,16 @@ class OpenCLDiscreteMI(OpenCLDiscrete):
         # Match the original function's float64 output.
         return result.astype(np.float64).reshape(orig_shape)
 
-    def calculateAverageMI(self, var1, var2):
+    def calculateAverageMI(self):
+        """Calculate average mutual information for discrete data.
+                This function can not be called directly! You need to call .estimate(X,Y)
+                with estimator setting local_values = False."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                               'with estimator setting local_values = False!')
+
+        var1, var2 = self.get_data()
         X = np.asarray(var1)
         Y = np.asarray(var2)
         n = X.size
@@ -3112,18 +3247,13 @@ class OpenCLDiscreteMI(OpenCLDiscrete):
             wait_for=[evt],
         )
 
-        #mi = float(self.reduce(terms_dev, queue=self.queue).get())
-
         mi_device = self.reduce(
             terms_dev,
             queue=self.queue,
         )
         mi = float(mi_device.get())
 
-        # ReductionKernel produces the scalar MI.
-        #mi = float(self.reduce(terms_dev, queue=self.queue).get())
-
-        return mi #float(self.reduce(terms_dev, wait_for=[evt]).get())
+        return mi
 
     def estimate(self, var1, var2):
         """Estimate mutual information.
@@ -3170,13 +3300,17 @@ class OpenCLDiscreteMI(OpenCLDiscrete):
         if self.settings['local_values']:
             var1 = self._ensure_one_dim_input(var1)
             var2 = self._ensure_one_dim_input(var2)
-            mi = self.calculateLocalMI(var1, var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateLocalMI()
             self.actualValue = np.mean(mi)
         else:
             var1 = self._ensure_two_dim_input(var1)
             var2 = self._ensure_two_dim_input(var2)
-            mi = self.calculateAverageMI(var1, var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateAverageMI()
             self.actualValue = mi
+
+        self.remove_data()
 
         return mi
 
@@ -3265,7 +3399,22 @@ class OpenCLDiscreteCMI(OpenCLDiscrete):
         super().__init__(settings)
 
 
-    def calculateLocalCMI(self, var1, var2, conditional):
+    def calculateLocalCMI(self):
+        """Local conditional mutual information for discrete data.
+
+                Assumes _encode_multidim_states returns:
+                    codes: integer array of shape (n,)
+                    nstates: number of encoded states
+
+                This function can not be called directly! You need to call .estimate(X,Y,Z)
+                with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                               'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
         x, nx = self.encode_multidim_states(var1)
         y, ny = self.encode_multidim_states(var2)
         z, nz = self.encode_multidim_states(conditional)
@@ -3422,11 +3571,15 @@ class OpenCLDiscreteCMI(OpenCLDiscrete):
 
         self.n_samples = var1.shape[0]
 
-        cmi = self.calculateLocalCMI(var1, var2, conditional)
+        self.set_data("CMI", var1, var2, conditional)
+
+        cmi = self.calculateLocalCMI()
         self.actualValue = np.mean(cmi)
 
         if not self.settings['local_values']:
             cmi = np.mean(cmi)
+
+        self.remove_data()
 
         return cmi
 
@@ -3567,13 +3720,17 @@ class OpenCLDiscreteAIS(OpenCLDiscrete):
 
         self.n_samples = process.shape[0]
 
+        self.set_data("AIS", process_past, process_current)
+
         if self.settings['local_values']:
-            ais = OpenCLDiscreteMI.calculateLocalMI(self, process_past, process_current)
+            ais = OpenCLDiscreteMI.calculateLocalMI(self)
             ais = np.hstack([np.zeros(self.settings['history']), ais[:, 0]])
             self.actualValue = np.mean(ais)
         else:
-            ais = OpenCLDiscreteMI.calculateAverageMI(self, process_past, process_current)
+            ais = OpenCLDiscreteMI.calculateAverageMI(self)
             self.actualValue = ais
+
+        self.remove_data()
 
         return ais
 
@@ -3748,7 +3905,9 @@ class OpenCLDiscreteTE(OpenCLDiscrete):
 
         self.n_samples = source_past.shape[0]
 
-        te = OpenCLDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+        self.set_data("TE", source_past, target_current, target_past)
+
+        te = OpenCLDiscreteCMI.calculateLocalCMI(self)
         self.actualValue = np.mean(te)
 
         if self.settings['local_values']:
@@ -3756,6 +3915,8 @@ class OpenCLDiscreteTE(OpenCLDiscrete):
             te = np.hstack([np.zeros(startFirstPoint + 1), te])
         else:
             te = np.mean(te)
+
+        self.remove_data()
 
         return te
 

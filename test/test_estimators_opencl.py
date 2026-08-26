@@ -1,7 +1,7 @@
 """Test OpenCL estimators.
 
 This module provides unit tests for OpenCL estimators. Estimators are tested
-against JIDT estimators.
+against Python and partially also with Jidt estimators.
 """
 import math
 import pytest
@@ -1677,7 +1677,52 @@ def test_multi_gpu():
                         'OpenCL estimator failed (error larger 0.05).')
 
 
+@opencl_missing
+def test_invalid_calculation_call():
+    """Test OpenCL Gaussian and Discrete MI and CMI estimators for invalid call
+     of calculate functions.
+    Testing direct call of local and average calculate functions before AND
+    after an estimate to check inf the flags are removed correctly"""
+
+    print("Test invalid calls of calculate defs in all Python MI and CMI estimators")
+
+    expected_mi, source1, source2, target = _get_gauss_data(n=100,seed=SEED)
+
+    # Gaussian MI
+    estimator = OpenCLGaussianMI(settings={})
+    #with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+    res = estimator.estimate(source1, target)
+    #with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+
+    # Gaussian CMI
+    estimator = OpenCLGaussianCMI(settings={})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+    res = estimator.estimate(source1, target, source2)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+
+    # Discrete MI
+    estimator = OpenCLDiscreteMI(settings={'discretise_method': 'max_ent'})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+    res = estimator.estimate(source1, target)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+
+    # Discrete CMI
+    estimator = OpenCLDiscreteCMI(settings={'discretise_method': 'max_ent'})
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+    res = estimator.estimate(source1, target, source2)
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+
+
 if __name__ == '__main__':
+
+    test_invalid_calculation_call()
+
     # all estimators
     test_user_input()
     # mi
@@ -1727,6 +1772,6 @@ if __name__ == '__main__':
     test_debug_setting()
     test_insufficient_no_points
 
-
     test_multi_gpu()
+
 
