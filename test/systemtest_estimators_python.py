@@ -4748,6 +4748,7 @@ if __name__ == '__main__':
 
 	#### Test Kraskov estimators
 	"""
+	
 	testhead("KraskovMI")
 	test_kraskov_mi()
 	
@@ -4777,6 +4778,7 @@ if __name__ == '__main__':
 	
 	testhead("KraskovCTE local values")
 	test_kraskov_cte_local_values()
+	
 	"""
 
     #### Test Gaussian estimators
@@ -4811,27 +4813,25 @@ if __name__ == '__main__':
 	testhead("GaussianCTE local values")
 	test_gaussian_cte_local_values()
 	"""
-	
 	#### Test Discrete estimators
 	"""
+	
 	testhead("DiscreteMI")
 	test_discrete_mi()
 
 	testhead("DiscreteMI local values")
 	test_discrete_mi_local_values()
-
 	testhead("DiscreteCMI")
 	test_discrete_cmi()
 	
 	testhead("DiscreteCMI local values")
 	test_discrete_cmi_local_values()
-	
 	testhead("DiscreteAIS")
 	test_discrete_ais()
-	"""
+	
 	testhead("DiscreteAIS local values")
 	test_discrete_ais_local_values()
-	"""
+	
 	testhead("DiscreteTE")
 	test_discrete_te()
 
@@ -4859,7 +4859,7 @@ if __name__ == '__main__':
 	test_analytic_distribution_te_discrete()
 	"""
 
-	#### Test bi- and multivariate analysis (single target) ################## TODO file
+	#### Test bi- and multivariate analysis (single target)
 	# Kraskov CMI
 	"""
 	testhead("BivariateMI KraskovCMI (analyse_single_target)")
@@ -4925,7 +4925,6 @@ if __name__ == '__main__':
 	"""
 	testhead("network analysis BivariateMI GaussianCMI")
 	test_network_analysis("BivariateMI","Gaussian", numperm=300, samples=500, reps=6)
-
 	testhead("network analysis BivariateTE GaussianCMI")
 	test_network_analysis("BivariateTE","Gaussian", numperm=300, samples=500, reps=6)
 
@@ -4940,7 +4939,6 @@ if __name__ == '__main__':
 	"""
 	testhead("network analysis BivariateMI DiscreteCMI")
 	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=600, reps=6)
-
 	testhead("network analysis BivariateTE DiscreteCMI")
 	test_network_analysis("BivariateTE","Discrete", numperm=300, samples=600, reps=6)
 	
