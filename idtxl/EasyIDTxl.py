@@ -4,7 +4,7 @@ EasyIDTxl can be used to easily generate analysis scripts for
 several idtxl estimators and analysis types:
     - mutual information (MI)
     - transfer entropy (TE)
-    - conditional MI and TE
+    - conditional MI and TE (CMI and CTE)
     - bi- and multivariate MI and TE
     - network analysis
     - active information storage (AIS)
