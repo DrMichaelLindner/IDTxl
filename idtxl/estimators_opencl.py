@@ -1,16 +1,20 @@
+"""Provide OpenCL estimators."""
 import sys
+import copy
 import logging
 from pkg_resources import resource_filename
 from scipy.special import digamma
 from scipy.linalg import cholesky
 import numpy as np
 from idtxl.estimator import Estimator
+import idtxl.idtxl_utils as utils
 from . import idtxl_exceptions as ex
 from idtxl.measurement_distributions_python import EmpiricalMeasurementDistribution, AnalyticalMeasurementDistribution, ChiSquareMeasurementDistribution
 
 try:
     import pyopencl as cl
     import pyopencl.array as cla
+    from pyopencl.reduction import ReductionKernel
 except ImportError as err:
     ex.package_missing(err, 'PyOpenCl is not available on this system.\n'
                             'If you want to use the idtxl OpenCL CMI estimators:\n'
@@ -34,25 +38,6 @@ class OpenCLEstimator(Estimator):
         
         self.settings = settings.copy()
 
-    ################################################## TODO remove ????????
-    def _get_device_old(self, gpuid):
-        """Return GPU devices, context, and queue."""
-        all_platforms = cl.get_platforms()
-        platform = next((p for p in all_platforms if
-                         p.get_devices(device_type=cl.device_type.GPU) != []),
-                        None)
-        if platform is None:
-            raise RuntimeError('No OpenCL GPU device found.')
-        my_gpu_devices = platform.get_devices(device_type=cl.device_type.GPU)
-        context = cl.Context(devices=my_gpu_devices)
-        if gpuid > len(my_gpu_devices)-1:
-            raise RuntimeError(
-                'No device with gpuid {0} (available device IDs: {1}).'.format(
-                    gpuid, np.arange(len(my_gpu_devices))))
-        queue = cl.CommandQueue(context, my_gpu_devices[gpuid])
-        logger.debug("Selected Device: {}".format(my_gpu_devices[gpuid].name))
-        return my_gpu_devices, context, queue
-
     def _get_device(self, gpuid):
         """Return OpenCL devices, context, and queue.
         
@@ -64,27 +49,29 @@ class OpenCLEstimator(Estimator):
         platform = next((p for p in all_platforms if
                          p.get_devices(device_type=cl.device_type.GPU) != []),
                         None)
-
         if platform is not None:
             my_devices = platform.get_devices(device_type=cl.device_type.GPU)
+            if gpuid > len(my_devices) - 1:
+                raise RuntimeError(
+                    'No device with gpuid {0} (available device IDs: {1}).'.format(
+                        gpuid, np.arange(len(my_devices))))
+
             device_type_str = "GPU"
         else:
             # Fallback to CPU
             platform = next((p for p in all_platforms if
                              p.get_devices(device_type=cl.device_type.CPU) != []),
                             None)
-            if platform is None:
+            if platform is not None:
+                # get device and type
+                my_devices = platform.get_devices(device_type=cl.device_type.CPU)
+                device_type_str = "CPU"
+            else:
+                # if no GPU or CPU available
                 raise RuntimeError('No OpenCL GPU or CPU device found.')
-            my_devices = platform.get_devices(device_type=cl.device_type.CPU)
-            device_type_str = "CPU"
 
+        # get context and queue
         context = cl.Context(devices=my_devices)
-
-        if gpuid > len(my_devices) - 1:
-            raise RuntimeError(
-                'No device with gpuid {0} (available device IDs: {1}).'.format(
-                    gpuid, np.arange(len(my_devices))))
-
         queue = cl.CommandQueue(context, my_devices[gpuid])
 
         logger.debug(
@@ -94,7 +81,7 @@ class OpenCLEstimator(Estimator):
             my_devices[gpuid].platform.name
         )
 
-        return my_devices, context, queue
+        return my_devices, context, queue, device_type_str
 
     def _get_max_mem(self):
         """Return max. GPU main memory available for computation."""
@@ -106,8 +93,129 @@ class OpenCLEstimator(Estimator):
         else:
             return 0.9 * self.devices[self.settings['gpuid']].global_mem_size
 
+    def _set_te_defaults(self, settings):
+        """Set defaults for transfer entropy estimation."""
+        try:
+            history_target = settings['history_target']
+        except KeyError:
+            raise RuntimeError('No target history was provided for TE '
+                               'estimation.')
+        settings.setdefault('history_source', history_target)
+        settings.setdefault('tau_target', 1)
+        settings.setdefault('tau_source', 1)
+        settings.setdefault('source_target_delay', 1)
 
-# Kraskov estimator
+        assert type(settings['tau_target']) is int, (
+            'Target tau has to be an integer.')
+        assert type(settings['tau_source']) is int, (
+            'Source tau has to be an integer.')
+        assert type(settings['history_target']) is int, (
+            'Target history has to be an integer.')
+        assert type(settings['history_source']) is int, (
+            'Source history has to be an integer.')
+        assert type(settings['source_target_delay']) is int, (
+            'Source-target delay has to be an integer.')
+        assert settings['tau_target'] >= 1, 'Target tau must be >= 1'
+        assert settings['tau_source'] >= 1, 'Source tau must be >= 1'
+        assert settings['history_target'] >= 0, 'Target history must be >= 0'
+        assert settings['history_source'] >= 1, 'Source history must be >= 1'
+        assert settings['source_target_delay'] >= 0, (
+            'Source-target delay must be >= 0')
+        return settings
+
+    def computeStartTimeForFirstDestEmbedding(self, history_target, tau_target, history_source, tau_source, delay):
+        """get first time point for embedding"""
+        startTimeBasedOnTargetPast = (history_target - 1) * tau_target
+        startTimeBasedOnSourcePast = (history_source - 1) * tau_source + delay - 1
+        return max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast);
+
+    def makeDelayEmbeddingVector(self, ts, history, tau, startFirstPoint, numEmbeddingVectors):
+        """create past delay embedding vector of given data and settings """
+        embedded_vector = np.zeros((numEmbeddingVectors, history))
+
+        for t in range(startFirstPoint, numEmbeddingVectors + startFirstPoint):
+            for i in range(history):
+                embedded_vector[t - startFirstPoint, i] = ts[t - i * tau]
+
+        return embedded_vector
+
+    def makeDelayEmbeddingVectorCurrent(self, ts, history, startFirstPoint, numEmbeddingVectors):
+        """create current delay embedding vector of given data and settings """
+        embedded_vector = np.zeros((numEmbeddingVectors, history))
+
+        for t in range(startFirstPoint, numEmbeddingVectors + startFirstPoint):
+            for i in range(history):
+                embedded_vector[t - startFirstPoint, i] = ts[t - i]
+
+        return embedded_vector
+
+    def set_data(self, flag, X, Y=None, Z=None):
+        """Set data to self for calculation of Local or Average XXX"""
+
+        if flag == "AIS":
+            self.flag = "AIS"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "MI":
+            self.flag = "MI"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "CMI":
+            self.flag = "CMI"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "TE":
+            self.flag = "TE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "CTE":
+            self.flag = "CTE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+
+    def get_data(self):
+        """get data in calculate functions"""
+        if self.flag == "MI":
+            return self.var1, self.var2
+        if self.flag == "CMI":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "AIS":
+            return self.var1, self.var2
+        if self.flag == "TE":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "CTE":
+            return self.var1, self.var2, self.conditional
+
+    def remove_data(self):
+        """Remove data from self after calculation"""
+        if self.flag == "MI":
+            del self.var1
+            del self.var2
+        if self.flag == "CMI":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "AIS":
+            del self.var1
+            del self.var2
+        if self.flag == "TE":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "CTE":
+            del self.var1
+            del self.var2
+            del self.conditional
+
+        del self.flag
+
+
+###############################
+# Kraskov estimators
+###############################
 class OpenCLKraskov(OpenCLEstimator):
     """Abstract class for implementation of OpenCLKraskov estimators.
 
@@ -182,7 +290,7 @@ class OpenCLKraskov(OpenCLEstimator):
                 'Set debug option to True to return neighbor counts.')
 
         # Get kernel and devices.
-        self.devices, self.context, self.queue = self._get_device(
+        self.devices, self.context, self.queue, self.device_type_str = self._get_device(
                                                         self.settings['gpuid'])
         self.kernel_location = resource_filename(__name__,
                                                  'gpuKnnKernelNoIdx.cl')
@@ -882,30 +990,16 @@ class OpenCLKraskovCMI(OpenCLKraskov):
             return cmi_array
 
 
-
-# Gaussian estimator
+###############################
+# Gaussian estimators
+###############################
 class OpenCLGaussian(OpenCLEstimator):
     """Abstract class for implementation of OpenCL Gaussian estimators.
 
     Abstract class for implementation of OpenCL Gaussian-estimators, 
     child classes implement estimators for mutual information (MI), 
-    conditional mutual information (CMI), 
-
-    actice information storage (AIS) and ######################### TODO ?????????
-    transfer entropy (TE) 
-
-    using OpenCL Gaussian estimator for continuous data. 
-    
-    ###############################################################TODO !!!
-
-    Estimators can be used to perform multiple, independent searches in
-    parallel. Each of these parallel searches is called a 'chunk'. To 
-    search multiple chunks, provide point sets as 2D arrays, where the 
-    first dimension represents samples or points, and the second 
-    dimension represents the points' dimensions. Concatenate chunk data 
-    in the first dimension and pass the number of chunks to the 
-    estimators. Chunks must be
-    of equal size.
+    conditional mutual information (CMI), actice information storage (AIS)
+    and transfer entropy (TE) using OpenCL Gaussian estimator for continuous data.
 
     Set common estimation parameters for OpenCL estimators.
 
@@ -918,62 +1012,51 @@ class OpenCLGaussian(OpenCLEstimator):
             - gpuid : int [optional] - device ID used for estimation 
               (if more than one device is available on the current 
               platform) (default=0)
-            
-            ########################################################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
-            - normalise : bool [optional] - z-standardise data 
+            - normalise : bool [optional] - z-standardise data
               (default=False)
             - noise_level : float [optional] - random noise added to the
               data (default=0)
             - local_values : bool [optional] - return local MI/TE 
               instead of average MI/TE (default=False)
-
-            
-    """  
+    """
     def __init__(self, settings=None):
         # Get defaults for estimator settings
         super().__init__(settings)
-        self.settings = settings.copy()
+        #self.settings = settings.copy()
         self.settings.setdefault('gpuid', int(0))
         self.settings.setdefault('normalise', False)
         self.settings.setdefault('noise_level', np.float32(1e-8))
         self.settings.setdefault('local_values', False)
-        self.settings.setdefault('padding', True)
         self.settings.setdefault('verbose', True)
         self.sizeof_float = int(np.dtype(np.float32).itemsize)
         self.sizeof_int = int(np.dtype(np.int32).itemsize)
 
         # get devices.
-        self.devices, self.context, self.queue = self._get_device(
+        self.devices, self.context, self.queue, self.device_type_str = self._get_device(
                                                 self.settings['gpuid'])
 
-
-        ############################################### TODO
         # get max_work_item_sizes of device
-        self.work_group_size = min(self.queue.device.max_work_item_sizes)
+        self.work_group_size = self.queue.device.max_work_item_sizes[0]
+        self.work_group_size2 = self.queue.device.max_work_item_sizes[1]
+        self.work_group_size3 = self.queue.device.max_work_item_sizes[2]
 
-
-        ############################################# TODO
-        #self.work_group_size = 4096
-        # Use a safe two-dimensional local size.
-        #if self.work_group_size >= 2048:
-        #    self.tile_2d = 64
-        #elif self.work_group_size >= 1024:
-        #    self.tile_2d = 32
-        #el
-        if self.work_group_size >= 256:
+        if self.work_group_size >= 1024:
+            self.tile_2d = 32
+        elif self.work_group_size >= 256:
             self.tile_2d = 16
         elif self.work_group_size >= 64:
             self.tile_2d = 8
         else:
             self.tile_2d = 4
-        
-        self.observation_tile = self.tile_2d
-        
 
-
+        if self.work_group_size2 >= 1024:
+            self.observation_tile = 32
+        elif self.work_group_size2 >= 256:
+            self.observation_tile = 16
+        elif self.work_group_size2 >= 64:
+            self.observation_tile = 8
+        else:
+            self.observation_tile = 4
 
         # get kernel
         self.kernel_location = resource_filename(__name__,
@@ -982,12 +1065,11 @@ class OpenCLGaussian(OpenCLEstimator):
 
         # get rng seed
         if self.settings['noise_level'] > 0:
-            rng_seed = settings.get("rng_seed", None)
+            rng_seed = self.settings.get("rng_seed", None)
             self._rng = np.random.default_rng(rng_seed)
 
         self.actualValue = None
-
-        self.surr_est_type = "fast" 
+        self.surr_est_type = "fast"
 
     def is_parallel(self):
         return False
@@ -1034,37 +1116,7 @@ class OpenCLGaussian(OpenCLEstimator):
         self.concat_three = program.concat_three
         self.center_one = program.center_one
         self.quadratic_forms_four = program.quadratic_forms_four
-            
-    def _set_te_defaults(self, settings):
-        """Set defaults for transfer entropy estimation."""
-        try:
-            history_target = settings['history_target']
-        except KeyError:
-            raise RuntimeError('No target history was provided for TE '
-                               'estimation.')
-        settings.setdefault('history_source', history_target)
-        settings.setdefault('tau_target', 1)
-        settings.setdefault('tau_source', 1)
-        settings.setdefault('source_target_delay', 1)
-        
-        assert type(settings['tau_target']) is int, (
-            'Target tau has to be an integer.')
-        assert type(settings['tau_source']) is int, (
-            'Source tau has to be an integer.')
-        assert type(settings['history_target']) is int, (
-            'Target history has to be an integer.')
-        assert type(settings['history_source']) is int, (
-            'Source history has to be an integer.')
-        assert type(settings['source_target_delay']) is int, (
-            'Source-target delay has to be an integer.')
-        assert settings['tau_target'] >= 1, 'Target tau must be >= 1'
-        assert settings['tau_source'] >= 1, 'Source tau must be >= 1'
-        assert settings['history_target'] >= 0, 'Target history must be >= 0'
-        assert settings['history_source'] >= 1, 'Source history must be >= 1'
-        assert settings['source_target_delay'] >= 0, (
-            'Source-target delay must be >= 0')
-        return settings
-    
+
     def _set_cte_defaults(self, settings):
         """Set defaults for conditional transfer entropy estimation."""
 
@@ -1082,32 +1134,6 @@ class OpenCLGaussian(OpenCLEstimator):
             'Conditional-target delay must be >= 0')
 
         return settings
-
-    def computeStartTimeForFirstDestEmbedding(self, history_target, tau_target, history_source, tau_source, delay): 
-        """get first time point for embedding"""        
-        startTimeBasedOnTargetPast = (history_target - 1) * tau_target
-        startTimeBasedOnSourcePast = (history_source - 1) * tau_source + delay - 1
-        return max(startTimeBasedOnTargetPast, startTimeBasedOnSourcePast);
-
-    def makeDelayEmbeddingVector(self, ts, history, tau, startFirstPoint, numEmbeddingVectors):
-        """create past delay embedding vector of given data and settings """
-        embedded_vector = np.zeros((numEmbeddingVectors, history))
-        
-        for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
-            for i in range(history):
-                embedded_vector[t - startFirstPoint, i] = ts[t - i * tau]
-
-        return embedded_vector
-
-    def makeDelayEmbeddingVectorCurrent(self, ts, history, startFirstPoint, numEmbeddingVectors):
-        """create current delay embedding vector of given data and settings """
-        embedded_vector = np.zeros((numEmbeddingVectors, history))
-
-        for t in range(startFirstPoint, numEmbeddingVectors+startFirstPoint):
-            for i in range(history):
-                embedded_vector[t - startFirstPoint, i] = ts[t - i]
-
-        return embedded_vector
 
     # common functions
     def round_up(self, value, multiple):
@@ -1500,11 +1526,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
 
             - gpuid : int [optional] - device ID used for estimation (if more
               than one device is available on the current platform) (default=0)
-            
-            ######################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
             - normalise : bool [optional] - z-standardise data (default=False)
             - noise_level : float [optional] - random noise added to the data
               (default=1e-8)
@@ -1520,8 +1541,16 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.settings.setdefault('lag_mi', 0)
 
         
-    def calculateLocalMI(self, var1, var2):
-        """calculate local mutual information for gaussian data"""
+    def calculateLocalMI(self):
+        """calculate local mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
 
         b = self._allocate_buffers(var1, var2)
 
@@ -1629,12 +1658,21 @@ class OpenCLGaussianMI(OpenCLGaussian):
 
         return (logpdf_xy - logpdf_x - logpdf_y)
 
-    def calculateAverageMI(self, var1, var2):
-        """calculate local mutual information for gaussian data"""
-        lcmi = self.calculateLocalMI(var1, var2)
-        return np.mean(lcmi)
+    """
+    def calculateAverageMI(self):
+        calculate local mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = False.
 
-    #################################################### TODO
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = False!')
+
+        lcmi = self.calculateLocalMI()
+
+        return np.mean(lcmi)
+    """
+
     def estimate(self, var1, var2):
         """Estimate mutual information.
 
@@ -1647,11 +1685,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
                 should be int32
             var2 : numpy array
                 realisations of the second variable (similar to var1)
-            
-            ############################################# TODO
-            n_chunks : int
-                number of data chunks, no. data points has to be the same for
-                each chunk
 
         Returns:
             float | numpy array
@@ -1672,19 +1705,21 @@ class OpenCLGaussianMI(OpenCLGaussian):
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
 
-
-        ####################################### TODO analytic dist
+        # for analystic distribution measurement
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
-        if self.settings['local_values']:
-            mi = self.calculateLocalMI(var1, var2)
-            
-        else:
-            mi = np.mean(self.calculateAverageMI(var1, var2))
+        self.set_data("MI", var1, var2)
 
-        self.actualValue = np.mean(mi)
+        if self.settings['local_values']:
+            mi = self.calculateLocalMI()
+            self.actualValue = np.mean(mi)
+        else:
+            mi = np.mean(self.calculateLocalMI())
+            self.actualValue = mi
+
+        self.remove_data()
 
         return mi
 
@@ -1741,12 +1776,7 @@ class OpenCLGaussianCMI(OpenCLGaussian):
             - gpuid : int [optional] - device ID used for estimation 
               (if more than one device is available on the current 
               platform) (default=0)
-            
-            ########################################################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
-            - normalise : bool [optional] - z-standardise data 
+            - normalise : bool [optional] - z-standardise data
               (default=False)
             - noise_level : float [optional] - random noise added to the
               data (default=0)
@@ -1759,8 +1789,17 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         # Set default estimator settings.
         super().__init__(settings)
 
-    def calculateAverageCMI(self, var1, var2, conditional):
-        """calculate conditional mutual information for gaussian data """
+
+    def calculateAverageCMI(self):
+        """calculate conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = False!')
+
+        var1, var2, conditional = self.get_data()
 
         b = self._allocate_buffers_cmi(var1, var2, conditional)
 
@@ -1893,8 +1932,17 @@ class OpenCLGaussianCMI(OpenCLGaussian):
 
         return mi
         
-    def calculateLocalCMI(self, var1, var2, conditional):
-        """calculate local conditional mutual information for gaussian data """
+    def calculateLocalCMI(self):
+        """calculate local conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
         b = self._allocate_buffers_cmi(var1, var2, conditional)
 
         center_events = self._center_inputs_cmi(b)
@@ -2079,8 +2127,6 @@ class OpenCLGaussianCMI(OpenCLGaussian):
 
         return local_mi
         
-
-
     def estimate(self, var1, var2, conditional=None):
         """Estimate conditional mutual information between var1 and var2, given
         conditional.
@@ -2102,7 +2148,6 @@ class OpenCLGaussianCMI(OpenCLGaussian):
                 samples if 'local_values'=True
 
         """
-
         # Return MI if no conditioning variable was provided.
         if conditional is None:
             #if (self.est_mi is None):
@@ -2130,31 +2175,39 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         # Add noise to avoid duplicate points
         # Do not add noise inplace, because it would change the input data
         if self.settings['noise_level'] > 0:
-            var1 = var1 + self._rng.normal(0, 
-                self.settings['noise_level'], 
+            var1 = var1 + self._rng.normal(0,
+                self.settings['noise_level'],
                 var1.shape)
-            var2 = var2 + self._rng.normal(0, 
-                self.settings['noise_level'], 
+            var2 = var2 + self._rng.normal(0,
+                self.settings['noise_level'],
                 var2.shape)
-            conditional = conditional + self._rng.normal(0, 
-                self.settings['noise_level'], 
+            conditional = conditional + self._rng.normal(0,
+                self.settings['noise_level'],
                 conditional.shape)
 
+        # for analystic distribution measurement
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
-        
-        var1 = np.ascontiguousarray(var1)
-        var2 = np.ascontiguousarray(var2)
-        conditional = np.ascontiguousarray(conditional)
+
+        #print(var1.shape)
+        #print(var2.shape)
+        #print(conditional.shape)
+
+        var1 = np.ascontiguousarray(var1, dtype=np.float64)
+        var2 = np.ascontiguousarray(var2, dtype=np.float64)
+        conditional = np.ascontiguousarray(conditional, dtype=np.float64)
+        self.set_data("CMI", var1, var2, conditional)
 
         if self.settings['local_values']:
-            cmi = self.calculateLocalCMI(var1, var2, conditional)
+            cmi = self.calculateLocalCMI()
             self.actualValue = np.mean(cmi)
         else:
-            cmi = self.calculateAverageCMI(var1, var2, conditional)
+            cmi = np.mean(self.calculateLocalCMI())
             self.actualValue = cmi
-        
+
+        self.remove_data()
+
         return cmi
 
     def computeSignificance(self):
@@ -2219,11 +2272,6 @@ class OpenCLGaussianAIS(OpenCLGaussian):
             sets estimation parameters:
             - gpuid : int [optional] - device ID used for estimation (if more
               than one device is available on the current platform) (default=0)
-            
-            ######################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
             - history : int - number of samples in the processes' past used as
               embedding
             - tau : int [optional] - the processes' embedding delay (default=1)
@@ -2278,17 +2326,19 @@ class OpenCLGaussianAIS(OpenCLGaussian):
         self.process_current_dim = process_current.shape[1]
         self.process_past_dim = process_past.shape[1]
 
+        self.set_data("AIS", process_past, process_current)
+
         if self.settings['local_values']:
-            ais = OpenCLGaussianMI.calculateLocalMI(self, 
-                process_current, process_past)
+            ais = OpenCLGaussianMI.calculateLocalMI(self)
             # correction to compare with JidtGaussianTE results
             ais = np.hstack([np.zeros(startFirstPoint+1), ais])
             self.actualValue = np.mean(ais)
         else:
-            ais = np.mean(OpenCLGaussianMI.calculateLocalMI(self, 
-                process_current, process_past))
+            ais = np.mean(OpenCLGaussianMI.calculateLocalMI(self))
             self.actualValue = ais
-        
+
+        self.remove_data()
+
         return ais
 
     def computeSignificance(self):
@@ -2349,11 +2399,6 @@ class OpenCLGaussianTE(OpenCLGaussian):
             
             - gpuid : int [optional] - device ID used for estimation (if more
               than one device is available on the current platform) (default=0)
-            
-            ######################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
             - history_target : int - number of samples in the target's past
               used as embedding
             - history_source  : int [optional] - number of samples in the
@@ -2370,7 +2415,7 @@ class OpenCLGaussianTE(OpenCLGaussian):
 
 
     """
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         """Initialise estimator with settings."""
         settings = self._check_settings(settings)
         settings = self._set_te_defaults(settings)
@@ -2403,7 +2448,6 @@ class OpenCLGaussianTE(OpenCLGaussian):
             source.shape[0] == target.shape[0]
         ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
 
-     
         # delay embedding
         startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
             self.settings['history_target'],
@@ -2432,17 +2476,19 @@ class OpenCLGaussianTE(OpenCLGaussian):
         self.n_samples = source.shape[0]
         self.source_past_dim = source_past.shape[1]
         self.target_current_dim = target_current.shape[1]
-        #self.target_past_dim = target_past.shape[1]
+
+        self.set_data("TE", source_past, target_current, target_past)
 
         if self.settings['local_values']:
-            te = OpenCLGaussianCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            te = OpenCLGaussianCMI.calculateLocalCMI(self)
             ## correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
             self.actualValue = np.mean(te)
-
         else:
-            te = OpenCLGaussianCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            te = OpenCLGaussianCMI.calculateAverageCMI(self)
             self.actualValue = te
+
+        self.remove_data()
 
         return te
 
@@ -2507,11 +2553,6 @@ class OpenCLGaussianCTE(OpenCLGaussian):
             - gpuid : int [optional] - device ID used for estimation 
               (if more than one device is available on the current 
               platform) (default=0)
-            
-            ########################################################## TODO
-            - padding : bool [optional] - pad data to a length that is a
-              multiple of 1024, workaround for a
-            
             - history_target : int - number of samples in the target's past
               used as embedding
             - history_source  : int [optional] - number of samples in the
@@ -2610,16 +2651,18 @@ class OpenCLGaussianCTE(OpenCLGaussian):
         self.source_past_dim = source_past.shape[1]
         self.target_current_dim = target_current.shape[1]
 
+        self.set_data("CTE", source_past, target_current, condCombine)
+
         if self.settings['local_values']:
-            cte = OpenCLGaussianCMI.calculateLocalCMI(self, source_past, 
-                target_current, condCombine)
+            cte = OpenCLGaussianCMI.calculateLocalCMI(self)
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
             self.actualValue = np.mean(cte)
         else:
-            cte = OpenCLGaussianCMI.calculateAverageCMI(self, source_past, 
-                target_current, condCombine)
+            cte = OpenCLGaussianCMI.calculateAverageCMI(self)
             self.actualValue = cte
-            
+
+        self.remove_data()
+
         return cte
 
     def computeSignificance(self):
@@ -2661,8 +2704,1256 @@ class OpenCLGaussianCTE(OpenCLGaussian):
             return self.computeSignificance()
 
 
+###############################
+# Discrete estimators
+###############################
+class OpenCLDiscrete(OpenCLEstimator):
+    """Abstract class for implementation of OpenCL Discrete-estimators.
+
+    Abstract class for implementation of OpenCL Discrete-estimators, child
+    classes implement estimators for mutual information (MI), conditional
+    mutual information (CMI), active information storage (AIS), transfer
+    entropy (TE) using OpenCL estimator for discrete data.
+
+    implemented in idtxl by Michael Lindner, 2026
+
+    Args:
+        settings : dict [optional]
+            set estimator parameters:
+
+            - gpuid : int [optional] - device ID used for estimation
+              (if more than one device is available on the current
+              platform) (default=0)
+            - normalise : bool [optional] - z-standardise data (default=False)
+            - noise_level : float [optional] - random noise added to the data
+              (default=0)
+            - local_values : bool [optional] - return local MI/TE instead of
+              average MI/TE (default=False)
+    """
+
+    def __init__(self, settings):
+        settings.setdefault('gpuid', int(0))
+        settings.setdefault('discretise_method', 'none')
+        settings.setdefault('normalise', False)
+        settings.setdefault('noise_level', np.float32(1e-8))
+        settings.setdefault('local_values', False)
+        super().__init__(settings)
+
+        # get devices.
+        self.devices, self.context, self.queue, self.device_type_str = self._get_device(
+            self.settings['gpuid'])
+
+        # get max_work_item_sizes of device
+        self.work_group_size = self.queue.device.max_work_item_sizes[0]
+        self.work_group_size2 = self.queue.device.max_work_item_sizes[1]
+        self.work_group_size3 = self.queue.device.max_work_item_sizes[2]
+
+        if self.work_group_size >= 1024:
+            self.tile_2d = 32
+        elif self.work_group_size >= 256:
+            self.tile_2d = 16
+        elif self.work_group_size >= 64:
+            self.tile_2d = 8
+        else:
+            self.tile_2d = 4
+
+        if self.work_group_size2 >= 1024:
+            self.observation_tile = 32
+        elif self.work_group_size2 >= 256:
+            self.observation_tile = 16
+        elif self.work_group_size2 >= 64:
+            self.observation_tile = 8
+        else:
+            self.observation_tile = 4
+
+        # get kernels
+        self.kernel_location = resource_filename(__name__,
+                                                 'gpuDiscreteKernel.cl')
+        self._get_kernels()
+
+        # PyOpenCL generates a parallel reduction kernel.
+        self.reduce = ReductionKernel(
+            self.context,
+            dtype_out=np.float32,
+            neutral="0.0f",
+            reduce_expr="a+b",
+            map_expr="x[i]",
+            arguments="__global const float *x",
+        )
+
+        # get mem flag
+        self.mf = cl.mem_flags
+
+        # get rng seed
+        if self.settings['noise_level'] > 0:
+            rng_seed = settings.get("rng_seed", None)
+            self._rng = np.random.default_rng(rng_seed)
+
+        self.actualValue = None
+        self.surr_est_type = "fast"
+
+    def is_parallel(self):
+        return False
+
+    def is_analytic_null_estimator(self):
+        return True
+
+    def estimate_surrogates_analytic(self, n_perm=200, **data):
+        """Estimate the surrogate distribution analytically.
+        This method must be implemented because this class'
+        is_analytic_null_estimator() method returns true
+
+        Args:
+            n_perms : int
+                number of permutations (default=200)
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per estimate_parallel for this estimator.
+
+        Returns:
+            float | numpy array
+                n_perm surrogates of the average MI/CMI/TE over all samples
+                under the null hypothesis of no relationship between var1 and
+                var2 (in the context of conditional)
+        """
+        return common_estimate_surrogates_analytic(self, n_perm, **data)
+
+    def _get_kernels(self):
+        """Return KNN and range search OpenCL kernel."""
+        kernel_source = open(self.kernel_location).read()
+        program = cl.Program(self.context, kernel_source).build()
+        # MI
+        self.histogram_joint = program.histogram_joint
+        self.local_mi = program.local_mi
+        self.mi_terms = program.mi_terms
+        # CMI
+        self.count_cmi = program.count_cmi
+        self.local_cmi = program.local_cmi
+
+    def _discretise_vars(self, var1, var2=None, conditional=None):
+        # Discretise variables if requested. Otherwise assert data are discrete
+        # and provided alphabet sizes are correct.
+        if self.settings['discretise_method'] == 'equal':
+            var1 = utils.discretise(var1, self.settings['alph1'])
+            if var2 is not None:
+                var2 = utils.discretise(var2, self.settings['alph2'])
+            if conditional is not None:
+                conditional = utils.discretise(conditional,
+                                               self.settings['alphc'])
+
+        elif self.settings['discretise_method'] == 'max_ent':
+            var1 = utils.discretise_max_ent(var1, self.settings['alph1'])
+            if var2 is not None:
+                var2 = utils.discretise_max_ent(var2, self.settings['alph2'])
+            if not (conditional is None):
+                conditional = utils.discretise_max_ent(conditional,
+                                                       self.settings['alphc'])
+
+        elif self.settings['discretise_method'] == 'none':
+            assert issubclass(var1.dtype.type, np.integer), (
+                'Var1 is not an integer numpy array. '
+                'Discretise data to use this estimator.')
+            assert np.min(var1) >= 0, 'Minimum of var1 is smaller than 0.'
+            assert np.max(var1) < self.settings['alph1'], (
+                'Maximum of var1 is larger than the alphabet size.')
+            if var2 is not None:
+                assert issubclass(var2.dtype.type, np.integer), (
+                    'Var2 is not an integer numpy array. '
+                    'Discretise data to use this estimator.')
+                assert np.min(var2) >= 0, 'Minimum of var2 is smaller than 0.'
+                assert np.max(var2) < self.settings['alph2'], (
+                    'Maximum of var2 is larger than the alphabet size.')
+            if conditional is not None:
+                assert np.min(conditional) >= 0, (
+                    'Minimum of conditional is smaller than 0.')
+                assert issubclass(conditional.dtype.type, np.integer), (
+                    'Conditional is not an integer numpy array. '
+                    'Discretise data to use this estimator.')
+                assert np.max(conditional) < self.settings['alphc'], (
+                    'Maximum of conditional is larger than the alphabet size.')
+                assert var1.shape[0] == var2.shape[0] == conditional.shape[0], (
+                    'var1, var2 and conditional must have same length.')
+        else:
+            raise ValueError('Unkown discretisation method.')
+
+        if conditional is not None:
+            return var1, var2, conditional
+        elif var2 is not None:
+            return var1, var2
+        else:
+            return var1
+
+    def encode_multidim_states(self, arr):
+        """
+        Map each row of an integer-valued array to a single integer state.
+        Optimized: uses intp dtype, vectorized stride computation, dot product.
+        """
+        arr = np.asarray(arr, dtype=np.intp)  # Use platform-native int for indexing
+
+        if arr.ndim == 1:
+            mn = arr.min()
+            codes = arr - mn  # Avoid explicit astype
+            n_states = codes.max() + 1
+            return np.ascontiguousarray(codes), n_states
+
+        mn = arr.min(axis=0)
+        col = arr - mn
+        bases = col.max(axis=0) + 1
+
+        # Vectorized stride computation (replaces Python loop)
+        strides = np.empty(len(bases), dtype=np.intp)
+        strides[-1] = 1
+        if len(bases) > 1:
+            strides[:-1] = np.cumprod(bases[:0:-1])[::-1]
+
+        codes = col @ strides  # Dot product instead of sum
+        n_states = codes.max() + 1
+        return np.ascontiguousarray(codes), n_states
+
+    def is_analytic_null_estimator(self):
+        return True
+
+    def get_analytic_distribution(self, **data):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per the estimate method for this estimator.
+
+        """
+        pass
+
+    def estimate_surrogates_analytic(self, n_perm=200, **data):
+        """Return estimate of the analytical surrogate distribution.
+
+        This method must be implemented because this class'
+        is_analytic_null_estimator() method returns true.
+
+        Args:
+            n_perms : int [optional]
+                number of permutations (default=200)
+            data : numpy arrays
+                realisations of random variables required for the calculation
+                (varies between estimators, e.g. 2 variables for MI, 3 for
+                CMI). Formatted as per the estimate method for this estimator.
+
+        Returns:
+            float | numpy array
+                n_perm surrogates of the average MI/CMI/TE over all samples
+                under the null hypothesis of no relationship between var1 and
+                var2 (in the context of conditional)
+        """
+        return common_estimate_surrogates_analytic(self, n_perm, **data)
 
 
+class OpenCLDiscreteMI(OpenCLDiscrete):
+    """Calculate MI with OpenCL discrete-variable implementation.
+
+    Calculate the mutual information (MI) between two variables.
+
+    Results are returned in bits.
+
+    implemented in idtxl by Michael Lindner, 2026
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+
+            - gpuid : int [optional] - device ID used for estimation
+              (if more than one device is available on the current
+              platform) (default=0)
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning 'equal' for equal size bins, and or 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1 and
+              alph2
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2, or the value set for n_discrete_bins)
+            - alph2 : int [optional] - number of discrete bins/levels for var2
+              (default=2, or the value set for n_discrete_bins)
+            - lag_mi : int [optional] - time difference in samples to calculate
+              the lagged MI between processes (default=0)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Set default alphabet sizes. Try to overwrite alphabet sizes with
+        # number of bins for discretisation if provided, otherwise assume
+        # binary variables.
+        super().__init__(settings)
+        self.settings.setdefault('lag_mi', int(0))
+        try:
+            n_discrete_bins = int(self.settings['n_discrete_bins'])
+            self.settings['alph1'] = n_discrete_bins
+            self.settings['alph2'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph_* set below
+        self.settings.setdefault('alph1', int(2))
+        self.settings.setdefault('alph2', int(2))
+
+    def calculateLocalMI(self,):
+        """Calculate average mutual information for discrete data.
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                               'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
+        X = np.asarray(var1)
+        Y = np.asarray(var2)
+
+        if X.shape != Y.shape:
+            raise ValueError(
+                f"Shape mismatch: X.shape={X.shape}, Y.shape={Y.shape}")
+
+        orig_shape = X.shape
+        x_flat = np.ascontiguousarray(X.ravel())
+        y_flat = np.ascontiguousarray(Y.ravel())
+        n = x_flat.size
+
+        if n == 0:
+            return np.empty(orig_shape, dtype=np.float64)
+
+        # This part remains on the CPU.
+        # It is generally preferable to avoid transferring the original
+        # possibly-large categorical arrays to the device.
+        _, x_idx = np.unique(x_flat, return_inverse=True)
+        _, y_idx = np.unique(y_flat, return_inverse=True)
+
+        # GPU kernels use 32-bit indices and counts.
+        x_idx = np.ascontiguousarray(x_idx, dtype=np.int32)
+        y_idx = np.ascontiguousarray(y_idx, dtype=np.int32)
+
+        nx = int(x_idx.max()) + 1
+        ny = int(y_idx.max()) + 1
+
+        if n > np.iinfo(np.uint32).max:
+            raise ValueError("uint32 histogram counts would overflow")
+
+        mf = self.mf
+
+        x_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=x_idx,
+        )
+        y_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=y_idx,
+        )
+
+        joint_dev = cl.Buffer(
+            self.context,
+            mf.READ_WRITE,
+            size=nx * ny * np.dtype(np.uint32).itemsize,
+        )
+
+        # Zero the joint histogram.
+        cl.enqueue_fill_buffer(
+            self.queue,
+            joint_dev,
+            np.uint32(0),
+            0,
+            nx * ny * np.dtype(np.uint32).itemsize,
+        )
+
+        # Build the joint histogram.
+        evt_hist = self.histogram_joint(
+            self.queue,
+            (n,),
+            None,
+            x_dev,
+            y_dev,
+            joint_dev,
+            np.int32(ny),
+            np.int32(n),
+        )
+
+        # Compute marginal counts on the GPU.
+        # Each marginal can be obtained efficiently by copying the compact
+        # joint table back, but this version computes them on the CPU.
+        #
+        # For large nx*ny, replace this with separate GPU reduction kernels.
+        joint_counts = np.empty((nx, ny), dtype=np.uint32)
+        cl.enqueue_copy(self.queue, joint_counts, joint_dev, wait_for=[evt_hist])
+
+        x_counts = np.ascontiguousarray(joint_counts.sum(axis=1), dtype=np.uint32)
+        y_counts = np.ascontiguousarray(joint_counts.sum(axis=0), dtype=np.uint32)
+
+        x_counts_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=x_counts,
+        )
+        y_counts_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=y_counts,
+        )
+
+        result_dev = cl.Buffer(
+            self.context,
+            mf.WRITE_ONLY,
+            size=n * np.dtype(np.float32).itemsize,
+        )
+
+        evt_mi = self.local_mi(
+            self.queue,
+            (n,),
+            None,
+            x_dev,
+            y_dev,
+            joint_dev,
+            x_counts_dev,
+            y_counts_dev,
+            result_dev,
+            np.int32(ny),
+            np.float32(n),
+            np.int32(n),
+            wait_for=[evt_hist],
+        )
+
+        result = np.empty(n, dtype=np.float32)
+        cl.enqueue_copy(self.queue, result, result_dev, wait_for=[evt_mi]).wait()
+
+        # Match the original function's float64 output.
+        return result.astype(np.float64).reshape(orig_shape)
+
+    def calculateAverageMI(self):
+        """Calculate average mutual information for discrete data.
+                This function can not be called directly! You need to call .estimate(X,Y)
+                with estimator setting local_values = False."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                               'with estimator setting local_values = False!')
+
+        var1, var2 = self.get_data()
+        X = np.asarray(var1)
+        Y = np.asarray(var2)
+        n = X.size
+
+        if n == 0:
+            return 0.0
+
+        x = X.ravel()
+        y = Y.ravel()
+
+        # CPU relabeling. Prefer caching these labels if this method
+        # is called repeatedly for the same categorical data.
+        _, x_idx = np.unique(x, return_inverse=True)
+        _, y_idx = np.unique(y, return_inverse=True)
+
+        x_idx = np.ascontiguousarray(x_idx, dtype=np.int32)
+        y_idx = np.ascontiguousarray(y_idx, dtype=np.int32)
+
+        nx = int(x_idx.max()) + 1
+        ny = int(y_idx.max()) + 1
+
+        if n > np.iinfo(np.uint32).max:
+            raise ValueError("uint32 histogram counts would overflow")
+
+        mf = cl.mem_flags
+        queue = self.queue
+
+        x_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=x_idx,
+        )
+
+        y_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=y_idx,
+        )
+
+        joint_dev = cl.Buffer(
+            self.context,
+            mf.READ_WRITE,
+            size=nx * ny * np.dtype(np.uint32).itemsize,
+        )
+
+        cl.enqueue_fill_buffer(
+            queue,
+            joint_dev,
+            np.uint32(0),
+            0,
+            nx * ny * np.dtype(np.uint32).itemsize,
+        )
+
+        evt = self.histogram_joint(
+            queue,
+            (n,),
+            None,
+            x_dev,
+            y_dev,
+            joint_dev,
+            np.int32(ny),
+            np.int32(n),
+        )
+
+        # The table is only nx*ny elements, usually much smaller than n.
+        joint = np.empty((nx, ny), dtype=np.uint32)
+        cl.enqueue_copy(queue, joint, joint_dev, wait_for=[evt]).wait()
+
+        px = np.ascontiguousarray(joint.sum(axis=1), dtype=np.uint32)
+        py = np.ascontiguousarray(joint.sum(axis=0), dtype=np.uint32)
+
+        px_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=px,
+        )
+
+        py_dev = cl.Buffer(
+            self.context,
+            mf.READ_ONLY | mf.COPY_HOST_PTR,
+            hostbuf=py,
+        )
+
+        terms_dev = cla.empty(
+            self.queue,
+            (nx * ny,),
+            dtype=np.float32,
+        )
+
+        evt = self.mi_terms(
+            queue,
+            (nx * ny,),
+            None,
+            joint_dev,
+            px_dev,
+            py_dev,
+            terms_dev.data,
+            np.int32(nx),
+            np.int32(ny),
+            np.float32(n),
+            wait_for=[evt],
+        )
+
+        mi_device = self.reduce(
+            terms_dev,
+            queue=self.queue,
+        )
+        mi = float(mi_device.get())
+
+        return mi
+
+    def estimate(self, var1, var2):
+        """Estimate mutual information.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            return_calc : boolean
+                return the calculator used here as well as the numeric
+                calculated value(s)
+
+        Returns:
+            float | numpy array
+                average MI over all samples or local MI for individual
+                samples if 'local_values'=True
+        """
+        # Check the input data
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+
+        assert (
+                var1.shape[0] == var2.shape[0]
+        ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]})"
+
+        # Discretise variables if requested.
+        var1, var2 = self._discretise_vars(var1, var2)
+
+        # Then collapse any multivariates into univariate arrays:
+        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
+        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
+
+        self.n_samples = var1.shape[0]
+
+        # Shift variables to calculate a lagged MI.
+        if self.settings['lag_mi'] > 0:
+            var1 = var1[:-self.settings['lag_mi']]
+            var2 = var2[self.settings['lag_mi']:]
+
+        if self.settings['local_values']:
+            var1 = self._ensure_one_dim_input(var1)
+            var2 = self._ensure_one_dim_input(var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateLocalMI()
+            self.actualValue = np.mean(mi)
+        else:
+            var1 = self._ensure_two_dim_input(var1)
+            var2 = self._ensure_two_dim_input(var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateAverageMI()
+            self.actualValue = mi
+
+        self.remove_data()
+
+        return mi
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                                           self.n_samples,
+                                           (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1),
+                                           False,
+                                           self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, var1, var2):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        self.estimate(var1, var2)
+        return self.computeSignificance()
+
+
+class OpenCLDiscreteCMI(OpenCLDiscrete):
+    """Calculate CMI with OpenCL implementation for discrete variables.
+
+    Calculate the conditional mutual information between two variables given
+    the third.
+
+    Results are returned in bits.
+
+    implemented in idtxl by Michael Lindner, 2026
+
+    Args:
+        settings : dict [optional]
+            sets estimation parameters:
+
+            - gpuid : int [optional] - device ID used for estimation
+              (if more than one device is available on the current
+              platform) (default=0)
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 'equal' for equal size bins, and or 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1, alph2
+              and alphc
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2, or the value set for n_discrete_bins)
+            - alph2 : int [optional] - number of discrete bins/levels for var2
+              (default=2, or the value set for n_discrete_bins)
+            - alphc : int [optional] - number of discrete bins/levels for
+              conditional (default=2, or the value set for n_discrete_bins)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+    """
+
+    def __init__(self, settings=None):
+        settings = self._check_settings(settings)
+        # Set default alphabet sizes. Try to overwrite alphabet sizes with
+        # number of bins for discretisation if provided, otherwise assume
+        # binary variables.
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+            settings['alph2'] = n_discrete_bins
+            settings['alphc'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph_* set below
+        settings.setdefault('alph1', int(2))
+        settings.setdefault('alph2', int(2))
+        settings.setdefault('alphc', int(2))
+        super().__init__(settings)
+
+
+    def calculateLocalCMI(self):
+        """Local conditional mutual information for discrete data.
+
+                Assumes _encode_multidim_states returns:
+                    codes: integer array of shape (n,)
+                    nstates: number of encoded states
+
+                This function can not be called directly! You need to call .estimate(X,Y,Z)
+                with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                               'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
+        x, nx = self.encode_multidim_states(var1)
+        y, ny = self.encode_multidim_states(var2)
+        z, nz = self.encode_multidim_states(conditional)
+
+        if not (x.size == y.size == z.size):
+            raise ValueError("All variables must have the same number of samples")
+
+        n = x.size
+
+        if n == 0:
+            return np.empty(0, dtype=np.float64)
+
+        if nx * ny * nz >= 2 ** 32:
+            raise ValueError(
+                "The mixed-radix state space exceeds uint32 addressing capacity"
+            )
+
+        if n >= 2 ** 31:
+            raise ValueError(
+                "This implementation uses int32 histogram counters"
+            )
+
+        # The kernels use long for state values and ulong for key arithmetic.
+        x = np.ascontiguousarray(x, dtype=np.int64)
+        y = np.ascontiguousarray(y, dtype=np.int64)
+        z = np.ascontiguousarray(z, dtype=np.int64)
+
+        mf = self.mf
+
+        # allocate memory on GPU and copy data
+        bx = cl.Buffer(
+            self.context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x
+        )
+        by = cl.Buffer(
+            self.context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=y
+        )
+        bz = cl.Buffer(
+            self.context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=z
+        )
+
+        # These are exactly the maximum possible mixed-radix keys.
+        nxyz = nx * ny * nz
+        nxz = nx * nz
+        nyz = ny * nz
+
+        c_xyz = cl.Buffer(self.context, mf.READ_WRITE, nxyz * np.int32().nbytes)
+        c_xz = cl.Buffer(self.context, mf.READ_WRITE, nxz * np.int32().nbytes)
+        c_yz = cl.Buffer(self.context, mf.READ_WRITE, nyz * np.int32().nbytes)
+        c_z = cl.Buffer(self.context, mf.READ_WRITE, nz * np.int32().nbytes)
+
+        zero = np.int32(0)
+
+        for buf, size in (
+                (c_xyz, nxyz),
+                (c_xz, nxz),
+                (c_yz, nyz),
+                (c_z, nz),
+        ):
+            cl.enqueue_fill_buffer(
+                self.queue,
+                buf,
+                zero,
+                0,
+                size * np.int32().nbytes
+            )
+
+        local = cl.Buffer(self.context, mf.WRITE_ONLY, n * np.float64().nbytes)
+
+        # A multiple of the device's preferred work-group size is usually useful.
+        device = self.queue.device
+        preferred = device.max_work_group_size
+        local_size = min(256, preferred)
+        global_size = ((n + local_size - 1) // local_size) * local_size
+
+        self.count_cmi(
+            self.queue,
+            (global_size,),
+            (local_size,),
+            bx, by, bz,
+            c_xyz, c_xz, c_yz, c_z,
+            np.int64(ny),
+            np.int64(nz),
+            np.uint64(n)
+        )
+
+        self.local_cmi(
+            self.queue,
+            (global_size,),
+            (local_size,),
+            bx, by, bz,
+            c_xyz, c_xz, c_yz, c_z,
+            local,
+            np.int64(ny),
+            np.int64(nz),
+            np.uint64(n)
+        )
+
+        result = np.empty(n, dtype=np.float64)
+        cl.enqueue_copy(self.queue, result, local).wait()
+
+        return result
+
+    def estimate(self, var1, var2, conditional=None):
+        """Estimate conditional mutual information.
+
+           Args:
+               var1 : numpy array
+                   realisations of first variable, either a 2D numpy array where
+                   array dimensions represent [realisations x variable dimension]
+                   or a 1D array representing [realisations], array type can be
+                   float (requires discretisation) or int
+               var2 : numpy array
+                   realisations of the second variable (similar to var1)
+               conditional : numpy array [optional]
+                   realisations of the conditioning variable (similar to var), if
+                   no conditional is provided, return MI between var1 and var2
+
+           Returns:
+               float | numpy array
+                   average CMI over all samples or local CMI for individual
+                   samples if 'local_values'=True
+
+        """
+        # Return MI if no conditioning variable was provided.
+        if conditional is None:
+            # if (self.est_mi is None):
+            self.est_mi = OpenCLDiscreteMI(self.settings)
+            return self.est_mi.estimate(var1, var2)
+        else:
+            assert (conditional.size != 0), 'Conditional Array is empty.'
+
+        # Check the input data
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        conditional = self._ensure_two_dim_input(conditional)
+
+        assert (
+                var1.shape[0] == var2.shape[0] == conditional.shape[0]
+        ), f"Unequal number of observations (var1: {var1.shape[0]}, var2: {var2.shape[0]}, conditional: {conditional.shape[0]})"
+
+        # Discretise if requested.
+        var1, var2, conditional = self._discretise_vars(var1, var2,
+                                                        conditional)
+
+        # Then collapse any mulitvariates into univariate arrays:
+        var1 = utils.combine_discrete_dimensions(var1, self.settings['alph1'])
+        var2 = utils.combine_discrete_dimensions(var2, self.settings['alph2'])
+        conditional = utils.combine_discrete_dimensions(conditional,
+                                                        self.settings['alphc'])
+
+        var1 = self._ensure_one_dim_input(var1)
+        var2 = self._ensure_one_dim_input(var2)
+        conditional = self._ensure_one_dim_input(conditional)
+
+        self.n_samples = var1.shape[0]
+
+        self.set_data("CMI", var1, var2, conditional)
+
+        cmi = self.calculateLocalCMI()
+        self.actualValue = np.mean(cmi)
+
+        if not self.settings['local_values']:
+            cmi = np.mean(cmi)
+
+        self.remove_data()
+
+        return cmi
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                self.n_samples,
+                (self.settings['alph1'] - 1) * (self.settings['alph2'] - 1) * (self.settings['alphc']),
+                False,
+                self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, var1, var2, conditional=None):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array [optional]
+                realisations of the conditioning variable (similar to var), if
+                no conditional is provided, return MI between var1 and var2
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        if (conditional is None):
+            mi = OpenCLDiscreteMI(self.settings)
+            mi.estimate(var1, var2)
+            return mi.computeSignificance()
+        else:
+            self.estimate(var1, var2, conditional)
+            return self.computeSignificance()
+
+
+class OpenCLDiscreteAIS(OpenCLDiscrete):
+    """Calculate AIS with OpenCL discrete-variable implementation.
+
+    Calculate the active information storage (AIS) for one process.
+
+    Results are returned in bits.
+
+    implemented in idtxl by Michael Lindner, 2026
+
+    Args:
+        settings : dict
+            set estimator parameters:
+
+            - gpuid : int [optional] - device ID used for estimation
+              (if more than one device is available on the current
+              platform) (default=0)
+            - history : int - number of samples in the target's past used as
+              embedding (>= 0)
+            - tau : int [optional] - the processes' embedding delay (default=1)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 'equal' for equal size bins, and 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph. (>= 2)
+            - alph1 : int [optional] - number of discrete bins/levels for var1
+              (default=2 , or the value set for n_discrete_bins). (>= 2)
+    """
+
+    def __init__(self, settings):
+        settings = self._check_settings(settings)
+        try:
+            settings['history']
+        except KeyError:
+            raise RuntimeError('No history was provided for AIS estimation.')
+        assert type(settings['history']) is int, (
+            'History has to be an integer.')
+        assert settings['history'] >= 0, 'History must be >= 0'
+
+        settings.setdefault('tau', 1)
+        assert type(settings['tau']) is int, (
+            'tau has to be an integer.')
+        assert settings['tau'] >= 0, 'tau must be >= 0'
+
+        # Get alphabet sizes and check if discretisation is requested
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+        except KeyError:
+            pass  # Do nothing and use the default for alph set below
+        settings.setdefault('alph1', int(2))
+        assert settings['alph1'] >= 2, 'Number of bins must be >= 2'
+        super().__init__(settings)
+
+    def estimate(self, process):
+        """Estimate active information storage.
+
+        Args:
+            process : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations]
+
+        Returns:
+            float | numpy array
+                average AIS over all samples or local MI for individual
+                samples if 'local_values'=True
+
+        """
+        # Check the input data
+        process = self._ensure_one_dim_input(process)
+
+        # Discretise variables if requested.
+        process = self._discretise_vars(process)
+
+        # delay embedding
+        startFirstPoint = (self.settings['history'] - 1)
+
+        process_current = self.makeDelayEmbeddingVectorCurrent(process,
+                                                               1,
+                                                               startFirstPoint + 1,
+                                                               process.shape[0] - startFirstPoint - 1)
+
+        process_past = self.makeDelayEmbeddingVector(process,
+                                                     self.settings['history'],
+                                                     1,
+                                                     startFirstPoint,
+                                                     process.shape[0] - startFirstPoint - 1)
+        process_past = utils.combine_discrete_dimensions(process_past, self.settings['alph1'])
+        process_past = self._ensure_two_dim_input(process_past)
+        process_past = process_past.astype(int)
+
+        self.n_samples = process.shape[0]
+
+        self.set_data("AIS", process_past, process_current)
+
+        if self.settings['local_values']:
+            ais = OpenCLDiscreteMI.calculateLocalMI(self)
+            ais = np.hstack([np.zeros(self.settings['history']), ais[:, 0]])
+            self.actualValue = np.mean(ais)
+        else:
+            ais = OpenCLDiscreteMI.calculateAverageMI(self)
+            self.actualValue = ais
+
+        self.remove_data()
+
+        return ais
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                                           self.n_samples,
+                                           (self.settings['alph1'] - 1) * (
+                                                       np.power(self.settings['alph1'], self.settings['history']) - 1),
+                                           False,
+                                           self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, process):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            process : numpy array
+                realisations as either a 2D numpy array where array dimensions
+                represent [realisations x variable dimension] or a 1D array
+                representing [realisations], array type can be float (requires
+                discretisation) or int
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        self.estimate(process)
+        return self.computeSignificance()
+
+
+class OpenCLDiscreteTE(OpenCLDiscrete):
+    """Calculate TE with OpenCL implementation for discrete variables.
+
+    Calculate the transfer entropy between two time series processes.
+
+    Results are returned in bits.
+
+    implemented in idtxl by Michael Lindner, 2026
+
+    Args:
+        settings : dict
+            sets estimation parameters:
+
+             - gpuid : int [optional] - device ID used for estimation
+              (if more than one device is available on the current
+              platform) (default=0)
+            - history_target : int - number of samples in the target's past
+              used as embedding. (>= 0)
+            - history_source  : int [optional] - number of samples in the
+              source's past used as embedding (default=same as the target
+              history). (>= 1)
+            - tau_source : int [optional] - source's embedding delay
+              (default=1). (>= 1)
+            - tau_target : int [optional] - target's embedding delay
+              (default=1). (>= 1)
+            - source_target_delay : int [optional] - information transfer delay
+              between source and target (default=1) (>= 0)
+            - discretise_method : str [optional] - if and how to discretise
+              incoming continuous data, can be 'max_ent' for maximum entropy
+              binning, 'equal' for equal size bins, and 'none' if no binning is
+              required (default='none')
+            - n_discrete_bins : int [optional] - number of discrete bins/
+              levels or the base of each dimension of the discrete variables
+              (default=2). If set, this parameter overwrites/sets alph1 and
+              alph2. (>= 2)
+            - alph1 : int [optional] - number of discrete bins/levels for
+              source (default=2, or the value set for n_discrete_bins). (>= 2)
+            - alph2 : int [optional] - number of discrete bins/levels for
+              target (default=2, or the value set for n_discrete_bins). (>= 2)
+            - local_values : bool [optional] - return local TE instead of
+              average TE (default=False)
+    """
+
+    def __init__(self, settings):
+        settings = self._check_settings(settings)
+        # Get embedding and delay parameters.
+        settings = self._set_te_defaults(settings)
+
+        # Get alphabet sizes and check if discretisation is requested. Try to
+        # overwrite alphabet sizes with number of bins.
+        try:
+            n_discrete_bins = int(settings['n_discrete_bins'])
+            settings['alph1'] = n_discrete_bins
+            settings['alph2'] = n_discrete_bins
+        except KeyError:
+            # do nothing and set alphabet sizes to default below
+            pass
+        settings.setdefault('alph1', int(2))
+        settings.setdefault('alph2', int(2))
+        assert type(settings['alph1']) is int, (
+            'Num discrete levels for source has to be an integer.')
+        assert type(settings['alph2']) is int, (
+            'Num discrete levels for target has to be an integer.')
+        assert settings['alph1'] >= 2, (
+            'Num discrete levels for source must be >= 2')
+        assert settings['alph2'] >= 2, (
+            'Num discrete levels for target must be >= 2')
+        super().__init__(settings)
+
+    def combine_embedding_dimensions(self, var, alph):
+        var = utils.combine_discrete_dimensions(var, alph)
+        var = self._ensure_one_dim_input(var)
+        var = var.astype(int)
+        return var
+
+    def estimate(self, source, target):
+        """Estimate transfer entropy from a source to a target variable.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            target : numpy array
+                realisations of target variable (similar to var1)
+            return_calc : boolean
+                return the calculator used here as well as the numeric
+                calculated value(s)
+
+        Returns:
+            float | numpy array
+                average TE over all samples or local TE for individual
+                samples if 'local_values'=True
+
+        """
+        # Check the input data
+        source = self._ensure_one_dim_input(source)
+        target = self._ensure_one_dim_input(target)
+
+        # Discretise variables if requested.
+        source, target = self._discretise_vars(source, target)
+
+        assert (
+                source.shape[0] == target.shape[0]
+        ), f"Unequal number of observations (source: {source.shape[0]}, target: {target.shape[0]})"
+
+        # delay embedding
+        startFirstPoint = self.computeStartTimeForFirstDestEmbedding(
+            self.settings['history_target'],
+            self.settings['tau_target'],
+            self.settings['history_source'],
+            self.settings['tau_source'],
+            self.settings['source_target_delay'],
+        )
+
+        target_past = self.makeDelayEmbeddingVector(target,
+                                                    self.settings['history_target'],
+                                                    self.settings['tau_target'],
+                                                    startFirstPoint,
+                                                    target.shape[0] - startFirstPoint - 1)
+        target_past = self.combine_embedding_dimensions(target_past, self.settings['alph2'])
+
+        target_current = self.makeDelayEmbeddingVectorCurrent(target,
+                                                              1,
+                                                              startFirstPoint + 1,
+                                                              target.shape[0] - startFirstPoint - 1)
+        target_current = self._ensure_one_dim_input(target_current)
+        target_current = target_current.astype(int)
+
+        source_past = self.makeDelayEmbeddingVector(source,
+                                                    self.settings['history_source'],
+                                                    self.settings['tau_source'],
+                                                    startFirstPoint + 1 - self.settings['source_target_delay'],
+                                                    source.shape[0] - startFirstPoint - 1)
+
+        source_past = self.combine_embedding_dimensions(source_past, self.settings['alph1'])
+
+        self.n_samples = source_past.shape[0]
+
+        self.set_data("TE", source_past, target_current, target_past)
+
+        te = OpenCLDiscreteCMI.calculateLocalCMI(self)
+        self.actualValue = np.mean(te)
+
+        if self.settings['local_values']:
+            # correction to compare with JidtGaussianTE results
+            te = np.hstack([np.zeros(startFirstPoint + 1), te])
+        else:
+            te = np.mean(te)
+
+        self.remove_data()
+
+        return te
+
+    def computeSignificance(self):
+        C = ChiSquareMeasurementDistribution()
+        C.ChiSquareMeasurementDistribution(self.actualValue,
+                                           self.n_samples,
+                                           (np.power(self.settings['alph1'], self.settings['history_source']) - 1) * (
+                                                       self.settings['alph1'] - 1) * np.power(self.settings['alph2'],
+                                                                                              self.settings[
+                                                                                                  'history_target']),
+                                           False,
+                                           self.surr_est_type)
+        return C
+
+    def get_analytic_distribution(self, source, target):
+        """Return a Python AnalyticNullDistribution object.
+
+        Required so that our estimate_surrogates_analytic method can use the
+        common_estimate_surrogates_analytic() method, where data is formatted
+        as per the estimate method for this estimator.
+
+        Args:
+            source : numpy array
+                realisations of source variable, either a 2D numpy array where
+                array dimensions represent [realisations x variable dimension]
+                or a 1D array representing [realisations], array type can be
+                float (requires discretisation) or int
+            target : numpy array
+                realisations of target variable (similar to var1)
+
+        Returns:
+            idtxl calculator that was used here
+        """
+        # Make one estimate to prepare the calculator:
+        self.estimate(source, target)
+        return self.computeSignificance()
 
 
 def common_estimate_surrogates_analytic(estimator, n_perm=200, **data):

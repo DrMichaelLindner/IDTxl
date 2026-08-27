@@ -712,10 +712,64 @@ def test_discrete_ais():
     _assert_result(mi_d, 0, 'PythonDiscreteAIS', 'MI (no memory)')
     _assert_result(mi_g, 0, 'PythonGaussianAIS', 'MI (no memory)')
 
+def test_invalid_calculation_call():
+    """Test all Python estimators for invalid call of calculate functions
+    Testing direct call of local and average calculate functions before AND
+    after an estimate to check inf the flags are removed correctly"""
+
+    print("Test invalid calls of calculate defs in all Python MI and CMI estimators")
+
+    expected_mi, source1, source2, target = _get_gauss_data(n=100,seed=SEED)
+
+    # Kraskov MI
+    estimator = PythonKraskovMI(settings={})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+    res = estimator.estimate(source1, target)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+
+    # Kraskov CMI
+    estimator = PythonKraskovCMI(settings={})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+    res = estimator.estimate(source1, target, source2)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+
+    # Gaussian MI
+    estimator = PythonGaussianMI(settings={})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+    res = estimator.estimate(source1, target)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+
+    # Gaussian CMI
+    estimator = PythonGaussianCMI(settings={})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+    res = estimator.estimate(source1, target, source2)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageCMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+
+    # Discrete MI
+    estimator = PythonDiscreteMI(settings={'discretise_method': 'max_ent'})
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+    res = estimator.estimate(source1, target)
+    with pytest.raises(RuntimeError): res = estimator.calculateAverageMI()
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalMI()
+
+    # Discrete CMI
+    estimator = PythonDiscreteCMI(settings={'discretise_method': 'max_ent'})
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
+    res = estimator.estimate(source1, target, source2)
+    with pytest.raises(RuntimeError): res = estimator.calculateLocalCMI()
 
 
 if __name__ == '__main__':
-    
+
     test_mi_gauss_data()
     test_cmi_gauss_data_no_cond()
     test_cmi_gauss_data()
@@ -731,6 +785,5 @@ if __name__ == '__main__':
     test_one_two_dim_input_discrete()
     test_invalid_settings_input()
     test_invalid_history_parameters()
-    test_insufficient_no_points()    
-    
-    
+    test_insufficient_no_points()
+    test_invalid_calculation_call()

@@ -4,7 +4,7 @@ EasyIDTxl can be used to easily generate analysis scripts for
 several idtxl estimators and analysis types:
     - mutual information (MI)
     - transfer entropy (TE)
-    - conditional MI and TE
+    - conditional MI and TE (CMI and CTE)
     - bi- and multivariate MI and TE
     - network analysis
     - active information storage (AIS)
@@ -17,7 +17,7 @@ Requirements:
 
 Start EasyIDTxl using: python EasyIDTxl.py
 
-Michael Lindner, 2025
+implemented by Michael Lindner, 2025
 """
 
 
@@ -68,20 +68,20 @@ window_width = 1200
 window_higth = 800
 
 # define available estimators for each analysis type
-MI_estimators = ["PythonKraskovMI", "PythonGaussianMI","PythonDiscreteMI", 
-    "JidtKraskovMI", "JidtGaussianMI", "JidtDiscreteMI", 
-    "OpenCLKraskovMI", "CudaKraskovMI", "RudeltNSBEstimatorSymbolsMI",
-    "RudeltPluginEstimatorSymbolsMI", "RudeltBBCEstimator"]
-TE_estimators = ["PythonKraskovTE",  "PythonGaussianTE", "PythonDiscreteTE",
+MI_estimators = ["PythonKraskovMI", "PythonGaussianMI","PythonDiscreteMI",
+    "OpenCLKraskovMI", "OpenCLGaussianMI", "OpenCLDiscreteMI", "CudaKraskovMI",
+    "JidtKraskovMI", "JidtGaussianMI", "JidtDiscreteMI",
+    "RudeltNSBEstimatorSymbolsMI","RudeltPluginEstimatorSymbolsMI", "RudeltBBCEstimator"]
+TE_estimators = ["PythonKraskovTE",  "PythonGaussianTE", "PythonDiscreteTE", "OpenCLGaussianTE", "OpenCLDiscreteTE",
     "JidtKraskovTE", "JidtGaussianTE", "JidtDiscreteTE"]
 CMI_estimators = ["PythonKraskovCMI", "PythonDiscreteCMI", "PythonGaussianCMI", 
-    "PythonKraskovCTE", "PythonGaussianCTE", "OpenCLKraskovCMI", 
-    "CudaKraskovCMI", "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI", 
-    "JidtKraskovCTE","JidtGaussianCTE"]
+    "PythonKraskovCTE", "PythonGaussianCTE", "OpenCLKraskovCMI", "OpenCLGaussianCMI",
+    "OpenCLGaussianCTE", "OpenCLDiscreteCMI", "CudaKraskovCMI", "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI",
+    "JidtKraskovCTE", "JidtGaussianCTE"]
 AIS_estimators = ["ActiveInformationStorage", "PythonKraskovAIS", 
-    "PythonGaussianAIS", "PythonDiscreteAIS", "JidtKraskovAIS", 
-    "JidtGaussianAIS", "JidtDiscreteAIS", "OptimizationRudelt", 
-    "RudeltShufflingEstimator"]
+    "PythonGaussianAIS", "PythonDiscreteAIS", "OpenCLGaussianAIS", "OpenCLDiscreteAIS",
+    "JidtKraskovAIS", "JidtGaussianAIS", "JidtDiscreteAIS",
+    "OptimizationRudelt",  "RudeltShufflingEstimator"]
 AIS_CMI_estimators = CMI_estimators
 PID_estimators = ["I_BROJA(via_permutation)", 
     "I_BROJA(via_convex_optimization)", "I_sx(multivariate)", 
@@ -93,55 +93,68 @@ Estimator_dict = {
     "I_BROJA(via_convex_optimization)": "TartuPID",
     "I_sx(multivariate)": "SxPID",
 }
-Multivariate_estimators = ["PythonKraskovCMI", "PythonGaussianCMI", 
-    "PythonDiscreteCMI", "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI", 
-     "OpenCLKraskovCMI", "CudaKraskovCMI"]
-Nonlinear_analysis = ["PythonGaussianCMI", "JidtGaussianCMI"]
+Multivariate_estimators = ["PythonKraskovCMI", "PythonGaussianCMI",
+    "PythonDiscreteCMI", "OpenCLKraskovCMI", "OpenCLGaussianCMI", "OpenCLDiscreteCMI",
+    "CudaKraskovCMI", "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI"]
+Nonlinear_analysis = ["PythonGaussianCMI", "JidtGaussianCMI", "OpenCLGaussianCMI"]
 Nonlinear_BiMulti_type = ["MultivariateTE", "BivariateTE"]
 Network_analysis = ["PythonKraskovCMI", "PythonGaussianCMI", "PythonDiscreteCMI", 
-    "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI", 
-    "OpenCLKraskovCMI", "CudaKraskovCMI"]
+    "OpenCLKraskovCMI", "OpenCLGaussianCMI", "OpenCLDiscreteCMI", "CudaKraskovCMI",
+    "JidtKraskovCMI", "JidtGaussianCMI", "JidtDiscreteCMI"]
 BiMulti_type = ["MultivariateMI", "MultivariateTE", 
     "BivariateMI", "BivariateTE"]
 MPI_estimators = ["PythonKraskovMI", "PythonDiscreteMI", "PythonGaussianMI",
     "PythonKraskovTE", "PythonDiscreteTE", "PythonGaussianTE",
     "PythonKraskovCMI", "PythonDiscreteCMI", "PythonGaussianCMI",
+    "PythonKraskovCTE", "PythonGaussianCTE",
     "JidtKraskovMI", "JidtDiscreteMI", "JidtGaussianMI",
     "JidtKraskovTE", "JidtDiscreteTE", "JidtGaussianTE",
-    "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI"]
+    "JidtKraskovCMI", "JidtDiscreteCMI", "JidtGaussianCMI",
+    "JidtKraskovCTE", "JidtGaussianCTE",]
 
 # define allowed input data orders
-data_order_all = ["psr","prs","spr","srp","rps","rsp", "ps", "sp"]
+data_order_all = ["psr", "prs", "spr", "srp", "rps", "rsp", "ps", "sp"]
 data_order_2d = ["ps", "sp"]
 data_order_2dx = ["ps", "s"]
 
 
 # define estimator sources (files in which estimators are stored)
 estimator_source = {
+    ### Python
     "PythonKraskovMI": "estimators_python",
     "PythonDiscreteMI": "estimators_python",
     "PythonGaussianMI": "estimators_python",
-    "PythonBayesianDiscreteMI": "estimators_python",
-    "PythonKraskovTE": "estimators_python", 
+    "PythonKraskovTE": "estimators_python",
     "PythonDiscreteTE": "estimators_python",
     "PythonGaussianTE": "estimators_python",
     "PythonKraskovCMI": "estimators_python",
     "PythonDiscreteCMI": "estimators_python",
     "PythonGaussianCMI": "estimators_python",
-    "PythonBayesianDiscreteCMI": "estimators_python",
     "PythonKraskovAIS": "estimators_python",
     "PythonDiscreteAIS": "estimators_python",
     "PythonGaussianAIS": "estimators_python",
     "PythonKraskovCTE": "estimators_python",
     "PythonGaussianCTE": "estimators_python",
-    
+    ### OpenCL
+    "OpenCLKraskovMI": "estimators_opencl",
+    "OpenCLKraskovCMI": "estimators_opencl",
+    "OpenCLGaussianMI": "estimators_opencl",
+    "OpenCLGaussianTE": "estimators_opencl",
+    "OpenCLGaussianCMI": "estimators_opencl",
+    "OpenCLGaussianAIS": "estimators_opencl",
+    "OpenCLGaussianCTE": "estimators_opencl",
+    "OpenCLDiscreteMI": "estimators_opencl",
+    "OpenCLDiscreteTE": "estimators_opencl",
+    "OpenCLDiscreteCMI": "estimators_opencl",
+    "OpenCLDiscreteAIS": "estimators_opencl",
+    ### CUDA
+    "CudaKraskovCMI": "estimators_cuda",
+    ### Jidt
     "JidtKraskovCTE": "estimators_jidt",
     "JidtGaussianCTE": "estimators_jidt",
-
     "JidtKraskovMI": "estimators_jidt",
     "JidtDiscreteMI": "estimators_jidt",
     "JidtGaussianMI": "estimators_jidt",
-    "OpenCLKraskovMI": "estimators_opencl",
     "CudaKraskovMI": "estimators_cuda",
     "JidtKraskovTE": "estimators_jidt", 
     "JidtDiscreteTE": "estimators_jidt",
@@ -149,12 +162,12 @@ estimator_source = {
     "JidtKraskovCMI": "estimators_jidt",
     "JidtDiscreteCMI": "estimators_jidt",
     "JidtGaussianCMI": "estimators_jidt",
-    "OpenCLKraskovCMI": "estimators_opencl",
-    "CudaKraskovCMI": "estimators_cuda",
     "JidtKraskovAIS": "estimators_jidt",
     "JidtDiscreteAIS": "estimators_jidt",
     "JidtGaussianAIS": "estimators_jidt",
+    ### AIS
     "ActiveInformationStorage": "active_information_storage",
+    ### PID
     "SydneyPID": "estimators_pid",
     "SxPID": "estimators_multivariate_pid",
     "BivariatePID": "bivariate_pid",
@@ -162,10 +175,12 @@ estimator_source = {
     "TartuPID": "estimators_pid",
     "BivariatePID": "bivariate_pid",
     "MultivariatePID": "multivariate_pid",
+    ### BI/MULTI
     "MultivariateMI": "multivariate_mi",
     "MultivariateTE": "multivariate_te",
     "BivariateMI": "bivariate_mi",
     "BivariateTE": "bivariate_te",
+    ### Rudelt
     "RudeltNSBEstimatorSymbolsMI": "estimators_Rudelt",
     "RudeltPluginEstimatorSymbolsMI": "estimators_Rudelt",
     "RudeltBBCEstimator": "estimators_Rudelt",
@@ -175,52 +190,65 @@ estimator_source = {
 
 # define estimator tooltips
 estimator_tooltips = {
-    
+    ### Python
     "PythonKraskovMI": "Estimate MI with Python Kraskov implementation.\n Calculate the MI between two variables.",
     "PythonDiscreteMI": "Estimate MI with Python Discrete implementation.\n Calculate the MI between two variables.",
     "PythonGaussianMI": "Estimate MI with Python Gaussian implementation.\n Calculate the MI between two variables.",
-    "PythonBayesianDiscreteMI": "Estimate MI with Python Bayesian Discrete implementation.\n Calculate the MI between two variables.",
-    "PythonKraskovTE": "Estimate TE with Python Kraskov implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
+    "PythonKraskovTE": "Estimate TE with Python Kraskov implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.",
     "PythonDiscreteTE": "Estimate TE with Python Discrete implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
     "PythonGaussianTE": "Estimate TE with Python Gaussian implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
     "PythonKraskovCMI": "Estimate CMI with Python Kraskov implementation.\n Calculate the CMI between two variables given the third.",
     "PythonDiscreteCMI": "Estimate CMI with Python Discrete implementation.\n Calculate the CMI between two variables given the third.",
     "PythonGaussianCMI": "Estimate CMI with Python Gaussian implementation.\n Calculate the CMI between two variables given the third.",
-    "PythonBayesianDiscreteCMI": "Estimate CMI with Python Bayesian Discrete implementation.\n Calculate the CMI between two variables given the third.",
     "PythonKraskovAIS": "Estimate AIS with Python Kraskov implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
     "PythonDiscreteAIS": "Estimate AIS with Python Discrete implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
     "PythonGaussianAIS": "Estimate AIS with Python Gaussian implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
     "PythonKraskovCTE": "Estimate CTE with Python Kraskov implementation.\n Calculate the CTE between two variables given the third.",
     "PythonGaussianCTE": "Estimate CTE with Python Gaussian implementation.\n Calculate the CTE between two variables given the third.",
-    "JidtKraskovCTE": "Estimate CTE with JIDT's Kraskov implementation.\n Calculate the CTE between two variables given the third.",
-    "JidtGaussianCTE": "Estimate CTE with JIDT's Gaussian implementation.\n Calculate the CTE between two variables given the third.",
-
-    
+    ### OpenCL
+    "OpenCLKraskovMI": "Estimate MI with OpenCL Kraskov implementation.\n Calculate the MI between two variables using OpenCL GPU-code.",
+    "OpenCLKraskovCMI": "Estimate CMI with OpenCL Kraskov implementation.\n Calculate the CMI between two variables given the third using OpenCL GPU-code.",
+    "OpenCLGaussianMI": "Estimate MI with Python Gaussian implementation.\n Calculate the MI between two variables using OpenCL GPU-code.",
+    "OpenCLGaussianCMI": "Estimate CMI with Python Gaussian implementation.\n Calculate the CMI between two variables given the third using OpenCL GPU-code.",
+    "OpenCLGaussianAIS": "Estimate AIS with Python Gaussian implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value using OpenCL GPU-code.",
+    "OpenCLGaussianTE": "Estimate TE with Python Gaussian implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past using OpenCL GPU-code.",
+    "OpenCLGaussianCTE": "Estimate CTE with Python Gaussian implementation.\n Calculate the CTE between two variables given the third using OpenCL GPU-code.",
+    "OpenCLDiscreteMI": "Estimate MI with Python Discrete implementation.\n Calculate the MI between two variables using OpenCL GPU-code.",
+    "OpenCLDiscreteCMI": "Estimate CMI with Python Discrete implementation.\n Calculate the CMI between two variables given the third using OpenCL GPU-code.",
+    "OpenCLDiscreteAIS": "Estimate AIS with Python Discrete implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value using OpenCL GPU-code.",
+    "OpenCLDiscreteTE": "Estimate TE with Python Discrete implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past using OpenCL GPU-code.",
+    ### CUDA
+    "CudaKraskovMI": "Estimate MI with Cuda Kraskov implementation.\n Calculate the MI between two variables using NVidia CUDA GPU-code.",
+    ### Jidt
     "JidtKraskovMI": "Estimate MI with JIDT's Kraskov implementation.\n Calculate the MI between two variables.",
     "JidtDiscreteMI": "Estimate MI with JIDT's discrete-variable implementation.\n Calculate the MI between two variables.",
     "JidtGaussianMI": "Estimate MI with JIDT's Gaussian implementation.\n Calculate the MI between two variables.",
-    "OpenCLKraskovMI": "Estimate MI with OpenCL Kraskov implementation.\n Calculate the MI between two variables using OpenCL GPU-code.",
-    "CudaKraskovMI": "Estimate MI with Cuda Kraskov implementation.\n Calculate the MI between two variables using NVidia CUDA GPU-code.",
-    "JidtKraskovTE": "Estimate TE with JIDT's Kraskov implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
+    "JidtKraskovTE": "Estimate TE with JIDT's Kraskov implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.",
     "JidtDiscreteTE": "Estimate TE with JIDT's discrete-variable implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
     "JidtGaussianTE": "Estimate TE with JIDT's Gaussian implementation.\n Calculate TE between a source and a target variable. TE is defined as the conditional mutual information between the source's past state and the target's current value, conditional on the target's past.", 
     "JidtKraskovCMI": "Estimate CMI with JIDT's Kraskov implementation.\n Calculate the CMI between three variables.\nCall JIDT via jpype and use the Kraskov 1 estimator. If no conditional is given (is None), the function returns the MI between source and target.",
     "JidtDiscreteCMI": "Estimate CMI with JIDT's discrete-variable implementation.\n Calculate the CMI between two variables given the third.",
     "JidtGaussianCMI": "Calculate CMI with JIDT's Gaussian implementation.\n Computes the differential CMI of two multivariate sets of observations, conditioned on another, assuming that the probability distribution function for these observations is a multivariate Gaussian distribution.",
-    "OpenCLKraskovCMI": "Estimate CMI with OpenCL Kraskov implementation.\n Calculate the CMI between two variables given the third.",
     "CudaKraskovCMI": "Estimate CMI with Cuda Kraskov implementation.\n Calculate the CMI between two variables given the third.",
     "JidtKraskovAIS": "Estimate AIS with JIDT's Kraskov implementation.\n Calculate AIS for some process using JIDT's implementation of the Kraskov type 1 estimator. AIS is defined as the MI between the processes' past state and current value.",
     "JidtDiscreteAIS": "Estimate AIS with JIDT's discrete-variable implementation.\n Calculate the AIS for some processes using JIDT's implementation of the discrtete estimator. AIS is defined as the mutual information between the processes' past state and current value.",
     "JidtGaussianAIS": "Estimate AIS with JIDT's Gaussian implementation.\n Calculate AIS for some processes using JIDT's implementation of the Gaussian estimator. AIS is defined as the mutual information between the processes' past state and current value.",
+    "JidtKraskovCTE": "Estimate CTE with JIDT's Kraskov implementation.\n Calculate the CTE between two variables given the third.",
+    "JidtGaussianCTE": "Estimate CTE with JIDT's Gaussian implementation.\n Calculate the CTE between two variables given the third.",
+    ### AIS
     "ActiveInformationStorage": "Analysis of active information storage (AIS) in individual processes of a network.\nanalyse_single_process: Estimate active information storage for one process in the network.\nnetwork_analysis: Estimate active information storage for all or a subset of processes in the network.",
+    ### PID
     "SydneyPID": "Estimate PID of discrete variables.\nFast implementation of the BROJA partial information decomposition (PID) estimator for discrete data",
     "SxPID": "Estimate partial information decomposition for multiple inputs.\n\nImplementation of the multivariate partial information decomposition (PID)\nestimator for discrete data with (up to 4 inputs) and one output. The\nestimator finds shared information, unique information and synergistic\ninformation between the multiple inputs s1, s2, ..., sn with respect to the\noutput t for each realization (t, s1, ..., sn) and then average them\naccording to their distribution weights p(t, s1, ..., sn). Both the\npointwise (on the realization level) PID and the averaged PID are returned\n(see the 'return' of 'estimate()').\n\nThe algorithm uses recursion to compute the partial information decomposition.",
     "TartuPID": "Estimate PID for two inputs and one output",
     "BivariatePID": "Perform partial information decomposition for individual processes.\nPerform partial information decomposition (PID) for two source processes and one target process in the network. Estimate unique, shared, and synergistic information in the two sources about the target. Call analyse_network() on the whole network or a set of nodes or call analyse_single_target() to estimate PID for a single process. See docstrings of the two functions for more information.",
     "MultivariatePID": "Perform partial information decomposition for individual processes.\nPerform partial information decomposition (PID) for multiple source processes (up to 4 sources) and a target process in the network. Estimate unique, shared, and synergistic information in the multiple sources about the target. Call analyse_network() on the whole network or a set of nodes or call analyse_single_target() to estimate PID for a single process. See docstrings of the two functions for more information.",
+    ### BI/MULTI
+    "BivariateMI": "Perform network inference using bivariate MI.",
+    "BivariateTE": "Perform network inference using bivariate TE.",
     "MultivariateMI": "Perform network inference using multivariate MI.",
     "MultivariateTE": "Perform network inference using multivariate TE.",
-
+    ### Rudelt
     "RudeltNSBEstimatorSymbolsMI": "History dependence NSB estimator\n\nCalculate the mutual information (MI) of one variable depending on its past\nusing NSB estimator.",
     "RudeltPluginEstimatorSymbolsMI": "Plugin History dependence estimator\n\nCalculate the mutual information (MI) of one variable depending on its past\nusing plugin estimator.",
     "RudeltBBCEstimator": "Bayesian bias criterion (BBC) Estimator using NSB and Plugin estimator\n\nCalculate the mutual information (MI) of one variable depending on its past\nusing nsb and plugin estimator and check if bias criterion is passed.",
@@ -233,7 +261,6 @@ gen_att = "ATTENTION: In case of 'list' or 'list of lists': \nDO NOT the enter o
 
 # define parameter tooltips
 parameter_tooltips =  {
-
     "history_target": "[int] number of samples in the target's past used as embedding",
     "history_source": "[int] number of samples in the source's past used as embedding (default = same as the target history)",
     "history_conditional": "[int] number of samples in the conditional's past used as embedding (default = same as the target history)",
@@ -245,33 +272,27 @@ parameter_tooltips =  {
     "algorithm_num": "[int] [optional] which Kraskov algorithm (1 or 2) to use (default=1)",
     "local_values": "[optional] [bool] return local TE instead of average TE (default=False)",
     "debug": "[bool] [optional] return debug information when calling JIDT (default=False)",
-    
     "discretise_method": "[str] [optional] if and how to discretise incoming continuous data, can be 'max_ent' for maximum entropy binning, 'equal' for equal size bins, and 'none' if no binning is required. (default=none)",
     "n_discrete_bins": "[int] [optional] number of discrete bins/levels or the base of each dimension of the discrete variables. If set, this parameter overwrites/sets alph1 and alph2. (default=2)",
     "alph1": "[int] [optional] number of discrete bins/levels for source (default=2, or the value set for n_discrete_bins) (>= 2)",
     "alph2": "[int] [optional] number of discrete bins/levels for target (default=2, or the value set for n_discrete_bins) (>= 2)",
     "alphc": "[int] [optional] number of discrete bins/levels for conditional (default=2, or the value set for n_discrete_bins) (>= 2)",
-
     "kraskov_k": "[int] [optional] number of nearest neighbours for KNN search (default=4)",
     "theiler_t": "[int][optional] number of next temporal neighbours ignored in KNN and range searches (default=0)",
     "lag_mi": "[int] [optional] time difference in samples to calculate the lagged MI between processes (default=0)",
     "noise_level": "[float] [optional] random noise added to the data (default=1e-8)",
     "normalise": "[bool] [optional] z-standardise data ",
     "num_threads": "[int | str] [optional] number of threads used for estimation (default='USE_ALL', note that this uses *all* available threads on the current machine).",
-
     "gpuid": "[int] [optional] device ID used for estimation (if more than one device is available on the current platform) (default=0)",
     "return_counts": "[bool] [optional] return intermediate results, i.e. neighbour counts from range searches and KNN distances (default=False)",
     "padding": "[bool] [optional] pad data to a length that is a multiple of 1024 (default=True)",
-
-    "knn_finder": "[str] [optional] knn algorithm to use, can be 'scipy_kdtree' (default), 'sklearn_kdtree', or 'sklearn_balltree'",
+    "knn_finder": "[str] [optional] knn algorithm to use, can be 'scipy_kdtree' (default), 'scipy_ckdtree', 'sklearn_kdtree', or 'sklearn_balltree'",
     "rng_seed": "[int | None] [optional] random seed if noise level > 0 (defaults=None)",
     "base": "[float] [optional] base of returned values (default=np.e)",
-
     "n_perm_max_stat": "[int] [optional] number of max permutations (default=500)",
     "n_perm_min_stat": "[int] [optional] number of min permutations (default=500)",
     "n_perm_omnibus": "[int] [optional] number of permutations for omnibus test (default=500)",
     "n_perm_max_seq": "[int] [optional] number of permutations (default=500)",
-
     "max_lag_sources": "[int] maximum temporal search depth for candidates in the sources' past in samples",
     "min_lag_sources": "[int] minimum temporal search depth for candidates in the sources' past in samples",
     "max_lag_target": "[int] maximum temporal search depth for candidates in the target's past in samples (default = same as max_lag_sources)",
@@ -285,38 +306,29 @@ parameter_tooltips =  {
     "verbose": "[bool] [optional] toggle console output (default=True)",
     "write_ckp": "[bool] [optional] enable checkpointing, writes analysis state to disk every time a variable is selected; resume crashed analysis using network_analysis.resume_checkpoint() (default=False)",
     "filename_ckp": "[str] [optional] checkpoint file name (without extension)",
-
     "history": "[int] number of samples in the processes' past used as embedding",
     "tau": "[int] [optional] the processes' embedding delay (default=1)",
     "alph": "[int] [optional] number of discrete bins/levels for var1 (default=2 , or the value set for n_discrete_bins). (>= 2)",
-
     "alph_s1": "[int] alphabet size of s1",
     "alph_s2": "[int] alphabet size of s2",
     "alph_t": "[int] alphabet size of t",
     "max_unsuc_swaps_row_parm": "[int] soft limit for virtualised swaps based on the number of unsuccessful swaps attempted in a row. If there are too many unsuccessful swaps in a row, then it will break the inner swap loop; the outer loop decrements the size of the probability mass increment and then attemps virtualised swaps again with the smaller probability increment. The exact number of unsuccessful swaps allowed before breaking is the total number of possible swaps (given our alphabet sizes) times the control parameter max_unsuc_swaps_row_parm, e.g., if the parameter is set to 3, this gives a high degree of confidence that nearly (if not) all of the possible swaps have been attempted before this soft limit breaks the swap loop.",
     "num_reps": "[int] number of times the outer loop will halve the size of the probability increment used for the virtualised swaps. This is in direct correspondence with the number of times the empirical data was replicated in your original implementation.",
     "max_iters": "[int] provides a hard upper bound on the number of times it will attempt to perform virtualised swaps in the inner loop. However, this hard limit is (practically) never used as it should always hit the soft limit defined above (parameter may be removed in the future).",
-    
     "cone_solver": "[str] [optional] which cone solver to use (default='ECOS')",
     "solver_args": "[dict] solver arguments (default={})",
-
     "n": "[int] number of pid sources",
     "pdf_orig": "[dict] the original joint distribution of the inputs and the output (realizations are the keys). It doesn't have to be a full support distribution, i.e., it can contain realizations with 'zero' mass probability",
     "chld": "[dict] list of children for each node in the redundancy lattice (nodes are the keys)",
     "achain": "[tuple] tuple of all the nodes (antichains) in the redundacy lattice",
     "printing": "[bool] If True (default) prints the results using PrettyTables",
-
     "max_lag": "[int] maximum temporal search depth for candidates in the processes' past in samples",
     "tau": "[int] [optional] spacing between candidates in the sources' past in samples (default=1)",
     "alpha_mi": "[float] critical alpha level for statistical significance (default=0.05)",
-
-    "lags_pid": "[list of lists of ints] [optional] - lags in samples between sources and target (default=[[1, 1], [1, 1] ...])", 
-
+    "lags_pid": "[list of lists of ints] [optional] - lags in samples between sources and target (default=[[1, 1], [1, 1] ...])",
     "n_chunks": "[int] - number of data chunks\nno. data points has to be the same for each chunk",
-
     "embedding_step_size": "[float] [optional] Step size delta t (in seconds) with which the window is slid through the data (default = 0.005).",
     "return_averaged_R": "[bool] [optional] If set to True, compute R̂tot as the average over R̂(T ) for T ∈ [T̂D, Tmax ] instead of R̂tot = R(T̂D ). If set to True, the setting for number_of_bootstraps_R_tot is ignored and set to 0 (default=True)",
-
     "estimation_method": "[string] The method to be used to estimate the history dependence 'bbc' or 'shuffling'.",
     "embedding_step_size": "[float] [optional] Step size delta t (in seconds) with which the window is slid through the data. (default: 0.005)",
     "embedding_number_of_bins_set": "[list of ints] [optional] Set of values for d, the number of bins in the embedding. (default: [1, 2, 3, 4, 5])",
@@ -338,12 +350,14 @@ parameter_tooltips =  {
     "visualization": "[bool] [optional] create .eps output image showing the optimization values and graphs for the history dependence and the auto mutual information (default: False)",
     "output_path": "[String] [optional] if visualization is True. Path where the .eps images should be saved.",
     "output_prefix": "[String]  [optional] if visualization is True. Prefix of the output images e.g. <output_prefix>_process0.eps",
-
 }
 
 # define parameters and defaults for each estimator
 parameters = {}
 
+####################################################################### TODO OpenCLGaussianXXXX
+
+### Python
 parameters["PythonKraskovMI"] = {
     "kraskov_k" : 4,
     "theiler_t": 0,
@@ -380,7 +394,6 @@ parameters["PythonKraskovAIS"] = {
     "num_threads": "USE_ALL",
     "base": np.e,
 }   
-
 parameters["PythonKraskovTE"] = {
     "kraskov_k" : 4,
     "history_target" : "",
@@ -477,6 +490,129 @@ parameters["PythonDiscreteTE"] = {
     "local_values": False,
 }
 
+### OpenCL
+parameters["OpenCLKraskovMI"] = {
+    "gpuid": 0,
+    "kraskov_k" : 4,
+    "theiler_t": 1,
+    "lag_mi" : 0,
+    "padding": True,
+    "noise_level": 1e-8,
+    "normalise": False,
+    "return_counts": False,
+    "debug": False,
+    "n_chunks": 0,
+}
+parameters["OpenCLKraskovCMI"] = {
+    "gpuid": 0,
+    "kraskov_k" : 4,
+    "theiler_t": 1,
+    "lag_mi" : 0,
+    "padding": True,
+    "noise_level": 1e-8,
+    "normalise": False,
+    "return_counts": False,
+    "debug": False,
+    "n_chunks": 0,
+}
+parameters["OpenCLGaussianMI"] = {
+    "lag_mi" : 1,
+    "gpuid": 0,
+    "local_values": False,
+}
+parameters["OpenCLGaussianCMI"] = {
+    "gpuid": 0,
+    "local_values": False,
+}
+parameters["OpenCLGaussianAIS"] = {
+    "history": "",
+    "tau": 1,
+    "gpuid": 0,
+    "local_values": False,
+}
+parameters["OpenCLGaussianTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "gpuid": 0,
+    "local_values": False,
+}
+parameters["OpenCLGaussianCTE"] = {
+    "history_target" : "",
+    "history_source" : "",
+    "history_conditional" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "tau_conditional" : 1,
+    "source_target_delay" : 1,
+    "conditional_target_delay" : 1,
+    "gpuid": 0,
+    "local_values": False,
+}
+parameters["OpenCLDiscreteMI"] = {
+    "gpuid": 0,
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "lag_mi": 0,
+    "local_values": False,
+}
+parameters["OpenCLDiscreteCMI"] = {
+    "gpuid": 0,
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "alphc": 2,
+    "local_values": False,
+}
+parameters["OpenCLDiscreteAIS"] = {
+    "gpuid": 0,
+    "history": "",
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph": 2,
+    "debug": False,
+    "local_values": False,
+}
+parameters["OpenCLDiscreteTE"] = {
+    "gpuid": 0,
+    "history_target" : "",
+    "history_source" : "",
+    "tau_source" : 1,
+    "tau_target" : 1,
+    "source_target_delay" : 1,
+    "discretise_method": "none",
+    "n_discrete_bins": 2,
+    "alph1": 2,
+    "alph2": 2,
+    "local_values": False,
+}
+### CUDA
+parameters["CudaKraskovMI"] = {
+    "gpuid": 0,
+    "kraskov_k" : 4,
+    "theiler_t": 0,
+    "lag_mi" : 0,
+    "noise_level": 1e-8,
+    "normalise": False,
+    "return_counts": False,
+    "debug": False,
+}
+parameters["CudaKraskovCMI"] = {
+    "gpuid": 0,
+    "kraskov_k" : 4,
+    "theiler_t": 0,
+    "noise_level": 1e-8,
+    "normalise": False,
+    "return_counts": False,
+    "debug": False,
+}
+
+### Jidt
 parameters["JidtKraskovMI"] = {
     "kraskov_k" : 4,
     "theiler_t": 1,
@@ -559,7 +695,6 @@ parameters["JidtGaussianTE"] = {
     "local_values": False,
     "debug": False
 }
-
 parameters["JidtGaussianCTE"] = {
     "history_target" : "",
     "history_source" : "",
@@ -571,8 +706,6 @@ parameters["JidtGaussianCTE"] = {
     "conditional_target_delay" : 1,
     "local_values": False,
 }
-
-
 parameters["JidtDiscreteMI"] = {
     "discretise_method": "none",
     "n_discrete_bins": 2,
@@ -613,49 +746,7 @@ parameters["JidtDiscreteTE"] = {
     "debug": False
 }
 
-parameters["OpenCLKraskovMI"] = {
-    "gpuid": 0,
-    "kraskov_k" : 4,
-    "theiler_t": 1,
-    "lag_mi" : 0,
-    "padding": True,
-    "noise_level": 1e-8,
-    "normalise": False,
-    "return_counts": False,
-    "debug": False,
-    "n_chunks": 0,
-}
-parameters["CudaKraskovMI"] = {
-    "gpuid": 0,
-    "kraskov_k" : 4,
-    "theiler_t": 0,
-    "lag_mi" : 0,
-    "noise_level": 1e-8,
-    "normalise": False,
-    "return_counts": False,
-    "debug": False,
-}
-parameters["OpenCLKraskovCMI"] = {
-    "gpuid": 0,
-    "kraskov_k" : 4,
-    "theiler_t": 1,
-    "lag_mi" : 0,
-    "padding": True,
-    "noise_level": 1e-8,
-    "normalise": False,
-    "return_counts": False,
-    "debug": False,
-    "n_chunks": 0,
-}
-parameters["CudaKraskovCMI"] = {
-    "gpuid": 0,
-    "kraskov_k" : 4,
-    "theiler_t": 0,
-    "noise_level": 1e-8,
-    "normalise": False,
-    "return_counts": False,
-    "debug": False,
-}
+### Bi/Multi
 parameters["BivariateTE"] = {
     "max_lag_sources" : "",
     "min_lag_sources" : "",
@@ -720,6 +811,7 @@ parameters["permutations"] = {
     "n_perm_omnibus": 500,
     "n_perm_max_seq": 500,
 }
+### AIS
 parameters["ActiveInformationStorage"] = {
     "max_lag": "",
     "tau": 1,
@@ -732,6 +824,7 @@ parameters["ActiveInformationStorage"] = {
     "write_ckp": False,
     "filename_ckp": "./idtxl_checkpoint",
 }
+### PID
 parameters["SydneyPID"] = {
     "alph_s1": "",
     "alph_s2": "",
@@ -756,6 +849,7 @@ parameters["MultivariatePID"] = {
     "lags_pid": "",
 }
 
+### Rudelt
 parameters["RudeltNSBEstimatorSymbolsMI"] = {
     "embedding_step_size": 0.005,
     "normalise": True,
@@ -2660,7 +2754,7 @@ class MainWindow(QMainWindow):
         te_button.pressed.connect(self.te_button)
 
         # cmi button
-        cmi_button = QPushButton("Conditional Mutual Information (CMI)")
+        cmi_button = QPushButton("Conditional Mutual Information (CMI)\n and Conditional Transfer Entropy (CTE)")
         cmi_button.setFixedHeight(40)
         cmi_button.setStyleSheet(f"background-color: {lightblue};")
         cmi_button.pressed.connect(self.cmi_button)

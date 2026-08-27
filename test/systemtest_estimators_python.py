@@ -3356,7 +3356,7 @@ def test_discrete_ais_local_values():
 	print(f"\n\nTesting local AIS using 1D AR with history and noise")
 	print(f"testing settings history {hvals} and n_discrete_bins {nvals} and discrete_method max_ent\n")
 	
-	source1, source2 = _get_ar_data(seed=SEED+1)
+	source1, source2 = _get_ar_data(seed=SEED)
 	
 	min_len = min(len(source1),len(source2))
 	source1 = source1[:min_len]
@@ -3378,18 +3378,13 @@ def test_discrete_ais_local_values():
 		for i in nvals:
 		
 			conds[count,:] = [h, i]
-			settings = {}
-			settings_j = {'history': h,
-						'discretise_method': 'max_ent',
-						'n_discrete_bins': i,
-						'local_values': True}
-			settings_p = {'history': h, 
+			settings = {'history': h,
 						'discretise_method': 'max_ent',
 						'n_discrete_bins': i,
 						'local_values': True}
 
-			jidt_estimator = JidtDiscreteAIS(settings=settings_j)
-			python_estimator = PythonDiscreteAIS(settings=settings_p)
+			jidt_estimator = JidtDiscreteAIS(settings=settings)
+			python_estimator = PythonDiscreteAIS(settings=settings)
 	
 			itic = time.perf_counter()
 			res_jidt_cor = jidt_estimator.estimate(source1)
@@ -3412,21 +3407,16 @@ def test_discrete_ais_local_values():
 			itoc = time.perf_counter()
 			time_python_uncor[count] = itoc - itic
 			
-			#print(res_jidt_cor[:20])
-			#print(res_python_cor[:20])
-
-			min_len=min(len(res_jidt_cor), len(res_python_cor))
-			
 			verbose(res_jidt_cor, res_python_cor, f"{conds[count,:]} - with hist", "AIS", local=True, atol=atol)
 			verbose(res_jidt_uncor, res_python_uncor, f"{conds[count,:]} - noise    ", "AIS", local=True, atol=atol)
 
 			count += 1
 		
 	print("\nmean calculation times:")
-	print(" JidtKraskovAIS (with history): ", np.mean(time_jidt_cor) )
-	print(" PythonKraskovAIS (with history): ", np.mean(time_python_cor) )
-	print(" JidtKraskovAIS (noise): ", np.mean(time_jidt_uncor) )
-	print(" PythonKraskovAIS (noise): ", np.mean(time_python_uncor) )
+	print(" JidtDiscreteAIS (with history): ", np.mean(time_jidt_cor) )
+	print(" PythonDiscreteAIS (with history): ", np.mean(time_python_cor) )
+	print(" JidtDiscreteAIS (noise): ", np.mean(time_jidt_uncor) )
+	print(" PythonDiscreteAIS (noise): ", np.mean(time_python_uncor) )
 
 def test_discrete_te():
 
@@ -4633,8 +4623,10 @@ def test_network_analysis(analysis, est_type, numperm=300, samples=1000, reps=3)
 			equal = np.allclose(target_delays_jidt[t], target_delays_python[t], atol=atol)
 		else:
 			equal = False
-		
-		print(f"{t}\t{jidt_estimator}  :\t{target_delays_jidt[t]}{"\t" if len(target_delays_jidt[t])>1 else "\t\t"}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
+
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t{jidt_estimator}  :\t{target_delays_jidt[t]}{t1 if len(target_delays_jidt[t])>1 else t2}{equal}\n\t{python_estimator}:\t{target_delays_python[t]}")
 	
 	print(f"\nselected sources {measure.upper()}:\n")
 	print(f"target\tclose {atol}")
@@ -4742,8 +4734,9 @@ def test_nonlinear_granger(analysis, est_type, numperm=300, samples=1000, reps=6
 			equal_tt = tt_jidt==tt_python
 		except:
 			equal_tt = False
-
-		print(f"{t}\t\t{ts_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{tt_jidt}{"\t\t" if len(ts_jidt)<=1 else "\t"}{ts_python}{"\t\t" if len(ts_python)<=1 else "\t"}{tt_python}\t\t{equal_ts}{"\t\t" if len(tt_python)<=1 else "\t"}{equal_tt}")
+		t1 = "\t"
+		t2 = "\t\t"
+		print(f"{t}\t\t{ts_jidt}{t2 if len(ts_jidt)<=1 else t1}{tt_jidt}{t2 if len(ts_jidt)<=1 else t1}{ts_python}{t2 if len(ts_python)<=1 else t1}{tt_python}\t\t{equal_ts}{t2 if len(tt_python)<=1 else t1}{equal_tt}")
 
 	print("\n calculation times:")
 	print(f" nonlinear Granger via {analysis} {jidt_estimator}: ", np.mean(time_jidt) )
@@ -4755,6 +4748,7 @@ if __name__ == '__main__':
 
 	#### Test Kraskov estimators
 	"""
+	
 	testhead("KraskovMI")
 	test_kraskov_mi()
 	
@@ -4784,6 +4778,7 @@ if __name__ == '__main__':
 	
 	testhead("KraskovCTE local values")
 	test_kraskov_cte_local_values()
+	
 	"""
 
     #### Test Gaussian estimators
@@ -4818,27 +4813,25 @@ if __name__ == '__main__':
 	testhead("GaussianCTE local values")
 	test_gaussian_cte_local_values()
 	"""
-	
 	#### Test Discrete estimators
 	"""
+	
 	testhead("DiscreteMI")
 	test_discrete_mi()
 
 	testhead("DiscreteMI local values")
 	test_discrete_mi_local_values()
-
 	testhead("DiscreteCMI")
 	test_discrete_cmi()
 	
 	testhead("DiscreteCMI local values")
 	test_discrete_cmi_local_values()
-	
 	testhead("DiscreteAIS")
 	test_discrete_ais()
-
+	
 	testhead("DiscreteAIS local values")
 	test_discrete_ais_local_values()
-
+	
 	testhead("DiscreteTE")
 	test_discrete_te()
 
@@ -4932,7 +4925,6 @@ if __name__ == '__main__':
 	"""
 	testhead("network analysis BivariateMI GaussianCMI")
 	test_network_analysis("BivariateMI","Gaussian", numperm=300, samples=500, reps=6)
-
 	testhead("network analysis BivariateTE GaussianCMI")
 	test_network_analysis("BivariateTE","Gaussian", numperm=300, samples=500, reps=6)
 
@@ -4947,7 +4939,6 @@ if __name__ == '__main__':
 	"""
 	testhead("network analysis BivariateMI DiscreteCMI")
 	test_network_analysis("BivariateMI","Discrete", numperm=300, samples=600, reps=6)
-
 	testhead("network analysis BivariateTE DiscreteCMI")
 	test_network_analysis("BivariateTE","Discrete", numperm=300, samples=600, reps=6)
 	

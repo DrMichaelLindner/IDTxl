@@ -4,7 +4,7 @@
 
 The **I**nformation **D**ynamics **T**oolkit **xl**  **2.0**  (IDTxl 2.0) is a comprehensive software
 package for efficient inference of networks and their node dynamics from
-multivariate time series data using information theory. IDTxl provides
+multivariate time series data using information theory. IDTxl 2.0 provides
 functionality to estimate the following measures:
 
 1) For network inference:
@@ -16,7 +16,7 @@ functionality to estimate the following measures:
     - active information storage (AIS)
     - partial information decomposition (PID)
 
-IDTxl implements estimators for discrete and continuous data with parallel
+IDTxl 2.0 implements estimators for discrete and continuous data with parallel
 computing engines for both GPU and CPU platforms. Written for Python3.10+.
 
 To **get started** have a look at the [wiki](https://github.com/pwollstadt/IDTxl/wiki) and the [documentation](http://pwollstadt.github.io/IDTxl/). For further discussions, join [IDTxl's google group](https://groups.google.com/forum/#!forum/idtxl).
@@ -25,7 +25,7 @@ To **get started** have a look at the [wiki](https://github.com/pwollstadt/IDTxl
 P. Wollstadt, J. T. Lizier, R. Vicente, C. Finn, M. Martinez-Zarzuela, P. Mediano, L. Novelli, M. Wibral (2018). _IDTxl: The Information Dynamics Toolkit xl: a Python package for the efficient analysis of multivariate information dynamics in networks._ Journal of Open Source Software, 4(34), 1081. [https://doi.org/10.21105/joss.01081](https://doi.org/10.21105/joss.01081).
 
 ## How to cite
-Wollstadt, Lizier, Vicente, Finn, Martinez Zarzeula, Lindner, Martinez Mediano, Novelli, Wibral, 2017. "IDTxl - The Information Dynamics Toolkit xl: a Python package for the efficient analysis of multivariate information dynamics in networks", GitHub Repository: https://github.com/pwollstadt/IDTxl.
+Lindner, Wollstadt, Lizier, Vicente, Finn, Martinez Zarzeula, Lindner, Martinez Mediano, Novelli, Wibral, 2017. "IDTxl 2.0 - The Information Dynamics Toolkit xl 2.0: a Python package for the efficient analysis of multivariate information dynamics in networks", GitHub Repository: https://github.com/pwollstadt/IDTxl.
 
 ## Contributors
 
@@ -42,7 +42,7 @@ Wollstadt, Lizier, Vicente, Finn, Martinez Zarzeula, Lindner, Martinez Mediano, 
 - [Pedro Mediano](https://www.doc.ic.ac.uk/~pam213/), Computational Neurodynamics Group, Imperial College London, London, United Kingdom
 - Aaron J. Gutknecht, Campus Institute for Dynamics of Biological Networks, Georg August University, Göttingen, Germany
 
-**How to contribute?** We are happy about any feedback on IDTxl. If you would like to contribute, please open an issue or send a pull request with your feature or improvement. Also have a look at the [developer's section](https://github.com/pwollstadt/IDTxl/wiki#developers-section) in the Wiki for details.
+**How to contribute?** We are happy about any feedback on IDTxl 2.0. If you would like to contribute, please open an issue or send a pull request with your feature or improvement. Also have a look at the [developer's section](https://github.com/pwollstadt/IDTxl/wiki#developers-section) in the Wiki for details.
 
 
 ## Acknowledgements

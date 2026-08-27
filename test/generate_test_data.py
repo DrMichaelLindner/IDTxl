@@ -57,10 +57,7 @@ def _get_gauss_data(n=10000, covariance=0.4, expand=True, seed=None):
         target = np.array(target)
     return expected_mi, src_corr, src_uncorr, target
 
-
-
-def _get_discrete_gauss_data(
-    covariance=0.4, n=10000, delay=1, normalise=False, seed=None):
+def _get_discrete_gauss_data(covariance=0.4, n=10000, delay=1, normalise=False, seed=None):
 
     # Generate two coupled Gaussian time series
     np.random.seed(seed)
@@ -134,7 +131,6 @@ def _get_mem_binary_data(n=10000, expand=False):
     else:
         return source1[:n], source2[:n]
 
-
 def _generate_mute_data(n_samples=10000, n_replications=10):
     """Generate example data for a 6-process network.
     
@@ -177,22 +173,17 @@ def _generate_mute_data(n_samples=10000, n_replications=10):
 
     return x
 
-
-
-
 def generate_discrete_idtxl_data(n_samples=10000, n_replications=1):
     """Generate Gaussian test data: 1 -> 2 -> 3, delay 1."""
     d = generate_gauss_data(n_samples=n_samples, n_replications=n_replications, discrete=True)
     data = Data(d, dim_order="psr", normalise=False)
     return data
 
-
 def generate_continuous_idtxl_data(n_samples=10000, n_replications=1):
     """Generate Gaussian test data: 1 -> 2 -> 3, delay 1."""
     d = generate_gauss_data(n_samples=n_samples, n_replications=n_replications, discrete=False)
     data = Data(d, dim_order="psr", normalise=True)
     return data
-
 
 def generate_gauss_data(n_samples=10000, n_replications=1, discrete=False):
     settings = {"discretise_method": "equal", "n_discrete_bins": 5}
@@ -229,8 +220,6 @@ def generate_gauss_data(n_samples=10000, n_replications=1, discrete=False):
     return d
 
 
-
-
 def analyse_mute_te_data():
     # Generate example data: the following was ran once to generate example
     # data, which is now in the data sub-folder of the test-folder.
@@ -259,8 +248,6 @@ def analyse_mute_te_data():
     with open(path.joinpath("mute_results_full.p"), "wb") as output_file:
         pickle.dump(res, output_file)
 
-
-
 def analyse_discrete_data():
     """Run network inference on discrete data."""
     data = generate_discrete_idtxl_data()
@@ -277,42 +264,25 @@ def analyse_discrete_data():
     res = nw.analyse_network(settings=settings, data=data)
     pickle.dump(
         res,
-        open(
-            path.joinpath(f"discrete_results_mte_{settings["cmi_estimator"]}.p"), "wb"
-            #"{0}discrete_results_mte_{1}.p".format(path, settings["cmi_estimator"]), "wb",
-        ),
-    )
+        open(path.joinpath(f"discrete_results_mte_{settings['cmi_estimator']}.p"), "wb"))
 
     nw = BivariateTE()
     res = nw.analyse_network(settings=settings, data=data)
     pickle.dump(
         res,
-        open(
-            path.joinpath(f"discrete_results_bte_{settings["cmi_estimator"]}.p"), "wb"
-            #"{0}discrete_results_bte_{1}.p".format(path, settings["cmi_estimator"]), "wb",
-        ),
-    )
+        open(path.joinpath(f"discrete_results_bte_{settings['cmi_estimator']}.p"), "wb"))
 
     nw = MultivariateMI()
     res = nw.analyse_network(settings=settings, data=data)
     pickle.dump(
         res,
-        open(
-            path.joinpath(f"discrete_results_mmi_{settings["cmi_estimator"]}.p"), "wb"
-            #"{0}discrete_results_mmi_{1}.p".format(path, settings["cmi_estimator"]), "wb",
-        ),
-    )
+        open(path.joinpath(f"discrete_results_mmi_{settings['cmi_estimator']}.p"), "wb"))
 
     nw = BivariateMI()
     res = nw.analyse_network(settings=settings, data=data)
     pickle.dump(
         res,
-        open(
-            path.joinpath(f"discrete_results_bmi_{settings["cmi_estimator"]}.p"), "wb"
-            #"{0}discrete_results_bmi_{1}.p".format(path, settings["cmi_estimator"]), "wb",
-        ),
-    )
-
+        open(path.joinpath(f"discrete_results_bmi_{settings['cmi_estimator']}.p"), "wb"))
 
 def analyse_continuous_data():
     """Run network inference on continuous data."""
@@ -381,7 +351,6 @@ def assert_results():
         )
         print("\nInference algorithm: {0} (estimator: {1})".format(algo, estimator))
         _print_result(res)
-
 
 def _print_result(res):
     adjacency_matrix = res.get_adjacency_matrix(weights="max_te_lag")

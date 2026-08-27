@@ -104,7 +104,6 @@ class PythonEstimator(Estimator):
         assert settings['source_target_delay'] >= 0, (
             'Source-target delay must be >= 0')
         return settings
-    
 
     def _set_cte_defaults(self, settings):
         """Set defaults for conditional transfer entropy estimation."""
@@ -123,7 +122,69 @@ class PythonEstimator(Estimator):
             'Conditional-target delay must be >= 0')
 
         return settings
-        
+
+    def set_data(self, flag, X, Y=None, Z=None):
+        """Set data to self for calculation of Local or Average XXX"""
+
+        if flag == "AIS":
+            self.flag = "AIS"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "MI":
+            self.flag = "MI"
+            self.var1 = X
+            self.var2 = Y
+        elif flag == "CMI":
+            self.flag = "CMI"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "TE":
+            self.flag = "TE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+        elif flag == "CTE":
+            self.flag = "CTE"
+            self.var1 = X
+            self.var2 = Y
+            self.conditional = Z
+
+    def get_data(self):
+        """get data in calculate functions"""
+        if self.flag == "MI":
+            return self.var1, self.var2
+        if self.flag == "CMI":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "AIS":
+            return self.var1, self.var2
+        if self.flag == "TE":
+            return self.var1, self.var2, self.conditional
+        if self.flag == "CTE":
+            return self.var1, self.var2, self.conditional
+
+    def remove_data(self):
+        """Remove data from self after calculation"""
+        if self.flag == "MI":
+            del self.var1
+            del self.var2
+        if self.flag == "CMI":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "AIS":
+            del self.var1
+            del self.var2
+        if self.flag == "TE":
+            del self.var1
+            del self.var2
+            del self.conditional
+        if self.flag == "CTE":
+            del self.var1
+            del self.var2
+            del self.conditional
+
+        del self.flag
 
     def is_parallel(self):
         return False
@@ -299,8 +360,16 @@ class PythonKraskovMI(PythonKraskov):
         settings.setdefault('lag_mi', 0)
         super().__init__(settings)
         
-    def calculateLocalMI(self, var1, var2):
-        """calculate lokal Kraskov MI"""
+    def calculateLocalMI(self):
+        """calculate lokal Kraskov MI
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
 
         n_c_var1, n_c_var2 = self.getCountsMI(var1, var2)
 
@@ -312,8 +381,16 @@ class PythonKraskovMI(PythonKraskov):
     
         return mi
     
-    def calculateAverageMI(self, var1, var2):
-        """calculate Average Kraskov MI"""
+    def calculateAverageMI(self):
+        """calculate Average Kraskov MI
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = False."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = False!')
+
+        var1, var2 = self.get_data()
 
         n_c_var1, n_c_var2 = self.getCountsMI(var1, var2)
 
@@ -374,14 +451,18 @@ class PythonKraskovMI(PythonKraskov):
         if self.settings['lag_mi'] > 0:
             var1 = var1[:-self.settings['lag_mi'], :]
             var2 = var2[self.settings['lag_mi']:, :]
-        
+
+        self.set_data("MI", var1, var2)
+
         # Compute MI
         if self.settings["local_values"]:
-            return self.calculateLocalMI(var1, var2)
+            mi = self.calculateLocalMI()
         else:
+            mi = self.calculateAverageMI()
 
-            #return np.mean(lmi)
-            return self.calculateAverageMI(var1, var2)
+        self.remove_data()
+
+        return mi
 
 
 class PythonKraskovCMI(PythonKraskov):
@@ -437,8 +518,17 @@ class PythonKraskovCMI(PythonKraskov):
         self._knn_finder_name = settings.get("knn_finder", "scipy_ckdtree")
         self._knn_finder_class = get_knn_finder(self._knn_finder_name)
 
-    def calculateLocalCMI(self, var1, var2, conditional):
-        """calculate local Kraskov CMI"""
+    def calculateLocalCMI(self):
+        """calculate local Kraskov CMI
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
         n_c_var1, n_c_var2, n_c = self.getCountsCMI(var1, var2, conditional)
             
         cmi =(digamma(self.settings['kraskov_k'])
@@ -449,8 +539,17 @@ class PythonKraskovCMI(PythonKraskov):
 
         return cmi
     
-    def calculateAverageCMI(self, var1, var2, conditional):
-        """calculate Average Kraskov CMI"""
+    def calculateAverageCMI(self):
+        """calculate Average Kraskov CMI
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = False!')
+
+        var1, var2, conditional = self.get_data()
+
         n_c_var1, n_c_var2, n_c = self.getCountsCMI(var1, var2, conditional)
         
         cmi = (
@@ -531,12 +630,16 @@ class PythonKraskovCMI(PythonKraskov):
                 0, self.settings['noise_level'], conditional.shape
             )
 
+        self.set_data("CMI", var1, var2, conditional)
+
         # Compute CMI
         if self.settings["local_values"]:
-            cmi = self.calculateLocalCMI(var1, var2, conditional)
+            cmi = self.calculateLocalCMI()
         else:
-            cmi = self.calculateAverageCMI(var1, var2, conditional)
-            
+            cmi = self.calculateAverageCMI()
+
+        self.remove_data()
+
         return cmi
             
 
@@ -646,14 +749,18 @@ class PythonKraskovAIS(PythonKraskov):
             self.settings['tau'], 
             startFirstPoint, 
             process.shape[0] - startFirstPoint - 1)
-        
+
+        self.set_data("AIS", process_past, process_current)
+
         if self.settings['local_values']:
-            ais = PythonKraskovMI.calculateLocalMI(self, process_past, process_current)
+            ais = PythonKraskovMI.calculateLocalMI(self)
             # correction to compare with JidtGaussianTE results
             ais = np.hstack([np.zeros(startFirstPoint+1), ais])
 
         else:
-            ais = PythonKraskovMI.calculateAverageMI(self, process_past, process_current)
+            ais = PythonKraskovMI.calculateAverageMI(self)
+
+        self.remove_data()
 
         return ais
 
@@ -792,15 +899,19 @@ class PythonKraskovTE(PythonKraskov):
             self.settings['tau_source'],
             startFirstPoint + 1 - self.settings['source_target_delay'],
             source.shape[0] - startFirstPoint - 1)
-            
+
+        self.set_data("TE", source_past, target_current, target_past)
+
         if self.settings['local_values']:
-            te = PythonKraskovCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            te = PythonKraskovCMI.calculateLocalCMI(self)
             # correction to compare with JidtKraskovTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
 
         else:
-            te = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, target_past)
-            
+            te = PythonKraskovCMI.calculateAverageCMI(self)
+
+        self.remove_data()
+
         return te
         
 
@@ -938,13 +1049,17 @@ class PythonKraskovCTE(PythonKraskov):
         
         # combine target_current and conditional_past as conditional for CMI
         condCombine = np.hstack([target_past, conditional_past])
-       
+
+        self.set_data("CTE", source_past, target_current, condCombine)
+
         if self.settings['local_values']:
-            cte = PythonKraskovCMI.calculateLocalCMI(self, source_past, target_current, condCombine)
+            cte = PythonKraskovCMI.calculateLocalCMI(self)
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
         else:
-            cte = PythonKraskovCMI.calculateAverageCMI(self, source_past, target_current, condCombine)
-            
+            cte = PythonKraskovCMI.calculateAverageCMI(self)
+
+        self.remove_data()
+
         return cte
 
 
@@ -1060,9 +1175,16 @@ class PythonGaussianMI(PythonGaussian):
         super().__init__(settings)
         self.settings.setdefault('lag_mi', int(0))
         
-    def calculateAverageMI(self, var1, var2):
-        """calculate avarage mutual information for gaussian data"""
+    def calculateAverageMI(self):
+        """calculate avarage mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = False."""
 
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = False!')
+
+        var1, var2 = self.get_data()
         xy = np.hstack([var1, var2])
         
         cov_xy = np.cov(xy, rowvar=False, bias=False)
@@ -1082,9 +1204,16 @@ class PythonGaussianMI(PythonGaussian):
 
         return mi
 
-    def calculateLocalMI(self, var1, var2):
-        """calculate avarage mutual information for gaussian data"""
+    def calculateLocalMI(self):
+        """calculate avarage mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
 
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
         xy = np.hstack([var1, var2])
         
         eps=1e-10
@@ -1151,13 +1280,16 @@ class PythonGaussianMI(PythonGaussian):
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
+        self.set_data("MI", var1, var2)
+
         if self.settings['local_values']:
-            mi = self.calculateLocalMI(var1, var2)
+            mi = self.calculateLocalMI()
             self.actualValue = np.mean(mi)
         else:
-            mi = self.calculateAverageMI(var1, var2)
+            mi = self.calculateAverageMI()
             self.actualValue = mi
 
+        self.remove_data()
         return mi
     
     def computeSignificance(self):
@@ -1223,8 +1355,16 @@ class PythonGaussianCMI(PythonGaussian):
         super().__init__(settings)
         self.est_mi = None
     
-    def calculateAverageCMI(self, var1, var2, conditional):
-        """calculate avarage conditional mutual information for gaussian data"""
+    def calculateAverageCMI(self):
+        """calculate avarage conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = False!')
+
+        var1, var2, conditional = self.get_data()
 
         if conditional.ndim == 1:
             conditional = conditional[:,None]
@@ -1252,8 +1392,16 @@ class PythonGaussianCMI(PythonGaussian):
 
         return cmi
 
-    def calculateLocalCMI(self, var1, var2, conditional):
-        """calculate avarage conditional mutual information for gaussian data"""
+    def calculateLocalCMI(self):
+        """calculate avarage conditional mutual information for gaussian data
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
 
         if conditional.ndim == 1:
             conditional = conditional[:,None]
@@ -1344,12 +1492,16 @@ class PythonGaussianCMI(PythonGaussian):
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
+        self.set_data("CMI", var1, var2, conditional)
+
         if self.settings['local_values']:
-            cmi = self.calculateLocalCMI(var1, var2, conditional)
+            cmi = self.calculateLocalCMI()
             self.actualValue = np.mean(cmi)
         else:
-            cmi = self.calculateAverageCMI(var1, var2, conditional)
+            cmi = self.calculateAverageCMI()
             self.actualValue = cmi
+
+        self.remove_data()
 
         return cmi
 
@@ -1467,15 +1619,19 @@ class PythonGaussianAIS(PythonGaussian):
         self.process_current_dim = process_current.shape[1]
         self.process_past_dim = process_past.shape[1]
 
+        self.set_data("AIS", process_current, process_past)
+
         if self.settings['local_values']:
-            ais = PythonGaussianMI.calculateLocalMI(self, process_current, process_past)
+            ais = PythonGaussianMI.calculateLocalMI(self)
             # correction to compare with JidtGaussianTE results
             ais = np.hstack([np.zeros(startFirstPoint+1), ais])
             self.actualValue = np.mean(ais)
         else:
-            ais = PythonGaussianMI.calculateAverageMI(self, process_current, process_past)
+            ais = PythonGaussianMI.calculateAverageMI(self)
             self.actualValue = ais
-        
+
+        self.remove_data()
+
         return ais
 
     def computeSignificance(self):
@@ -1614,15 +1770,19 @@ class PythonGaussianTE(PythonGaussian):
         self.target_current_dim = target_current.shape[1]
         #self.target_past_dim = target_past.shape[1]
 
+        self.set_data("TE", source_past, target_current, target_past)
+
         if self.settings['local_values']:
-            te = PythonGaussianCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+            te = PythonGaussianCMI.calculateLocalCMI(self)
             # correction to compare with JidtGaussianTE results
             te = np.hstack([np.zeros(startFirstPoint+1), te])
             self.actualValue = np.mean(te)
 
         else:
-            te = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_current, target_past)
+            te = PythonGaussianCMI.calculateAverageCMI(self)
             self.actualValue = te
+
+        self.remove_data()
 
         return te
 
@@ -1782,12 +1942,14 @@ class PythonGaussianCTE(PythonGaussian):
         self.source_past_dim = source_past.shape[1]
         self.target_current_dim = target_current.shape[1]
 
+        self.set_data("CTE", source_past, target_current, condCombine)
+
         if self.settings['local_values']:
-            cte = PythonGaussianCMI.calculateLocalCMI(self, source_past, target_current, condCombine)
+            cte = PythonGaussianCMI.calculateLocalCMI(self)
             cte = np.hstack([np.zeros(startFirstPoint+1), cte])
             self.actualValue = np.mean(cte)
         else:
-            cte = PythonGaussianCMI.calculateAverageCMI(self, source_past, target_current, condCombine)
+            cte = PythonGaussianCMI.calculateAverageCMI(self)
             self.actualValue = cte
             
         return cte
@@ -1837,12 +1999,12 @@ class PythonGaussianCTE(PythonGaussian):
 ###############################
 
 class PythonDiscrete(PythonEstimator):
-    """Abstract class for implementation of Python Gaussian-estimators.
+    """Abstract class for implementation of Python Discrete-estimators.
 
-    Abstract class for implementation of Python Gaussian-estimators, child
+    Abstract class for implementation of Python Discrete-estimators, child
     classes implement estimators for mutual information (MI), conditional
     mutual information (CMI), active information storage (AIS), transfer
-    entropy (TE) using python Gaussian estimator for continuous data. 
+    entropy (TE) using Python estimator for discrete data.
 
     implemented in idtxl by Michael Lindner, 2026
     
@@ -2037,8 +2199,16 @@ class PythonDiscreteMI(PythonDiscrete):
         self.settings.setdefault('alph1', int(2))
         self.settings.setdefault('alph2', int(2))
     
-    def calculateAverageMI(self, var1, var2):
-        """Calculate average mutual information for discrete data."""
+    def calculateAverageMI(self):
+        """Calculate average mutual information for discrete data.
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = False."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateAverageMI can not be called directly! You need to call .estimate(X,Y) '
+                'with estimator setting local_values = False!')
+
+        var1, var2 = self.get_data()
 
         var1 = np.asarray(var1)
         var2 = np.asarray(var2)
@@ -2076,18 +2246,25 @@ class PythonDiscreteMI(PythonDiscrete):
 
         return np.sum(p_xy * np.log2(p_xy / (p_x * p_y)))
 
-    
-    def calculateLocalMI(self, X, Y):
-        """Calculate average mutual information for discrete data."""
-        X = np.asarray(X)
-        Y = np.asarray(Y)
-        if X.shape != Y.shape:
-            raise ValueError(f"Shape mismatch: X.shape={X.shape}, Y.shape={Y.shape}")
+    def calculateLocalMI(self):
+        """Calculate average mutual information for discrete data.
+        This function can not be called directly! You need to call .estimate(X,Y)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalMI can not be called directly! You need to call .estimate(X,Y) '
+                               'with estimator setting local_values = True!')
+
+        var1, var2 = self.get_data()
+        var1 = np.asarray(var1)
+        var2 = np.asarray(var2)
+        if var1.shape != var2.shape:
+            raise ValueError(f"Shape mismatch: var1.shape={var1.shape}, var2.shape={var2.shape}")
 
         # Flatten once, keep original shape
-        orig_shape = X.shape
-        x_flat = X.ravel()
-        y_flat = Y.ravel()
+        orig_shape = var1.shape
+        x_flat = var1.ravel()
+        y_flat = var2.ravel()
         n = x_flat.size
 
         # Relabel to contiguous integer indices
@@ -2175,13 +2352,17 @@ class PythonDiscreteMI(PythonDiscrete):
         if self.settings['local_values']:
             var1 = self._ensure_one_dim_input(var1)
             var2 = self._ensure_one_dim_input(var2)
-            mi = self.calculateLocalMI(var1, var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateLocalMI()
             self.actualValue = np.mean(mi)
         else:
             var1 = self._ensure_two_dim_input(var1)
             var2 = self._ensure_two_dim_input(var2)
-            mi = self.calculateAverageMI(var1, var2)
+            self.set_data("MI", var1, var2)
+            mi = self.calculateAverageMI()
             self.actualValue = mi
+
+        self.remove_data()
 
         return mi
     
@@ -2267,14 +2448,22 @@ class PythonDiscreteCMI(PythonDiscrete):
         super().__init__(settings)
 
     
-    def calculateLocalCMI(self, var1, var2, conditional):
+    def calculateLocalCMI(self):
         """Local conditional mutual information for discrete data.
 
-        Returns local values in bits.
         Assumes _encode_multidim_states returns:
             codes: integer array of shape (n,)
             nstates: number of encoded states
-        """
+
+        This function can not be called directly! You need to call .estimate(X,Y,Z)
+        with estimator setting local_values = True."""
+
+        if not hasattr(self, 'flag'):
+            raise RuntimeError('calculateLocalCMI can not be called directly! You need to call .estimate(X,Y,Z) '
+                'with estimator setting local_values = True!')
+
+        var1, var2, conditional = self.get_data()
+
         x, nx = self._encode_multidim_states(var1)
         y, ny = self._encode_multidim_states(var2)
         z, nz = self._encode_multidim_states(conditional)
@@ -2365,12 +2554,16 @@ class PythonDiscreteCMI(PythonDiscrete):
 
         self.n_samples = var1.shape[0]
 
-        cmi = self.calculateLocalCMI(var1, var2, conditional)
+        self.set_data("CMI", var1, var2, conditional)
+
+        cmi = self.calculateLocalCMI()
         self.actualValue = np.mean(cmi)
 
         if not self.settings['local_values']:
             cmi = np.mean(cmi)
-        
+
+        self.remove_data()
+
         return cmi
 
     def computeSignificance(self):
@@ -2507,14 +2700,18 @@ class PythonDiscreteAIS(PythonDiscrete):
         
         self.n_samples = process.shape[0]
 
+        self.set_data("AIS", process_past, process_current)
+
         if self.settings['local_values']:
-            ais = PythonDiscreteMI.calculateLocalMI(self, process_past, process_current)
+            ais = PythonDiscreteMI.calculateLocalMI(self)
             ais = np.hstack([np.zeros(self.settings['history']), ais[:,0]])
             self.actualValue = np.mean(ais)
         else:
-            ais = PythonDiscreteMI.calculateAverageMI(self, process_past, process_current)
+            ais = PythonDiscreteMI.calculateAverageMI(self)
             self.actualValue = ais
-        
+
+        self.remove_data()
+
         return ais
 
     def computeSignificance(self):
@@ -2684,7 +2881,9 @@ class PythonDiscreteTE(PythonDiscrete):
         
         self.n_samples = source_past.shape[0]
 
-        te = PythonDiscreteCMI.calculateLocalCMI(self, source_past, target_current, target_past)
+        self.set_data("TE", source_past, target_current, target_past)
+
+        te = PythonDiscreteCMI.calculateLocalCMI(self)
         self.actualValue = np.mean(te)
 
         if self.settings['local_values']:
@@ -2692,7 +2891,9 @@ class PythonDiscreteTE(PythonDiscrete):
             te = np.hstack([np.zeros(startFirstPoint+1), te])
         else:
             te = np.mean(te)
-        
+
+        self.remove_data()
+
         return te
 
     def computeSignificance(self):

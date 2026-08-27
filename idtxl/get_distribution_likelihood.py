@@ -36,9 +36,10 @@ class get_distribution_likelihood():
                         >>> dl = get_distribution_likelihood
                         >>> dl.show_distributions
 
-
     Usage e.g.:
         >>> gdl = get_distribution_likelihood(data)
+
+    implemented by Michael Lindner, 2025
     """
 
     def __init__(self,
@@ -262,7 +263,7 @@ class get_distribution_likelihood():
         self.processes = self._check_processes(processes)
 
         # initialise distribution likelihood output
-        dl = distribution_likelihoods_results(n_processes=self.n_processes,
+        dl = ResultsDistributionLikelihood(n_processes=self.n_processes,
                                               n_replications=self.n_replications,
                                               mode=mode)
 
@@ -432,9 +433,11 @@ class get_distribution_likelihood():
             return async_result.get(timeout=timeout)
 
 
-class distribution_likelihoods_results():
+class ResultsDistributionLikelihood():
     """provides output class for the results of the distribution fits
     This class is only called from the data function get_distribution_likelihood
+
+    implemented by Michael Lindner, 2025
     """
     def __init__(self, n_processes=None, n_replications=None, mode=None):
         self.n_data_processes = n_processes

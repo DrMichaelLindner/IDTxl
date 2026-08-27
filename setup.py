@@ -16,11 +16,11 @@ extensions = [
 
 setup(
     name="idtxl",
-    packages=["idtxl", "idtxl/knn"],
+    packages=["idtxl", "idtxl/knn", "idtxl/test"],
     include_package_data=True,
     version="2.0",
     description="Information Dynamics Toolkit xl 2.0",
-    author="Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
+    author="Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
     author_email="p.wollstadt@gmail.com",
     url="https://github.com/pwollstadt/IDTxl",
     long_description=long_description,
