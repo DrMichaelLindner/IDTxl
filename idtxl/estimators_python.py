@@ -1665,10 +1665,10 @@ class PythonGaussianCTE(PythonGaussian):
     implementation.
 
     Calculate transfer entropy between a source and a target variable using
-    Pathon implementation of the Gaussian estimator. Transfer entropy is
+    Python implementation of the Gaussian estimator. Transfer entropy is
     defined as the conditional mutual information between the source's past
     state and the target's current value, conditional on the target's and 
-    another conditional'spast.
+    another conditional's past.
 
     Past states need to be defined in the settings dictionary, where a past
     state is defined as a uniform embedding with parameters history and tau.

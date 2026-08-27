@@ -4866,7 +4866,7 @@ if __name__ == '__main__':
 	test_analytic_distribution_te_discrete()
 	"""
 
-	#### Test bi- and multivariate analysis (single target) ################## TODO file
+	#### Test bi- and multivariate analysis (single target)
 	# Kraskov CMI
 	"""
 	testhead("BivariateMI KraskovCMI (analyse_single_target)")
