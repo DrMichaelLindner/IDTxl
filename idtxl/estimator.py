@@ -103,6 +103,14 @@ def get_estimator(est, settings):
 
     # Check if MPI flag is set to True
     if settings.get("MPI", False):
+
+        print(settings['cmi_estimator'])
+        # prevent OpenCL estimators to be used for MPI
+        if settings['cmi_estimator'][:6]=="OpenCL":
+            raise RuntimeError(f"OpenCL estimators can not be used for MPI.")
+        if settings['cmi_estimator'][:4]=="CUDA":
+            raise RuntimeError(f"CUDA estimators can not be used for MPI.")
+
         settings_mpi = settings.copy()
 
         # Remove MPI flag to avoid infinite recursion

@@ -47,6 +47,51 @@ def test_mpi_estimator_creation():
         estimators_mpi._worker_estimator, JidtKraskovCMI
     ), "MPIEstimator wraps the wrong estimator!"
 
+
+@mpi_missing
+def test_reject_opencl_and_cuda():
+    """Test whether OpenCL estimators are rejected for MPI parallelization"""
+
+    # Create random data
+    data_array = np.random.rand(2, N_SAMPLES)
+
+    # Create Data object
+    data = Data(data_array, dim_order="ps")
+
+    # test creating estimators
+    with pytest.raises(RuntimeError):
+    	mpiEstimator = MPIEstimator("OpenCLKraskovCMI", dict(max_workers=MAX_WORKERS, noise_level=0))
+    with pytest.raises(RuntimeError):
+    	mpiEstimator = MPIEstimator("CUDAKraskovCMI", dict(max_workers=MAX_WORKERS, noise_level=0))
+
+
+    settings = {
+        "cmi_estimator": "OpenCLGaussianCMI",
+        "max_lag_sources": 5,
+        "min_lag_sources": 1,
+        "MPI": True,
+        "max_workers": MAX_WORKERS,
+        "noise_level":0
+    }
+
+    with pytest.raises(RuntimeError):
+    	estimator = get_estimator(settings["cmi_estimator"], settings)
+
+    settings = {
+        "cmi_estimator": "CUDAGaussianCMI",
+        "max_lag_sources": 5,
+        "min_lag_sources": 1,
+        "MPI": True,
+        "max_workers": MAX_WORKERS,
+        "noise_level":0
+    }
+
+    with pytest.raises(RuntimeError):
+    	estimator = get_estimator(settings["cmi_estimator"], settings)
+	
+
+
+    
 @mpi_missing
 def test_mpi_installation():
     from mpi4py import MPI
@@ -86,6 +131,7 @@ def test_mpi_estimation():
     assert np.array_equal(jidt_te, mpi_te), "MPI parallelization does not work correctly!"
     assert np.array_equal(jidt_te, mpi_te_workers[0]), "MPI parallelization does not work correctly!"
     assert all(np.array_equal(mpi_te, mpi_te_) for mpi_te_ in mpi_te_workers), "MPI parallelization does not work correctly!"
+
 
 @mpi_missing
 def test_lazy_array_estimation():
@@ -191,3 +237,4 @@ def test_caching():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+    

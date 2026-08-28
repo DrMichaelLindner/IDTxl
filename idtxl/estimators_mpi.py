@@ -40,7 +40,13 @@ if MPI is not None:
 class MPIEstimator():
 
     def __init__(self, est, settings=None):
-
+        
+        print(est)
+        if est[:6]=="OpenCL":
+            raise RuntimeError(f"OpenCL estimators can not be used for MPI.")
+        if est[:4]=="CUDA":
+            raise RuntimeError(f"CUDA estimators can not be used for MPI.")
+        
         if MPI is None:
             ex.package_missing(
                 err,
