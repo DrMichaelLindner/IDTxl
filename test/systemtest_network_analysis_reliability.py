@@ -9,8 +9,7 @@ from idtxl.estimators_jidt import (JidtKraskovMI, JidtKraskovCMI, JidtKraskovAIS
 									JidtDiscreteMI, JidtDiscreteCMI , JidtDiscreteAIS, JidtDiscreteTE)
 from idtxl.estimators_python import (PythonKraskovMI, PythonKraskovCMI, PythonKraskovAIS, PythonKraskovTE, PythonKraskovCTE, 
 									PythonGaussianMI, PythonGaussianCMI, PythonGaussianTE, PythonGaussianCTE, PythonGaussianAIS, 
-									PythonDiscreteMI, PythonDiscreteCMI, PythonDiscreteAIS, PythonDiscreteTE, 
-									PythonSpectralMI, PythonSpectralCMI)
+									PythonDiscreteMI, PythonDiscreteCMI, PythonDiscreteAIS, PythonDiscreteTE)
 
 from idtxl.multivariate_te import MultivariateTE
 from idtxl.bivariate_te import BivariateTE
