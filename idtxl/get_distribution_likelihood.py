@@ -33,7 +33,7 @@ class get_distribution_likelihood():
                         tests selected distributions in this list
 
                     For getting all distributions you can test here use e.g.:
-                        >>> dl = get_distribution_likelihood
+                        >>> dl = get_distribution_likelihood()
                         >>> dl.show_distributions
 
     Usage e.g.:
@@ -246,7 +246,6 @@ class get_distribution_likelihood():
                     print results of all processes (and replications) in console
                 .get_dists(<process>)
                     get list of the the 5 best fitted distribution names and a list with their p-values
-                    dist, pval = dl.get_all_dists(<process>)
                 .get_best_dist(<process>)
                     get the name of the best fitted distribution
                 .get_sse(<process>)
