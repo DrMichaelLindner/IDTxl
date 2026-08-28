@@ -232,6 +232,15 @@ idtxl.get_distribution_likelihood module
     :show-inheritance:
 
 
+idtxl.EasyIDTxl module
+----------------------------
+
+.. automodule:: idtxl.EasyIDTxl
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 Module contents
 ---------------
 

@@ -62,8 +62,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "IDTxl 2.0"
-copyright = "2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
+project = "IDTxl2.0"
+copyright = "2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
 author = "Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -99,14 +99,31 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "pyramid"  # 'bootstrap' 'pyramid' 'alabaster'
+# html_theme = "pyramid"  # 'bootstrap' 'pyramid' 'alabaster'
 # html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme = "classic"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+background = "#c2b4a9"
+yellow = "#f5a66e"
+lightblue = "#8899ad"
+darkblue = "#3498a8"
+red = "#b8888d"
+brown = "#ab998f"
+darkbrown = "#6c5a50"
+html_theme_options = {
+    "bgcolor": background,
+    "sidebarbgcolor": lightblue,
+    "sidebarbtncolor": red,
+    "linkcolor": darkblue,
+    "codebgcolor": brown,
+    "footerbgcolor": yellow,
+    "headtextcolor": "#000000",
+    "headbgcolor": red,
+    }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -144,7 +161,7 @@ latex_documents = [
     (
         master_doc,
         "IDTxl.tex",
-        "IDTxl Documentation",
+        "IDTxl2.0 Documentation",
         "Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
         "manual",
     ),
@@ -155,7 +172,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "idtxl", "IDTxl Documentation", [author], 1)]
+man_pages = [(master_doc, "idtxl", "IDTxl2.0 Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -167,7 +184,7 @@ texinfo_documents = [
     (
         master_doc,
         "IDTxl",
-        "IDTxl Documentation",
+        "IDTxl2.0 Documentation",
         author,
         "IDTxl",
         "One line description of project.",
