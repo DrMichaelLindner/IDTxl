@@ -1,10 +1,10 @@
 [![DOI](http://joss.theoj.org/papers/10.21105/joss.01081/status.svg)](https://doi.org/10.21105/joss.01081)
 
-# IDTxl 2.0
+# IDTxl2.0
 
-The **I**nformation **D**ynamics **T**oolkit **xl**  **2.0**  (IDTxl 2.0) is a comprehensive software
+The **I**nformation **D**ynamics **T**oolkit **xl**  **2.0**  (IDTxl2.0) is a comprehensive software
 package for efficient inference of networks and their node dynamics from
-multivariate time series data using information theory. IDTxl 2.0 provides
+multivariate time series data using information theory. IDTxl2.0 provides
 functionality to estimate the following measures:
 
 1) For network inference:
@@ -16,7 +16,7 @@ functionality to estimate the following measures:
     - active information storage (AIS)
     - partial information decomposition (PID)
 
-IDTxl 2.0 implements estimators for discrete and continuous data with parallel
+IDTxl2.0 implements estimators for discrete and continuous data with parallel
 computing engines for both GPU and CPU platforms. Written for Python3.10+.
 
 To **get started** have a look at the [wiki](https://github.com/pwollstadt/IDTxl/wiki) and the [documentation](http://pwollstadt.github.io/IDTxl/). For further discussions, join [IDTxl's google group](https://groups.google.com/forum/#!forum/idtxl).
