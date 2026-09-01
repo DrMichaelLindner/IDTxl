@@ -7,9 +7,10 @@ greedy approach with maximum statistics to generate a non-uniform embedding
 Note:
     Written for Python 3.4+
 """
-from .network_inference import NetworkInferenceTE, NetworkInferenceBivariate
-from .stats import network_fdr
+from .network_inference import NetworkInferenceBivariate, NetworkInferenceTE
 from .results import ResultsNetworkInference
+from .stats import network_fdr
+import copy
 
 
 class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
@@ -69,7 +70,7 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
     def __init__(self):
         super().__init__()
 
-    def analyse_network(self, settings, data, targets='all', sources='all'):
+    def analyse_network(self, settings, data, targets="all", sources="all"):
         """Find bivariate transfer entropy between all nodes in the network.
 
         Estimate bivariate transfer entropy (TE) between all nodes in the
@@ -125,49 +126,79 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
                 ResultsNetworkInference()
         """
         # Set defaults for network inference.
-        settings.setdefault('verbose', True)
-        settings.setdefault('fdr_correction', True)
+        settings.setdefault("verbose", True)
+        settings.setdefault("fdr_correction", True)
+
+        if "nonlinear_prepared" in settings and data.get_nonlinear_status():
+            n_processes = int(data.n_processes/2)
+        else:
+            n_processes = data.n_processes
 
         # Check which targets and sources are requested for analysis.
-        if targets == 'all':
-            targets = [t for t in range(data.n_processes)]
-        if sources == 'all':
-            sources = ['all' for t in targets]
-        if (type(sources) is list) and (type(sources[0]) is int):
+        if targets == "all":
+            targets = list(range(n_processes))
+        if sources == "all":
+            sources = ["all" for t in targets]
+        elif isinstance(sources, list) and isinstance(sources[0], int):
             sources = [sources for t in targets]
-        if (type(sources) is list) and (type(sources[0]) is list):
+        elif isinstance(sources, list) and isinstance(sources[0], list):
             pass
         else:
-            ValueError('Sources was not specified correctly: {0}.'.format(
-                                                                    sources))
-        assert(len(sources) == len(targets)), (
-            'List of targets and list of sources have to have the length')
+            raise ValueError(f"Sources was not specified correctly: {sources}.")
+        assert len(sources) == len(
+            targets
+        ), "List of targets and list of sources have to have the length"
+
+        # Check and set defaults for checkpointing. If requested, initialise
+        # checkpointing.
+        self.settings = self._set_checkpointing_defaults(
+            settings, data, sources, targets
+        )
 
         # Perform TE estimation for each target individually
-        results = ResultsNetworkInference(n_nodes=data.n_processes,
-                                          n_realisations=data.n_realisations(),
-                                          normalised=data.normalise)
-        for t in range(len(targets)):
-            if settings['verbose']:
-                print('\n####### analysing target with index {0} from list {1}'
-                      .format(t, targets))
-            res_single = self.analyse_single_target(
-                settings, data, targets[t], sources[t])
-            results.combine_results(res_single)
+        results = ResultsNetworkInference(
+            n_nodes=data.n_processes,
+            n_realisations=data.n_realisations(),
+            normalised=data.normalise,
+        )
+        for t, target in enumerate(targets):
+            if "nonlinear_prepared" in settings and data.get_nonlinear_status():
+                # get nonlinear targets and sources
+                nt, ns, pd = data.get_lin_and_nonlin_targets_and_sources(target, sources[t], data.n_processes)
+                settings["nonlinear_settings"] = {"nonlinear_target_predictors": nt,
+                                                  "nonlinear_source_predictors": ns,
+                                                  "nonlinear_process_desc": pd
+                                                  }
+
+                if settings["verbose"]:
+                    print(f"\n####### analysing nonlinear targets with indices"
+                          f" {nt} ")
+
+                res_single = self.analyse_single_target(settings,
+                                                        data,
+                                                        nt,
+                                                        ns)
+                results.combine_results(res_single)
+            else:
+                if settings["verbose"]:
+                    print(f"\n####### analysing target with index {t} from list {targets}")
+                res_single = self.analyse_single_target(settings, data, target, sources[t])
+                results.combine_results(res_single)
 
         # Get no. realisations actually used for estimation from single target
         # analysis.
         results.data_properties.n_realisations = (
-            res_single.data_properties.n_realisations)
+            res_single.data_properties.n_realisations
+        )
 
         # Perform FDR-correction on the network level. Add FDR-corrected
         # results as an extra field. Network_fdr/combine_results internally
         # creates a deep copy of the results.
-        if settings['fdr_correction']:
+        if settings["fdr_correction"]:
             results = network_fdr(settings, results)
         return results
 
-    def analyse_single_target(self, settings, data, target, sources='all'):
+    def analyse_single_target(self, settings, data, target, sources="all"):
         """Find bivariate transfer entropy between sources and a target.
 
         Find bivariate transfer entropy (TE) between all potential source
@@ -252,6 +283,12 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
                   further settings (default=False)
                 - verbose : bool [optional] - toggle console output
                   (default=True)
+                - write_ckp : bool [optional] - enable checkpointing, writes
+                  analysis state to disk every time a variable is selected;
+                  resume crashed analysis using
+                  network_analysis.resume_checkpoint() (default=False)
+                - filename_ckp : str [optional] - checkpoint file name (without
+                  extension) (default='./idtxl_checkpoint')
 
             data : Data instance
                 raw data for analysis
@@ -271,41 +308,117 @@ class BivariateTE(NetworkInferenceTE, NetworkInferenceBivariate):
         self._initialise(settings, data, sources, target)
 
         # Main algorithm.
-        print('\n---------------------------- (1) include target candidates')
-        self._include_target_candidates(data)
-        print('\n---------------------------- (2) include source candidates')
+        print("\n---------------------------- (1) include target candidates")
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            if settings["cmi_estimator"] not in ['JidtGaussianCMI','PythonGaussianCMI','OpenCLGaussianCMI']:
+                raise RuntimeError(
+                    "For nonlinear analysis only the JidtGaussianCMI, PythonGaussianCMI or OpenCLGaussianCMI estimator can be used!"
+                )
+            print("                                  using original and nonlinear target candidates")
+            self._include_lin_and_nonlin_target_candidates(data)
+        else:
+            self._include_target_candidates(data)
+        print("\n---------------------------- (2) include source candidates")
         self._include_source_candidates(data)
-        print('\n---------------------------- (3) prune candidates')
+        print("\n---------------------------- (3) prune candidates")
         self._prune_candidates(data)
-        print('\n---------------------------- (4) final statistics')
+        print("\n---------------------------- (4) final statistics")
         self._test_final_conditional(data)
 
         # Clean up and return results.
-        if self.settings['verbose']:
-            print('final source samples: {0}'.format(
-                    self._idx_to_lag(self.selected_vars_sources)))
-            print('final target samples: {0}\n\n'.format(
-                    self._idx_to_lag(self.selected_vars_target)))
-        results = ResultsNetworkInference(
-            n_nodes=data.n_processes,
-            n_realisations=data.n_realisations(self.current_value),
-            normalised=data.normalise)
-        results._add_single_result(
-            target=self.target,
-            settings=self.settings,
-            results={
-                'sources_tested': self.source_set,
-                'current_value': self.current_value,
-                'selected_vars_sources': self._idx_to_lag(
-                    self.selected_vars_sources),
-                'selected_vars_target': self._idx_to_lag(
-                    self.selected_vars_target),
-                'selected_sources_pval': self.pvalues_sign_sources,
-                'selected_sources_te': self.statistic_sign_sources,
-                'omnibus_te': self.statistic_omnibus,
-                'omnibus_pval': self.pvalue_omnibus,
-                'omnibus_sign': self.sign_omnibus,
-                'te': self.statistic_single_link
-            })
+        if self.settings["verbose"]:
+            print(
+                f"final source samples: {self._idx_to_lag(self.selected_vars_sources)}"
+            )
+            print(
+                f"final target samples: {self._idx_to_lag(self.selected_vars_target)}\n\n"
+            )
+
+        if "nonlinear_prepared" in self.settings and data.get_nonlinear_status():
+            results = ResultsNetworkInference(
+                n_nodes=int(data.n_processes / 2),
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise
+            )
+
+            # In contrast to standard settings, the nonlinear setting change from target to target.
+            # When combining results from single target analyses, equality of settings is checked.
+            # Hence, the nonlinear settings are removed and stored separately in the results.
+            nonlinear_settings = self.settings["nonlinear_settings"]
+            del self.settings["nonlinear_settings"]
+
+            # set original sources in selected sources and add flag if orig or squared sources were used
+            sel_sources = self._idx_to_lag(self.selected_vars_sources)
+            selected_vars_sources_type = [None] * len(sel_sources)
+            count = 0
+            for i in sel_sources:
+                if i[0] >= data.n_processes / 2:
+                    s = list(i)
+                    s[0] = int(i[0] - data.n_processes / 2)
+                    sel_sources[count] = tuple(s)
+                # create flag for selected sources
+                selected_vars_sources_type[count] = nonlinear_settings["nonlinear_process_desc"][1][i[0]]
+                count = count + 1
+
+            # set original target in selected target and add flag if orig or squared target was used
+            sel_targets = self._idx_to_lag(self.selected_vars_target)
+            selected_vars_targets_type = [None] * len(sel_targets)
+            count = 0
+            for i in sel_targets:
+                if i[0] >= data.n_processes / 2:
+                    t = list(i)
+                    t[0] = int(i[0] - data.n_processes / 2)
+                    sel_targets[count] = tuple(t)
+                # create flag for selected targets
+                selected_vars_targets_type[count] = nonlinear_settings["nonlinear_process_desc"][1][i[0]]
+                count = count + 1
+
+            results._add_single_result(
+                target=self.target,
+                settings=self.settings,
+                results={
+                    "performed_nonlinear_analysis": True,
+                    "lin_and_nonlin_target_predictors_tested": nonlinear_settings["nonlinear_target_predictors"],
+                    "lin_and_nonlin_sources_tested": nonlinear_settings["nonlinear_source_predictors"],
+                    "nonlinear_process_desc": nonlinear_settings["nonlinear_process_desc"],
+                    "sources_tested": self.source_set,
+                    "current_value": self.current_value,
+                    "selected_vars_target": sel_targets,
+                    "selected_vars_sources": sel_sources,
+                    "selected_vars_sources_type": selected_vars_sources_type,
+                    "selected_vars_targets_type": selected_vars_targets_type,
+                    "selected_vars_target_orig": self._idx_to_lag(self.selected_vars_target),
+                    "selected_vars_sources_orig": self._idx_to_lag(self.selected_vars_sources),
+                    "selected_sources_pval": self.pvalues_sign_sources,
+                    "selected_sources_te": self.statistic_sign_sources,
+                    "omnibus_te": self.statistic_omnibus,
+                    "omnibus_pval": self.pvalue_omnibus,
+                    "omnibus_sign": self.sign_omnibus,
+                    "te": self.statistic_single_link,
+                },
+            )
+
+        else:
+            results = ResultsNetworkInference(
+                n_nodes=data.n_processes,
+                n_realisations=data.n_realisations(self.current_value),
+                normalised=data.normalise,
+            )
+            results._add_single_result(
+                target=self.target,
+                settings=self.settings,
+                results={
+                    "sources_tested": self.source_set,
+                    "current_value": self.current_value,
+                    "selected_vars_sources": self._idx_to_lag(self.selected_vars_sources),
+                    "selected_vars_target": self._idx_to_lag(self.selected_vars_target),
+                    "selected_sources_pval": self.pvalues_sign_sources,
+                    "selected_sources_te": self.statistic_sign_sources,
+                    "omnibus_te": self.statistic_omnibus,
+                    "omnibus_pval": self.pvalue_omnibus,
+                    "omnibus_sign": self.sign_omnibus,
+                    "te": self.statistic_single_link,
+                },
+            )
         self._reset()  # remove attributes
         return results

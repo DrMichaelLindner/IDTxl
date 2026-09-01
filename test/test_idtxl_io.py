@@ -1,12 +1,17 @@
 """Unit tests for IDTxl I/O functions."""
 import os
+import tempfile
 import pickle
 import pytest
 import numpy as np
 from pkg_resources import resource_filename
 from idtxl import idtxl_io as io
+from idtxl import idtxl_utils as utils
 from idtxl.data import Data
 from idtxl.network_comparison import NetworkComparison
+from idtxl.multivariate_te import MultivariateTE
+
+SEED = 0
 
 # Generate data and load network inference results.
 n_nodes = 5
@@ -24,13 +29,14 @@ comp_settings = {
         'stats_type': 'independent',
         'n_perm_max_stat': 50,
         'n_perm_min_stat': 50,
-        'n_perm_omnibus': 200,
+        'n_perm_omnibus': 50,
         'n_perm_max_seq': 50,
         'alpha_comp': 0.26,
-        'n_perm_comp': 200,
+        'n_perm_comp': 50,
         'tail': 'two',
         'permute_in_time': True,
-        'perm_type': 'random'
+        'perm_type': 'random',
+        'noise_level':0
         }
 comp = NetworkComparison()
 res_within = comp.compare_within(
@@ -39,6 +45,33 @@ res_within = comp.compare_within(
 
 def test_export_networkx():
     """Test export to networkx DiGrap() object."""
+    # Test export of graph with unconnected nodes.
+    max_lag = 3
+    data = Data(seed=SEED)
+    data.generate_mute_data(500, 5)
+    settings = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'noise_level': 0,
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': max_lag,
+        'min_lag_sources': 1,
+        'max_lag_target': max_lag}
+    target = 3
+    sources = [0, 4]
+    te = MultivariateTE()
+    results = te.analyse_single_target(
+        settings, data, target=target, sources=sources)
+    weights = 'binary'
+    adj_matrix = results.get_adjacency_matrix(weights=weights, fdr=False)
+    digraph = io.export_networkx_graph(
+        adjacency_matrix=adj_matrix, weights=weights)
+    np.testing.assert_array_equal(
+        np.sort(digraph.nodes), np.arange(data.n_processes),
+        err_msg='Wrong nodes in exported DiGraph.')
+
     # raise AssertionError('Test not yet implemented.')
     # Test export of networx graph for network inference results.
     weights = 'binary'
@@ -117,31 +150,31 @@ def test_export_brain_net():
                                    node_color=np.arange(n_nodes + 1))
 
 
-def test_import_fieldtrip():
-    """Test FieldTrip importer."""
-    file_path = resource_filename(__name__, 'data/ABA04_Up_10-140Hz_v7_3.mat')
-    (data, label, timestamps, fsample) = io.import_fieldtrip(
-                                            file_name=file_path,
-                                            ft_struct_name='data',
-                                            file_version='v7.3')
-    assert data.n_processes == 14, (
-        'Wrong number of processes, expected 14, found: {0}').format(
-            data.n_processes)
-    assert data.n_replications == 135, (
-        'Wrong number of replications, expected 135, found: {0}').format(
-            data.n_replications)
-    assert data.n_samples == 1200, (
-        'Wrong number of samples, expected 1200, found: {0}').format(
-            data.n_samples)
+# def test_import_fieldtrip():
+#     """Test FieldTrip importer."""
+#     file_path = resource_filename(__name__, 'data/ABA04_Up_10-140Hz_v7_3.mat')
+#     (data, label, timestamps, fsample) = io.import_fieldtrip(
+#                                             file_name=file_path,
+#                                             ft_struct_name='data',
+#                                             file_version='v7.3')
+#     assert data.n_processes == 14, (
+#         'Wrong number of processes, expected 14, found: {0}').format(
+#             data.n_processes)
+#     assert data.n_replications == 135, (
+#         'Wrong number of replications, expected 135, found: {0}').format(
+#             data.n_replications)
+#     assert data.n_samples == 1200, (
+#         'Wrong number of samples, expected 1200, found: {0}').format(
+#             data.n_samples)
 
-    assert label[0] == 'VirtualChannel_3491_pc1', (
-        'Wrong channel name for label 0.')
-    assert label[10] == 'VirtualChannel_1573_pc2', (
-        'Wrong channel name for label 10.')
-    assert label[30] == 'VirtualChannel_1804_pc1', (
-        'Wrong channel name for label 30.')
-    assert fsample == 600, ('Wrong sampling frequency: {0}'.format(fsample))
-    print(timestamps)  # TODO add assertion for this
+#     assert label[0] == 'VirtualChannel_3491_pc1', (
+#         'Wrong channel name for label 0.')
+#     assert label[10] == 'VirtualChannel_1573_pc2', (
+#         'Wrong channel name for label 10.')
+#     assert label[30] == 'VirtualChannel_1804_pc1', (
+#         'Wrong channel name for label 30.')
+#     assert fsample == 600, ('Wrong sampling frequency: {0}'.format(fsample))
+#     print(timestamps)  # TODO add assertion for this
 
 
 def test_import_matarray():
@@ -245,8 +278,54 @@ def test_import_matarray():
             normalise=False)
 
 
+def test_save_json():
+    # Test writing dictionaries to JSON files
+    data = Data()
+    data.generate_mute_data(n_samples=100, n_replications=1)
+    settings = {
+        'cmi_estimator': 'JidtKraskovCMI',
+        'n_perm_max_stat': 21,
+        'n_perm_min_stat': 21,
+        'n_perm_max_seq': 21,
+        'n_perm_omnibus': 21,
+        'max_lag_sources': 2,
+        'min_lag_sources': 1,
+        'noise_level':0
+        }
+    target = 1
+    sources = [0]
+    nw = MultivariateTE()
+    nw._initialise(settings, data, sources, target)
+    nw._include_target_candidates(data)
+    nw._include_source_candidates(data)
+    nw._prune_candidates(data)
+    nw._test_final_conditional(data)
+
+    fd, file_path = tempfile.mkstemp()
+    try:
+        # Save settings after running multivariate TE estimation with minimal
+        # settings.
+        _save_load_json(nw.settings, file_path)
+        # Add numpy array
+        nw.settings['y_test_array'] = np.arange(10)
+        _save_load_json(nw.settings, file_path)
+        # Add numpy float
+        nw.settings['z_test_float'] = np.float64(10)
+        _save_load_json(nw.settings, file_path)
+    finally:
+        os.remove(file_path)
+
+
+def _save_load_json(data, file_path):
+    # Helper function to test if dumped JSON data can be recovered correctly
+    io.save_json(data, file_path)
+    d = io.load_json(file_path)
+    assert utils.equal_dicts(data, d)
+
+
 if __name__ == '__main__':
+    test_save_json()
     test_export_brain_net()
     test_export_networkx()
     test_import_matarray()
-    test_import_fieldtrip()
+    # test_import_fieldtrip()

@@ -6,6 +6,8 @@
 ###################
 *.pyc
 *.py~
+*.c
+*.so
 
 # Sphinx documentation #
 ########################
@@ -24,6 +26,8 @@ docs/_build
 *.bac*
 *.in~
 .vscode
+.idea
+.flake8
 
 # Code Coverage      #
 ######################
@@ -49,3 +53,8 @@ test/output/.gitkeep
 # Files the test for BrainNet Viewer export writes
 test/data/*.edge
 test/data/*.node
+# Checkpoint data
+*.ckp
+*.ckp.old
+*.dat
+*.json

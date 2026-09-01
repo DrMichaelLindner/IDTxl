@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to IDTxl's documentation!
-=================================
+Welcome to IDTxl2.0 documentation!
+===================================
 
-Welcome to the IDTxl user documentation. IDTxl is being hosted at
+Welcome to the IDTxl2.0 user documentation. IDTxl2.0 is being hosted at
 `GitHub <https://github.com/pwollstadt/IDTxl>`_.
 
 Have a look at the `wiki <https://github.com/pwollstadt/IDTxl/wiki>`_
@@ -24,8 +24,10 @@ look at the IDTxl `google discussion group <https://groups.google.com/forum/#!fo
    idtxl_network_comparison.rst
    idtxl_results_class.rst
    idtxl_estimators.rst
+   idtxl_postprocessing.rst
    idtxl_helper.rst
-
+   idtxl_get_distribution_likelihood.rst
+   idtxl_easyidtxl.rst
 
 Package contents
 --------------------

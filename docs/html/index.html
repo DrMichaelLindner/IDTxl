@@ -1,18 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to IDTxl’s documentation! &#8212; IDTxl 1.0 documentation</title>
-    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Welcome to IDTxl’s documentation! &#8212; IDTxl 1.6.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/pyramid.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="The Data Class" href="idtxl_data_class.html" />
@@ -36,7 +36,8 @@
         <li class="right" >
           <a href="idtxl_data_class.html" title="The Data Class"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">IDTxl 1.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Welcome to IDTxl’s documentation!</a></li> 
       </ul>
     </div>  
 
@@ -45,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-idtxl-s-documentation">
+  <section id="welcome-to-idtxl-s-documentation">
 <h1>Welcome to IDTxl’s documentation!<a class="headerlink" href="#welcome-to-idtxl-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Welcome to the IDTxl user documentation. IDTxl is being hosted at
 <a class="reference external" href="https://github.com/pwollstadt/IDTxl">GitHub</a>.</p>
@@ -54,7 +55,7 @@ for more information and user tutorials. If you want to report a problem, head
 to the <a class="reference external" href="https://github.com/pwollstadt/IDTxl/issues">issue tracker</a> or have a
 look at the IDTxl <a class="reference external" href="https://groups.google.com/forum/#!forum/idtxl">google discussion group</a>.</p>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_data_class.html">The Data Class</a></li>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_network_inference.html">Algorithms for network inference</a><ul>
@@ -66,7 +67,13 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
 </li>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_process_analysis.html">Algorithms for the analysis of node dynamics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="idtxl_process_analysis.html#active-information-storage-ais">Active Information Storage (AIS)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl_process_analysis.html#partial-information-decomposition-pid">Partial Information Decomposition (PID)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_process_analysis.html#multivariate-partial-information-decomposition-pid">Multivariate Partial Information Decomposition (PID)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_process_analysis.html#bivariate-partial-information-decomposition-pid">Bivariate Partial Information Decomposition (PID)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_process_analysis.html#history-dependence-estimator-for-neural-spiking-data">History-dependence estimator for neural spiking data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl_process_analysis.html#embedding-optimization">Embedding optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl_process_analysis.html#estimators">Estimators</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_network_comparison.html">Network comparison</a></li>
@@ -78,8 +85,14 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
 </li>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_estimators.html">Information theoretic estimators</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="idtxl_estimators.html#jidt-estimators-cpu">JIDT Estimators (CPU)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_estimators.html#python-estimators-cpu">Python Estimators (CPU)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl_estimators.html#opencl-estimators-gpu">OpenCL Estimators (GPU)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_estimators.html#mpi-estimators-cpu">MPI Estimators (CPU)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl_estimators.html#pid-estimators">PID Estimators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="idtxl_postprocessing.html">Postprocessing of inferred networks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="idtxl_postprocessing.html#significant-subgraph-mining">Significant subgraph mining</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="idtxl_helper.html">Helper functions</a><ul>
@@ -89,57 +102,64 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
 </li>
 </ul>
 </div>
-<div class="section" id="package-contents">
+<section id="package-contents">
 <h2>Package contents<a class="headerlink" href="#package-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="idtxl.html">idtxl package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.active_information_storage">idtxl.active_information_storage module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_mi">idtxl.bivariate_mi module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_te">idtxl.bivariate_te module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.data">idtxl.data module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimator">idtxl.estimator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_te">idtxl.bivariate_te module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_mi">idtxl.bivariate_mi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_pid">idtxl.bivariate_pid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_te">idtxl.multivariate_te module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_mi">idtxl.multivariate_mi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_pid">idtxl.multivariate_pid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.active_information_storage">idtxl.active_information_storage module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.embedding_optimization_ais_Rudelt">idtxl.embedding_optimization_ais_Rudelt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_Rudelt">idtxl.estimators_Rudelt module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_jidt">idtxl.estimators_jidt module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_opencl">idtxl.estimators_opencl module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_mpi">idtxl.estimators_mpi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_python">idtxl.estimators_python module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_multivariate_pid">idtxl.estimators_multivariate_pid module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_pid">idtxl.estimators_pid module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_exceptions">idtxl.idtxl_exceptions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_io">idtxl.idtxl_io module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_utils">idtxl.idtxl_utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_mi">idtxl.multivariate_mi module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_te">idtxl.multivariate_te module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_analysis">idtxl.network_analysis module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_comparison">idtxl.network_comparison module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_inference">idtxl.network_inference module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.partial_information_decomposition">idtxl.partial_information_decomposition module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.results">idtxl.results module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.single_process_analysis">idtxl.single_process_analysis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_comparison">idtxl.network_comparison module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.results">idtxl.results module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.stats">idtxl.stats module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.synergy_tartu">idtxl.synergy_tartu module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.visualise_graph">idtxl.visualise_graph module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="indices-and-tables">
+</section>
+<section id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
-<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
-<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="#">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Welcome to IDTxl’s documentation!</a><ul>
 <li><a class="reference internal" href="#package-contents">Package contents</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
@@ -147,9 +167,12 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
 </li>
 </ul>
 
-  <h4>Next topic</h4>
-  <p class="topless"><a href="idtxl_data_class.html"
-                        title="next chapter">The Data Class</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="idtxl_data_class.html"
+                          title="next chapter">The Data Class</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -158,17 +181,15 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -185,12 +206,13 @@ look at the IDTxl <a class="reference external" href="https://groups.google.com/
         <li class="right" >
           <a href="idtxl_data_class.html" title="The Data Class"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">IDTxl 1.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Welcome to IDTxl’s documentation!</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
     </div>
   </body>
 </html>

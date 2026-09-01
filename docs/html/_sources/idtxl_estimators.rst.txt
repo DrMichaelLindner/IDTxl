@@ -1,6 +1,12 @@
 Information theoretic estimators
 ================================
 
+Python Estimators (CPU)
+-----------------------
+.. automodule:: idtxl.estimators_python
+    :members:
+    :noindex:
+
 JIDT Estimators (CPU)
 ---------------------
 .. automodule:: idtxl.estimators_jidt
@@ -10,6 +16,18 @@ JIDT Estimators (CPU)
 OpenCL Estimators (GPU)
 -----------------------
 .. automodule:: idtxl.estimators_opencl
+    :members:
+    :noindex:
+
+CUDA Estimators (GPU)
+-----------------------
+.. automodule:: idtxl.estimators_cuda
+    :members:
+    :noindex:
+
+MPI Estimators (CPU)
+-------------------------
+.. automodule:: idtxl.estimators_mpi
     :members:
     :noindex:
 

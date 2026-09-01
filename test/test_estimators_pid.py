@@ -13,17 +13,11 @@ optimiser_missing = pytest.mark.skipif(
     package_missing,
     reason='ECOS is missing.')
 
-no_float128 = False
-try:
-    np.float128()
-except AttributeError as err:
-    if "'module' object has no attribute 'float128'" == err.args[0]:
-        no_float128 = True
-    else:
-        raise
-float128_not_available = pytest.mark.skipif(
-    no_float128,
-    reason="type float128 not available on current architecture")
+# longdouble is not available on all systems (e.g., missing on Windows systems).
+# Skip tests in this case.
+longdouble_not_available = pytest.mark.skipif(
+    np.invert(hasattr(np, 'longdouble')),
+    reason="type longdouble not available on current architecture")
 
 
 ALPH_X = 2
@@ -49,6 +43,7 @@ Y = np.asarray([0, 1, 0, 1])
 # Y = np.random.randint(0, ALPH_Y, n)
 
 
+@longdouble_not_available
 @optimiser_missing
 def test_tartu_estimator():
     # Test Tartu estimator on logical and
@@ -59,7 +54,7 @@ def test_tartu_estimator():
         'Synergy is not 0.5. for Tartu estimator.')
 
 
-@float128_not_available
+@longdouble_not_available
 def test_sydney_estimator():
     # Test Sydney estimator on logical and
     pid_sydney = SydneyPID(SETTINGS)
@@ -69,7 +64,7 @@ def test_sydney_estimator():
         'Synergy is not 0.5. for Sydney estimator.')
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_pid_and():
     """Test PID estimator on logical AND."""
@@ -82,7 +77,7 @@ def test_pid_and():
                                                      'Tartu estimator.')
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_pid_xor():
     """Test PID estimator on logical XOR."""
@@ -93,7 +88,7 @@ def test_pid_xor():
     assert np.isclose(1, est_tartu['syn_s1_s2']), 'Synergy is not 1.'
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_pip_source_copy():
     """Test PID estimator on copied source."""
@@ -120,7 +115,7 @@ def test_pip_source_copy():
             est_tartu['syn_s1_s2']))
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_xor_long():
     """Test PID estimation with Sydney estimator on XOR with higher N."""
@@ -209,7 +204,7 @@ def _estimate(Z):
     return est_sydney, est_tartu
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_int_types():
     """Test PID estimator on different integer types."""
@@ -235,7 +230,7 @@ def test_int_types():
         est_sydney, est_tartu = _estimate(Z)
 
 
-@float128_not_available
+@longdouble_not_available
 @optimiser_missing
 def test_non_binary_alphabet():
     """Test PID estimators on larger alphabets."""

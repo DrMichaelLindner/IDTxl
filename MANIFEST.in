@@ -1,5 +1,7 @@
 include idtxl/infodynamics.jar
 include idtxl/gpuKnnKernelNoIdx.cl
+include idtxl/gpuGaussianKernel.cl
+include idtxl/gpuDiscreteKernel.cl
 include idtxl/libmodwtj.so
 recursive-include test/data *
 recursive-include docs *

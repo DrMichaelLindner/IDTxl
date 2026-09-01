@@ -6,8 +6,8 @@ import pytest
 import numpy as np
 from idtxl.network_analysis import NetworkAnalysis
 from idtxl.data import Data
-from test_estimators_jidt import _get_gauss_data
-from idtxl.estimators_jidt import JidtKraskovCMI, JidtKraskovMI
+from generate_test_data import _get_gauss_data
+from idtxl.estimators_jidt import JidtKraskovCMI
 
 
 def test_calculate_single_link():
@@ -20,7 +20,7 @@ def test_calculate_single_link():
     data = Data(np.hstack((source, source_uncorr, target)), dim_order='sp')
 
     n = NetworkAnalysis()
-    n._cmi_estimator = JidtKraskovCMI(settings={})
+    n._cmi_estimator = JidtKraskovCMI(settings={'noise_level': 0})
     n.settings = {
         'local_values': False
     }
@@ -29,13 +29,13 @@ def test_calculate_single_link():
     # Test single link estimation for a single and multiple sources for
     # cases: no target vars, source vars/no source vars (tests if the
     # conditioning set is built correctly for conditioning='full').
-    source_realisations = data.get_realisations(current_value, [(0, 0)])[0]
+    source_realisations = data.get_realisations(current_value, [(0, 0)])
     current_value_realisations = data.get_realisations(
-        current_value, [current_value])[0]
+        current_value, [current_value])
     expected_mi = n._cmi_estimator.estimate(
         current_value_realisations, source_realisations)
     # cond. on second source
-    cond_realisations = data.get_realisations(current_value, [(1, 0)])[0]
+    cond_realisations = data.get_realisations(current_value, [(1, 0)])
     expected_mi_cond1 = n._cmi_estimator.estimate(
         current_value_realisations, source_realisations, cond_realisations)
 
@@ -66,13 +66,13 @@ def test_calculate_single_link():
         # cases: target vars/no target vars, source vars (tests if the
         # conditioning set is built correctly for conditioning='full').
         cond_realisations = np.hstack((  # cond. on second source and target
-            data.get_realisations(current_value, [(1, 0)])[0],
-            data.get_realisations(current_value, [(2, 0)])[0]
+            data.get_realisations(current_value, [(1, 0)]),
+            data.get_realisations(current_value, [(2, 0)])
             ))
         expected_mi_cond2 = n._cmi_estimator.estimate(
             current_value_realisations, source_realisations, cond_realisations)
         # cond. on target
-        cond_realisations = data.get_realisations(current_value, [(2, 0)])[0]
+        cond_realisations = data.get_realisations(current_value, [(2, 0)])
         expected_mi_cond3 = n._cmi_estimator.estimate(
             current_value_realisations, source_realisations, cond_realisations)
 
@@ -122,31 +122,6 @@ def test_calculate_single_link():
         mi = n._calculate_single_link(
             data, current_value, source_vars=[(0, 0)], conditioning='test')
 
-
-def test_separate_realisations():
-    n = NetworkAnalysis()
-    r_1 = np.ones((10, 1))
-    r_2 = np.ones((10, 1)) * 2
-    r_3 = np.ones((10, 1)) * 3
-    idx = [(0, 1), (0, 2), (0, 3)]
-    n._append_selected_vars_idx(idx)
-    n._append_selected_vars_realisations(np.hstack((r_1, r_2, r_3)))
-    print(n._selected_vars_realisations)
-    [remain, single] = n._separate_realisations(idx, idx[0])
-    print(single.shape)
-    a = np.empty((10, 1))
-    b = np.empty((10, 2))
-    a[0:10, ] = single
-    b[0:10, ] = remain
-    print(a.shape)
-    print(b)
-
-    assert np.all(remain == np.hstack((r_2, r_3))), 'Remainder is incorrect.'
-    assert np.all(single == r_1), 'Single realisations are incorrect.'
-    [remain, single] = n._separate_realisations([idx[0]], idx[0])
-    assert remain is None, 'Remainder should be None.'
-
-
 def test_idx_to_lag():
     n = NetworkAnalysis()
     n.current_value = (0, 5)
@@ -177,8 +152,28 @@ def test_lag_to_idx():
         n._idx_to_lag(idx_list)
 
 
+def test_write_checkpoint():
+    # Test writing of checkpoints for network analysis
+    filename_ckp = 'test_checkpoint'
+    nw = NetworkAnalysis()
+    nw.current_value = (0, 0)
+    nw.settings = {'filename_ckp': filename_ckp}
+    with pytest.raises(FileNotFoundError):
+        nw._update_checkpoint(filename_ckp)
+    with pytest.raises(RuntimeError):
+        nw._write_checkpoint()
+
+
+def test_enforce_conditioning_vars():
+    # Test if tuples, lists, dicts, and 'faes' vars are added correctly!
+    # Check if tests already exist
+    # Test if source and target vars are added to the correct lists
+    pass
+
+
 if __name__ == '__main__':
+    test_write_checkpoint()
     test_calculate_single_link()
     test_idx_to_lag()
     test_lag_to_idx()
-    test_separate_realisations()
+    # test_separate_realisations()

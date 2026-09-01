@@ -1,21 +1,30 @@
-from distutils.core import setup
+from setuptools import setup, Extension
+from pathlib import Path
+from Cython.Build import cythonize
+from Cython.Compiler import Options
+import numpy
 
-# http://www.diveintopython3.net/packaging.html
-# https://pypi.python.org/pypi?:action=list_classifiers
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
-with open('README.txt') as file:
-    long_description = file.read()
+extensions = [
+    Extension(
+        "idtxl.hde_fast_embedding",
+        ["idtxl/hde_fast_embedding.pyx"], include_dirs=[numpy.get_include()],
+    ),
+]
 
 setup(
-    name='idtxl',
-    packages=['idtxl'],
+    name="idtxl",
+    packages=["idtxl", "idtxl/knn", "idtxl/test"],
     include_package_data=True,
-    version='1.0',
-    description='Information Dynamics Toolkit xl',
-    author='Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral',
-    author_email='p.wollstadt@gmail.com',
-    url='https://github.com/pwollstadt/IDTxl',
+    version="2.0",
+    description="Information Dynamics Toolkit xl 2.0",
+    author="Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral",
+    author_email="p.wollstadt@gmail.com",
+    url="https://github.com/pwollstadt/IDTxl",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
@@ -28,5 +37,7 @@ setup(
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    ]
+    ],
+    ext_modules = cythonize(extensions, compiler_directives={"language_level": 3, "profile": False}),
 )
+
