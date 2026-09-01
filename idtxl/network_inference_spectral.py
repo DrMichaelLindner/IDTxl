@@ -3,7 +3,7 @@ import numpy as np
 from joblib import Parallel, delayed
 from . import stats
 from .network_analysis import NetworkAnalysis
-from .estimator import find_estimator
+from .estimator import _find_estimator
 from .results import DotDict
 from .stats import _generate_spectral_surrogates
 from . import modwt
@@ -48,7 +48,7 @@ class NetworkInferenceSpectral(NetworkAnalysis):
         # estimated quantity may be different from CMI in other inference
         # algorithms. (Everything else can be done in the parent class.)
         try:
-            EstimatorClass = find_estimator(results.settings['cmi_estimator'])
+            EstimatorClass = _find_estimator(results.settings['cmi_estimator'])
         except KeyError:
             raise KeyError('Estimator was not specified!')
         # Don't add results with conflicting settings
@@ -1510,6 +1510,12 @@ def spectral_surrogates_parallel(data_slice, scale, param):
     merged_coeff = np.transpose(wav_stored._data, (1, 0, 2))
     rec_surrogate = modwt.imodwt_c(
         merged_coeff, approx_coeff, param['wavelet'],param['max_scale'])
+
+    print("##########################################")
+    print(rec_surrogate.shape)
+    print("##########################################")
+
+
     return rec_surrogate
 
 
