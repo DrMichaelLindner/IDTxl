@@ -1,4 +1,4 @@
-"""EasyIDTxl
+"""EasyIDTxl is a graphical user interface (GUI) for IDTxl2.0
 
 EasyIDTxl can be used to easily generate analysis scripts for 
 several idtxl estimators and analysis types:
@@ -19,7 +19,6 @@ Start EasyIDTxl using: python EasyIDTxl.py
 
 implemented by Michael Lindner, 2025
 """
-
 
 import os
 import sys
@@ -355,8 +354,6 @@ parameter_tooltips =  {
 # define parameters and defaults for each estimator
 parameters = {}
 
-####################################################################### TODO OpenCLGaussianXXXX
-
 ### Python
 parameters["PythonKraskovMI"] = {
     "kraskov_k" : 4,
@@ -515,14 +512,19 @@ parameters["OpenCLKraskovCMI"] = {
     "debug": False,
     "n_chunks": 0,
 }
+####################################################################### TODO OpenCLGaussianXXXX
+
+
 parameters["OpenCLGaussianMI"] = {
     "lag_mi" : 1,
     "gpuid": 0,
     "local_values": False,
+    "n_chunks": 0,
 }
 parameters["OpenCLGaussianCMI"] = {
     "gpuid": 0,
     "local_values": False,
+    "n_chunks": 0,
 }
 parameters["OpenCLGaussianAIS"] = {
     "history": "",
