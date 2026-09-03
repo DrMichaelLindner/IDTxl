@@ -1028,7 +1028,8 @@ class OpenCLGaussian(OpenCLEstimator):
         self.settings.setdefault('noise_level', np.float32(1e-8))
         self.settings.setdefault('local_values', False)
         self.settings.setdefault('verbose', True)
-        self.sizeof_float = int(np.dtype(np.float32).itemsize)
+        self.sizeof_float = int(np.dtype(np.float64).itemsize)
+        #self.sizeof_float = int(np.dtype(np.float32).itemsize)
         self.sizeof_int = int(np.dtype(np.int32).itemsize)
 
         # get devices.
@@ -1673,7 +1674,7 @@ class OpenCLGaussianMI(OpenCLGaussian):
         return np.mean(lcmi)
     """
 
-    def estimate(self, var1, var2):
+    def estimate(self, var1, var2, n_chunks=1):
         """Estimate mutual information.
 
         Args:
@@ -1710,18 +1711,96 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
+
+
+        signallength = var1.shape[0]
+        chunklength = signallength // n_chunks
+        var1dim = var1.shape[1]
+        var2dim = var2.shape[1]
+        pointdim = var1dim + var2dim
+
+        px = self._pad_features(var1dim)
+        py = self._pad_features(var2dim)
+        pxy = self._pad_features(var1dim + var2dim)
+        
+        n_pad = self._pad_observations(signallength)
+
+        mem_data = self.sizeof_float * chunklength * pointdim
+        
+        mem_mean_x = self.sizeof_float * var1dim
+        mem_mean_y = self.sizeof_float * var2dim
+        mem_all_means = mem_mean_x + mem_mean_y
+
+        mem_center_x = self.sizeof_float * n_pad * px
+        mem_center_y = self.sizeof_float * n_pad * py
+        mem_center_xy = self.sizeof_float * n_pad * pxy
+        mem_all_c_center = mem_center_x + mem_center_y + mem_center_xy
+
+        mem_cov_x = self.sizeof_float * var1dim * px
+        mem_cov_y = self.sizeof_float * var2dim * py
+        mem_cov_xy = self.sizeof_float * pointdim * pxy
+        mem_all_cov = mem_cov_xy + mem_cov_x + mem_cov_y
+
+        mem_chunk = mem_data + mem_all_means + mem_all_c_center + mem_all_cov
+        max_mem = self._get_max_mem()
+
+        max_chunks_per_run = np.floor(max_mem/mem_chunk).astype(int)
+        chunks_per_run = min(max_chunks_per_run, n_chunks)
+
+        logger.debug(
+            'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
+            'per run: {2}.'.format(
+                mem_chunk / C, max_mem / C, chunks_per_run))
+        if mem_chunk > max_mem:
+            raise RuntimeError('Size of single chunk exceeds GPU global '
+                               'memory.')
+
+        mi_array = np.array([])
+        for r in range(0, n_chunks, chunks_per_run):
+            startidx = r*chunklength
+            stopidx = min(r+chunks_per_run, n_chunks)*chunklength
+            subset1 = var1[startidx:stopidx, :]
+            subset2 = var2[startidx:stopidx, :]
+            n_chunks_current_run = subset1.shape[0] // chunklength
+            results = self._estimate_single_run(subset1, subset2,
+                                                n_chunks_current_run)
+
+            mi_array = np.concatenate((mi_array, results))
+
+        self.actualValue = np.mean(mi_array)
+        
+        return mi_array
+
+    def _estimate_single_run(self, var1, var2, n_chunks=1):
+
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        assert var1.shape[0] == var2.shape[0]
+        assert var1.shape[0] % n_chunks == 0
+        
         self.set_data("MI", var1, var2)
 
         if self.settings['local_values']:
-            mi = self.calculateLocalMI()
-            self.actualValue = np.mean(mi)
+            chunklength = var1.shape[0] // n_chunks
+            mi_array = -np.inf * np.ones(chunklength * n_chunks,
+                                                dtype=np.float64)
+            idx = 0
+            for c in range(n_chunks):
+                mi = self.calculateLocalMI()
+                mi_array[idx:idx+chunklength] = mi
+                idx += chunklength
         else:
-            mi = np.mean(self.calculateLocalMI())
-            self.actualValue = mi
+            mi_array = -np.inf * np.ones(n_chunks, dtype=np.float64)
+            for c in range(n_chunks):
+                mi = np.mean(self.calculateLocalMI())
+                mi_array[c] = mi
 
         self.remove_data()
 
-        return mi
+        return mi_array
+
+    def is_parallel(self):
+        return True
 
     def computeSignificance(self):
         C = ChiSquareMeasurementDistribution()
@@ -2127,7 +2206,7 @@ class OpenCLGaussianCMI(OpenCLGaussian):
 
         return local_mi
         
-    def estimate(self, var1, var2, conditional=None):
+    def estimate(self, var1, var2, conditional=None, n_chunks=1):
         """Estimate conditional mutual information between var1 and var2, given
         conditional.
 
@@ -2152,7 +2231,7 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         if conditional is None:
             #if (self.est_mi is None):
             self.est_mi = OpenCLGaussianMI(self.settings)
-            return self.est_mi.estimate(var1, var2)
+            return self.est_mi.estimate(var1, var2, n_chunks)
         else:
             assert(conditional.size != 0), 'Conditional Array is empty.'
 
@@ -2185,30 +2264,161 @@ class OpenCLGaussianCMI(OpenCLGaussian):
                 self.settings['noise_level'],
                 conditional.shape)
 
+        var1 = np.ascontiguousarray(var1, dtype=np.float64)
+        var2 = np.ascontiguousarray(var2, dtype=np.float64)
+        conditional = np.ascontiguousarray(conditional, dtype=np.float64)
+
         # for analystic distribution measurement
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
 
-        #print(var1.shape)
-        #print(var2.shape)
-        #print(conditional.shape)
 
-        var1 = np.ascontiguousarray(var1, dtype=np.float64)
-        var2 = np.ascontiguousarray(var2, dtype=np.float64)
-        conditional = np.ascontiguousarray(conditional, dtype=np.float64)
+        signallength = var1.shape[0]
+        chunklength = signallength // n_chunks
+        var1dim = var1.shape[1]
+        var2dim = var2.shape[1]
+        conddim = conditional.shape[1]
+        pointdim = var1dim + var2dim + conddim
+
+        px = self._pad_features(var1dim)
+        py = self._pad_features(var2dim)
+        pz = self._pad_features(conddim)
+        pxz = self._pad_features(var1dim + conddim)
+        pyz = self._pad_features(var2dim + conddim)
+        pxyz = self._pad_features(var1dim + var2dim + conddim)
+
+        n_pad = self._pad_observations(signallength)
+
+        mem_data = self.sizeof_float * chunklength * pointdim
+        mem_xz = self.sizeof_float * chunklength * (var1dim + conddim)
+        mem_yz = self.sizeof_float * chunklength * (var2dim + conddim)
+        mem_xyz = self.sizeof_float * chunklength * (var1dim + var2dim + conddim)
+        mem_all_data = mem_data + mem_xz + mem_yz + mem_xyz
+        
+        mem_mean_x = self.sizeof_float * var1dim
+        mem_mean_y = self.sizeof_float * var2dim
+        mem_mean_z = self.sizeof_float * conddim
+        mem_all_means = mem_mean_x + mem_mean_y + mem_mean_z
+
+        mem_center_x = self.sizeof_float * n_pad * px
+        mem_center_y = self.sizeof_float * n_pad * py
+        mem_center_z = self.sizeof_float * n_pad * pz
+        mem_all_i_center = mem_center_x + mem_center_y + mem_center_y
+
+        mem_center_xz = self.sizeof_float * n_pad * pxz
+        mem_center_yz = self.sizeof_float * n_pad * pyz
+        mem_center_xyz = self.sizeof_float * n_pad * pxyz
+        mem_all_c_center = mem_center_xz + mem_center_yz + mem_center_xyz
+
+        mem_cov_xz = self.sizeof_float * (var1dim + conddim) * pxz
+        mem_cov_yz = self.sizeof_float * (var2dim + conddim) * pyz
+        mem_cov_xyz = self.sizeof_float * pointdim * pxyz
+        mem_cov_z = self.sizeof_float * conddim * pz
+        mem_all_cov = mem_cov_z + mem_cov_xyz + mem_cov_xz + mem_cov_yz
+
+        mem_chunk = mem_all_data + mem_all_means + mem_all_i_center + mem_all_c_center + mem_all_cov
+
+        #mem_dist = self.sizeof_float * chunklength * kraskov_k
+        #mem_ncnt = 2 * self.sizeof_int * chunklength
+        #mem_chunk = mem_data + mem_dist + mem_ncnt
+        max_mem = self._get_max_mem()
+
+        max_chunks_per_run = np.floor(max_mem/mem_chunk).astype(int)
+        chunks_per_run = min(max_chunks_per_run, n_chunks)
+
+        logger.debug(
+            'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
+            'per run: {2}.'.format(
+                mem_chunk / C, max_mem / C, chunks_per_run))
+        if mem_chunk > max_mem:
+            raise RuntimeError('Size of single chunk exceeds GPU global '
+                               'memory.')
+
+        cmi_array = np.array([])
+        for r in range(0, n_chunks, chunks_per_run):
+            startidx = r*chunklength
+            stopidx = min(r+chunks_per_run, n_chunks)*chunklength
+            subset1 = var1[startidx:stopidx, :]
+            subset2 = var2[startidx:stopidx, :]
+            subset3 = conditional[startidx:stopidx, :]
+            n_chunks_current_run = subset1.shape[0] // chunklength
+            results = self._estimate_single_run(subset1, subset2, subset3,
+                                                n_chunks_current_run)
+            cmi_array = np.concatenate((cmi_array, results))
+
+        self.actualValue = np.mean(cmi_array)
+        
+        return cmi_array
+
+    def _estimate_single_run(self, var1, var2, conditional=None, n_chunks=1):
+        """Estimate conditional mutual information in a single GPU run.
+
+        This method should not be called directly, only inside estimate()
+        after memory bounds have been checked.
+
+        If conditional is None, the mutual information between var1 and var2 is
+        calculated.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [(realisations * n_chunks) x
+                variable dimension] or a 1D array representing [realisations],
+                array type should be int32
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            conditional : numpy array
+                realisations of conditioning variable (similar to var1)
+            n_chunks : int
+                number of data chunks, no. data points has to be the same for
+                each chunk
+
+        Returns:
+            float | numpy array
+                average CMI over all samples or local CMI for individual
+                samples if 'local_values'=True
+        """
+
+        # Return MI if no conditional is provided
+        if conditional is None:
+            est_mi = OpenCLGaussianMI(self.settings)
+            return est_mi.estimate(var1, var2, n_chunks)
+
+        # Prepare data and add noise: check if variable realisations are passed
+        # as 1D or 2D arrays and have equal no. observations.
+        var1 = self._ensure_two_dim_input(var1)
+        var2 = self._ensure_two_dim_input(var2)
+        conditional = self._ensure_two_dim_input(conditional)
+        assert var1.shape[0] == var2.shape[0]
+        assert var1.shape[0] == conditional.shape[0]
+        assert var1.shape[0] % n_chunks == 0
+        
         self.set_data("CMI", var1, var2, conditional)
 
         if self.settings['local_values']:
-            cmi = self.calculateLocalCMI()
-            self.actualValue = np.mean(cmi)
-        else:
-            cmi = np.mean(self.calculateLocalCMI())
-            self.actualValue = cmi
+            chunklength = var1.shape[0] // n_chunks
+            cmi_array = -np.inf * np.ones(n_chunks * chunklength,
+                                          dtype=np.float64)
+            idx = 0
+            for c in range(n_chunks):
+                cmi = self.calculateLocalCMI()
+                cmi_array[idx:idx+chunklength] = cmi
+                idx += chunklength
 
+        else:
+            cmi_array = -np.inf * np.ones(n_chunks, dtype=np.float64)
+            for c in range(n_chunks):
+                cmi = np.mean(self.calculateLocalCMI())
+                cmi_array[c] = cmi
+    
         self.remove_data()
 
-        return cmi
+        return cmi_array
+
+
+    def is_parallel(self):
+        return True
 
     def computeSignificance(self):
         C = ChiSquareMeasurementDistribution()
