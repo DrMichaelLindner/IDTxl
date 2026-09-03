@@ -24,7 +24,7 @@ except ImportError as err:
     sys.exit()
 
 logger = logging.getLogger(__name__)
-C = 1024**2
+MB = 1024**2
 
 
 class OpenCLEstimator(Estimator):
@@ -408,7 +408,7 @@ class OpenCLKraskovMI(OpenCLKraskov):
         logger.debug(
             'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
             'per run: {2}.'.format(
-                mem_chunk / C, max_mem / C, chunks_per_run))
+                mem_chunk / MB, max_mem / MB, chunks_per_run))
         if mem_chunk > max_mem:
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
@@ -519,7 +519,7 @@ class OpenCLKraskovMI(OpenCLKraskov):
             logger.debug(
                 'Memory req. after padding: {0:.2f} MB ({1} elements, shape: '
                 '{2}, {3} chunks, chunksize: {4}) -- Padding: {5}'.format(
-                    mem_total / C, pointset.size, pointset.shape,
+                    mem_total / MB, pointset.size, pointset.shape,
                     n_chunks, chunklength, pad_size))
             assert (pointset.shape[1] - pad_size) % n_chunks == 0
 
@@ -585,7 +585,7 @@ class OpenCLKraskovMI(OpenCLKraskov):
             print(
                 'Memory req. after padding: {0:.2f} MB ({1} elements, shape: '
                 '{2}, {3} chunks, chunksize: {4}) -- Padding: {5}'.format(
-                    mem_total / C, pointset.size, pointset.shape,
+                    mem_total / MB, pointset.size, pointset.shape,
                     n_chunks, chunklength, pad_size))
             assert (pointset.shape[1] - pad_size) % n_chunks == 0
             sys.exit(1)
@@ -744,7 +744,7 @@ class OpenCLKraskovCMI(OpenCLKraskov):
         logger.debug(
             'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
             'per run: {2}.'.format(
-                mem_chunk / C, max_mem / C, chunks_per_run))
+                mem_chunk / MB, max_mem / MB, chunks_per_run))
         if mem_chunk > max_mem:
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
@@ -868,7 +868,7 @@ class OpenCLKraskovCMI(OpenCLKraskov):
             mem_total = mem_data_pad + mem_dist + mem_ncnt
             logger.debug(
                 'Memory req. after padding: {0:.2f} MB ({1} elements) -- Padding: {2}.'.format(
-                      mem_total / C, pointset.size, pad_size))
+                      mem_total / MB, pointset.size, pad_size))
 
         # Set OpenCL kernel launch parameters
         if chunklength < self.devices[
@@ -1048,7 +1048,7 @@ class OpenCLGaussian(OpenCLEstimator):
         elif self.work_group_size >= 64:
             self.tile_2d = 8
         else:
-            self.tile_2d = 4
+            self.tile_2d = 512
 
         if self.work_group_size2 >= 1024:
             self.observation_tile = 32
@@ -1057,7 +1057,7 @@ class OpenCLGaussian(OpenCLEstimator):
         elif self.work_group_size2 >= 64:
             self.observation_tile = 8
         else:
-            self.observation_tile = 4
+            self.observation_tile = 256
 
         # get kernel
         self.kernel_location = resource_filename(__name__,
@@ -1154,12 +1154,12 @@ class OpenCLGaussian(OpenCLEstimator):
         event = self.covariance_one(
             self.queue,
             (
-                self.round_up(dp, 16),
-                self.round_up(dp, 16),
+                self.round_up(dp, self.tile_2d),
+                self.round_up(dp, self.tile_2d),
             ),
             (
-                16,
-                16,
+                self.tile_2d,
+                self.tile_2d,
             ),
             centered_dev.data,
             covariance_dev.data,
@@ -1691,9 +1691,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
             float | numpy array
                 average MI over all samples or local MI for individual
                 samples if 'local_values'=True
-            numpy arrays
-                distances and neighborhood counts for var1 and var2 if
-                debug=True and return_counts=True
         """
         # Check the input data
         var1 = self._ensure_two_dim_input(var1)
@@ -1710,8 +1707,6 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.n_samples = var1.shape[0]
         self.var1_dim = var1.shape[1]
         self.var2_dim = var2.shape[1]
-
-
 
         signallength = var1.shape[0]
         chunklength = signallength // n_chunks
@@ -1750,7 +1745,7 @@ class OpenCLGaussianMI(OpenCLGaussian):
         logger.debug(
             'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
             'per run: {2}.'.format(
-                mem_chunk / C, max_mem / C, chunks_per_run))
+                mem_chunk / MB, max_mem / MB, chunks_per_run))
         if mem_chunk > max_mem:
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
@@ -1772,7 +1767,28 @@ class OpenCLGaussianMI(OpenCLGaussian):
         return mi_array
 
     def _estimate_single_run(self, var1, var2, n_chunks=1):
+        """Estimate mutual information in a single GPU run.
 
+        This method should not be called directly, only inside estimate()
+        after memory bounds have been checked.
+
+        Args:
+            var1 : numpy array
+                realisations of first variable, either a 2D numpy array where
+                array dimensions represent [(realisations * n_chunks) x
+                variable dimension] or a 1D array representing [realisations],
+                array type should be int32
+            var2 : numpy array
+                realisations of the second variable (similar to var1)
+            n_chunks : int
+                number of data chunks, no. data points has to be the same for
+                each chunk
+
+        Returns:
+            float | numpy array
+                average MI over all samples or local MI for individual
+                samples if 'local_values'=True
+        """
         var1 = self._ensure_two_dim_input(var1)
         var2 = self._ensure_two_dim_input(var2)
         assert var1.shape[0] == var2.shape[0]
@@ -1781,7 +1797,7 @@ class OpenCLGaussianMI(OpenCLGaussian):
         self.set_data("MI", var1, var2)
 
         if self.settings['local_values']:
-            chunklength = var1.shape[0] // n_chunks
+            chunklength = var1.shape[0]# // n_chunks
             mi_array = -np.inf * np.ones(chunklength * n_chunks,
                                                 dtype=np.float64)
             idx = 0
@@ -2318,19 +2334,14 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         mem_all_cov = mem_cov_z + mem_cov_xyz + mem_cov_xz + mem_cov_yz
 
         mem_chunk = mem_all_data + mem_all_means + mem_all_i_center + mem_all_c_center + mem_all_cov
-
-        #mem_dist = self.sizeof_float * chunklength * kraskov_k
-        #mem_ncnt = 2 * self.sizeof_int * chunklength
-        #mem_chunk = mem_data + mem_dist + mem_ncnt
         max_mem = self._get_max_mem()
-
         max_chunks_per_run = np.floor(max_mem/mem_chunk).astype(int)
         chunks_per_run = min(max_chunks_per_run, n_chunks)
 
         logger.debug(
             'Memory per chunk: {0:.5f} MB, GPU global memory: {1} MB, chunks '
             'per run: {2}.'.format(
-                mem_chunk / C, max_mem / C, chunks_per_run))
+                mem_chunk / MB, max_mem / MB, chunks_per_run))
         if mem_chunk > max_mem:
             raise RuntimeError('Size of single chunk exceeds GPU global '
                                'memory.')
@@ -2397,7 +2408,7 @@ class OpenCLGaussianCMI(OpenCLGaussian):
         self.set_data("CMI", var1, var2, conditional)
 
         if self.settings['local_values']:
-            chunklength = var1.shape[0] // n_chunks
+            chunklength = var1.shape[0]# // n_chunks
             cmi_array = -np.inf * np.ones(n_chunks * chunklength,
                                           dtype=np.float64)
             idx = 0

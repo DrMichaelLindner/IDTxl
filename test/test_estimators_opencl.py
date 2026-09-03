@@ -65,7 +65,7 @@ def test_debug_setting():
         'correct no. values.')
 
 @opencl_missing
-def test_amd_data_padding():
+def test_amd_data_padding_kraskov():
     """Test padding necessary for AMD devices."""
     expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
 
@@ -118,6 +118,64 @@ def test_amd_data_padding():
     est_cmi = OpenCLKraskovCMI(settings=settings)
     mi = est_mi.estimate(source, target)
     cmi = est_cmi.estimate(source, target)
+
+
+@opencl_missing
+def test_amd_data_padding_gaussian():
+    """Test padding necessary for AMD devices."""
+    expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+
+    settings = {'debug': True}
+    est_mi = OpenCLGaussianMI(settings=settings)
+    est_cmi = OpenCLGaussianCMI(settings=settings)
+
+    # Run OpenCL estimator for various data sizes.
+    for n in [11, 13, 25, 64, 100, 128, 999, 10000, 3781, 50000]:
+        for n_chunks in [1, 3, 10, 50, 99]:
+            data_run_source = np.tile(source[:n], (n_chunks, 1))
+            data_run_target = np.tile(target[:n], (n_chunks, 1))
+            mi = est_mi.estimate(
+                data_run_source, data_run_target, n_chunks=n_chunks)
+            cmi = est_cmi.estimate(
+                data_run_source, data_run_target, n_chunks=n_chunks)
+    # Run OpenCL esitmator for various no. points and check result for
+    # correctness. Note that for smaller sample sizes the error becomes too
+    # large.
+    n_chunks = 1
+    for n in [832, 999, 10000, 3781, 50000]:
+        data_run_source = np.tile(source[:n], (n_chunks, 1))
+        data_run_target = np.tile(target[:n], (n_chunks, 1))
+        mi, dist, n_range_var1, n_range_var2 = est_mi.estimate(
+            data_run_source, data_run_target, n_chunks=n_chunks)
+        cmi, dist, n_range_var1, n_range_var2 = est_cmi.estimate(
+            data_run_source, data_run_target, n_chunks=n_chunks)
+        print('{0} points, {1} chunks: OpenCL MI result: {2:.4f} nats; '
+              'expected to be close to {3:.4f} nats for correlated '
+              'Gaussians.'.format(n, n_chunks, mi[0], expected_mi))
+        assert np.isclose(mi[0], expected_mi, atol=0.05), (
+            'MI estimation for uncorrelated Gaussians using the OpenCL '
+            'estimator failed (error larger 0.05).')
+        print('OpenCL CMI result: {0:.4f} nats; expected to be close to '
+              '{1:.4f} nats for correlated Gaussians.'.format(
+                    cmi[0], expected_mi))
+        assert np.isclose(cmi[0], expected_mi, atol=0.05), (
+            'CMI estimation for uncorrelated Gaussians using the OpenCL '
+            'estimator failed (error larger 0.05).')
+
+    # Test debugging switched off
+    settings = {'debug': False}
+    est_mi = OpenCLGaussianMI(settings=settings)
+    est_cmi = OpenCLGaussianCMI(settings=settings)
+    mi = est_mi.estimate(source, target)
+    cmi = est_cmi.estimate(source, target)
+
+    settings['local_values'] = True
+    est_mi = OpenCLGaussianMI(settings=settings)
+    est_cmi = OpenCLGaussianCMI(settings=settings)
+    mi = est_mi.estimate(source, target)
+    cmi = est_cmi.estimate(source, target)
+
+
 
 @opencl_missing
 def test_user_input():
@@ -245,6 +303,7 @@ def test_mi_correlated_gaussians_gaussian():
     settings = {'normalise': False, 'noise_level': 0}
     ocl_est = OpenCLGaussianMI(settings=settings)
     mi_ocl = ocl_est.estimate(source, target)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianMI(settings=settings)
@@ -342,6 +401,7 @@ def test_mi_uncorrelated_gaussians_gaussian():
     settings = {'normalise': False, 'noise_level': 0}
     ocl_est = OpenCLGaussianMI(settings=settings)
     mi_ocl = ocl_est.estimate(var1, var2)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianMI(settings=settings)
@@ -439,6 +499,7 @@ def test_mi_uncorrelated_gaussians_three_dims_gaussian():
     settings = {'noise_level':0}
     ocl_est = OpenCLGaussianMI(settings=settings)
     mi_ocl = ocl_est.estimate(var1, var2)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianMI(settings=settings)
@@ -492,7 +553,7 @@ def test_mi_uncorrelated_gaussians_three_dims_discrete():
 
 @opencl_missing
 @jpype_missing
-def test_mi_correlated_gaussians_two_chunks():
+def test_mi_correlated_gaussians_two_chunks_kraskov():
     """Test estimators on two chunks of correlated Gaussian data."""
     expected_mi, source, source_uncorr, target = _get_gauss_data(
         n=20000, seed=SEED)
@@ -529,6 +590,44 @@ def test_mi_correlated_gaussians_two_chunks():
     assert np.isclose(mi_ocl[0], mi_ocl[1], atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
                         'OpenCL estimator failed (error larger 0.05).')
+
+@opencl_missing
+def test_mi_correlated_gaussians_two_chunks_gaussian():
+    """Test estimators on two chunks of correlated Gaussian data."""
+    expected_mi, source, source_uncorr, target = _get_gauss_data(
+        n=20000, seed=SEED)
+    n_points = source.shape[0]
+
+    # Run OpenCL estimator.
+    n_chunks = 2
+    settings = {'debug': True}
+    ocl_est = OpenCLGaussianMI(settings=settings)
+    mi_ocl = ocl_est.estimate(source, target, n_chunks=n_chunks)
+
+    # Run Python estimator.
+    python_est = PythonGaussianMI(settings={'noise_level':0})
+    mi_python = python_est.estimate(source[0:int(n_points/2), :],
+                                target[0:int(n_points/2), :])
+
+    print('Python MI result: {0:.4f} nats; OpenCL MI result: [{1:.4f}, {2:.4f}] '
+          'nats; expected to be close to {3:.4f} nats for correlated '
+          'Gaussians.'.format(mi_python, mi_ocl[0], mi_ocl[1], expected_mi))
+    assert np.isclose(mi_python, expected_mi, atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'Python estimator failed (error larger 0.05).')
+    assert np.isclose(mi_ocl[0], expected_mi, atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'OpenCL estimator failed (error larger 0.05).')
+    assert np.isclose(mi_ocl[0], mi_python, atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'OpenCL estimator failed (error larger 0.05).')
+    assert np.isclose(mi_ocl[1], mi_python, atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'OpenCL estimator failed (error larger 0.05).')
+    assert np.isclose(mi_ocl[0], mi_ocl[1], atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'OpenCL estimator failed (error larger 0.05).')
+
 
 # CMI
 @opencl_missing
@@ -573,6 +672,7 @@ def test_cmi_correlated_gaussians_gaussian():
     settings = {'noise_level': 0, 'normalize': False}
     ocl_est = OpenCLGaussianCMI(settings=settings)
     mi_ocl = ocl_est.estimate(source, target, source_uncorr)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianCMI(settings=settings)
@@ -672,6 +772,7 @@ def test_cmi_uncorrelated_gaussians_gaussian():
     settings = {'noise_level': 0, 'normalize': False}
     ocl_est = OpenCLGaussianCMI(settings=settings)
     mi_ocl = ocl_est.estimate(var1, var2, var3)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianCMI(settings=settings)
@@ -795,6 +896,7 @@ def test_cmi_uncorrelated_gaussians_three_dims_gaussian():
     settings = {'noise_level':0}
     ocl_est = OpenCLGaussianCMI(settings=settings)
     mi_ocl = ocl_est.estimate(var1, var2)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianCMI(settings=settings)
@@ -815,6 +917,7 @@ def test_cmi_uncorrelated_gaussians_three_dims_gaussian():
 
     # Run with conditional
     mi_ocl = ocl_est.estimate(var1, var2, var3)
+    mi_ocl = mi_ocl[0]
     mi_python = python_est.estimate(var1, var2, var3)
 
     print('Python CMI result: {0:.4f} nats; OpenCL CMI result: {1:.4f} nats; '
@@ -948,6 +1051,7 @@ def test_cmi_uncorrelated_gaussians_unequal_dims_gaussian():
     settings = {'noise_level':0}
     ocl_est = OpenCLGaussianCMI(settings=settings)
     mi_ocl = ocl_est.estimate(var1, var2)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianCMI(settings=settings)
@@ -968,6 +1072,7 @@ def test_cmi_uncorrelated_gaussians_unequal_dims_gaussian():
 
     # Run estimation with conditionals.
     mi_ocl = ocl_est.estimate(var1, var2, var3)
+    mi_ocl = mi_ocl[0]
     mi_python = python_est.estimate(var1, var2, var3)
 
     print('Python CMI result: {0:.4f} nats; OpenCL CMI result: {1:.4f} nats; '
@@ -1078,6 +1183,7 @@ def test_cmi_no_cond_correlated_gaussians_gaussian():
     settings = {'noise_level': 0}
     ocl_est = OpenCLGaussianCMI(settings=settings)
     mi_ocl = ocl_est.estimate(source, target)
+    mi_ocl = mi_ocl[0]
 
     # Run Python estimator.
     python_est = PythonGaussianCMI(settings=settings)
@@ -1494,6 +1600,56 @@ def test_local_values_kraskov():
     assert np.isclose(cmi_ch2, cmi[1], atol=0.05)
 
 @opencl_missing
+def test_local_values_gaussian2():
+    """Test estimation of local MI and CMI using OpenCL estimators."""
+    print("### Test OpenCLKraskovXX local values:")
+    # Get data
+    n_chunks = 2
+    expec_mi, source, source_uncorr, target = _get_gauss_data(
+        n=20000, seed=SEED)
+    chunklength = int(source.shape[0] / n_chunks)
+
+    # Estimate local values
+    settings = {'local_values': True}
+    est_cmi = OpenCLGaussianCMI(settings=settings)
+    cmi = est_cmi.estimate(source, target, source_uncorr, n_chunks=n_chunks)
+
+    est_mi = OpenCLGaussianMI(settings=settings)
+    mi = est_mi.estimate(source, target, n_chunks=n_chunks)
+
+    mi_ch1 = np.mean(mi[0:chunklength])
+    mi_ch2 = np.mean(mi[chunklength:])
+    cmi_ch1 = np.mean(cmi[0:chunklength])
+    cmi_ch2 = np.mean(cmi[chunklength:])
+
+    # Estimate non-local values for comparison
+    settings = {'local_values': False}
+    est_cmi = OpenCLGaussianCMI(settings=settings)
+    mi = est_cmi.estimate(source, target, source_uncorr, n_chunks=n_chunks)
+
+    est_mi = OpenCLGaussianMI(settings=settings)
+    cmi = est_mi.estimate(source, target, n_chunks=n_chunks)
+
+    # Report results
+    print('OpenCL MI result: {0:.4f} nats (chunk 1); {1:.4f} nats (chunk 2) '
+          'expected to be close to {2:.4f} nats for uncorrelated '
+          'Gaussians.'.format(mi_ch1, mi_ch2, expec_mi))
+    print('OpenCL CMI result: {0:.4f} nats (chunk 1); {1:.4f} nats (chunk 2) '
+          'expected to be close to {2:.4f} nats for uncorrelated '
+          'Gaussians.'.format(cmi_ch1, cmi_ch2, expec_mi))
+
+    assert np.isclose(mi_ch1, expec_mi, atol=0.05)
+    assert np.isclose(mi_ch2, expec_mi, atol=0.05)
+    assert np.isclose(cmi_ch1, expec_mi, atol=0.05)
+    assert np.isclose(cmi_ch2, expec_mi, atol=0.05)
+    assert np.isclose(mi_ch1, mi_ch2, atol=0.05)
+    assert np.isclose(mi_ch1, mi[0], atol=0.05)
+    assert np.isclose(mi_ch2, mi[1], atol=0.05)
+    assert np.isclose(cmi_ch1, cmi_ch2, atol=0.05)
+    assert np.isclose(cmi_ch1, cmi[0], atol=0.05)
+    assert np.isclose(cmi_ch2, cmi[1], atol=0.05)
+
+@opencl_missing
 def test_local_values_gaussian():
     """Test estimation of local MI and CMI using OpenCL estimators."""
     print("### Test OpenCLGaussianXX local values:")
@@ -1648,6 +1804,8 @@ def test_insufficient_no_points():
 def test_multi_gpu():
     """Test use of multiple GPUs."""
     expected_mi, source, source_uncorr, target = _get_gauss_data(seed=SEED)
+
+    # Kraskov
     settings = {'debug': True, 'return_counts': True}
 
     # Get no. available devices on current platform.
@@ -1669,12 +1827,46 @@ def test_multi_gpu():
                                                     source_uncorr)
 
     mi_ocl = mi_ocl[0]
-    print('Expected MI: {0:.4f} nats; OpenCL MI result: {1:.4f} nats; '
+    print('Expected MI: {0:.4f} nats; OpenCLKraskov MI result: {1:.4f} nats; '
           'expected to be close to 0 nats for uncorrelated '
           'Gaussians.'.format(expected_mi, mi_ocl))
     assert np.isclose(mi_ocl, expected_mi, atol=0.05), (
                         'MI estimation for uncorrelated Gaussians using the '
-                        'OpenCL estimator failed (error larger 0.05).')
+                        'OpenCLKraskov estimator failed (error larger 0.05).')
+
+
+    # Gaussian
+    settings = {}
+
+    # Get no. available devices on current platform.
+    device_list, _, _, _ = OpenCLGaussianCMI()._get_device(gpuid=0)
+    print(device_list)
+    n_devices = len(device_list)
+
+    # Try initialising estimator with unavailable GPU ID
+    with pytest.raises(RuntimeError):
+        settings['gpuid'] = n_devices + 1
+        OpenCLGaussianCMI(settings=settings)
+
+    # Run OpenCL estimator on available device with highest available ID.
+    settings['gpuid'] = n_devices - 1
+    ocl_est = OpenCLGaussianCMI(settings=settings)
+
+    (mi_ocl, dist, n_range_var1,
+     n_range_var2, n_range_cond) = ocl_est.estimate(source, target,
+                                                    source_uncorr)
+
+    mi_ocl = mi_ocl[0]
+    print('Expected MI: {0:.4f} nats; OpenCLGaussian MI result: {1:.4f} nats; '
+          'expected to be close to 0 nats for uncorrelated '
+          'Gaussians.'.format(expected_mi, mi_ocl))
+    assert np.isclose(mi_ocl, expected_mi, atol=0.05), (
+                        'MI estimation for uncorrelated Gaussians using the '
+                        'OpenCLGaussian estimator failed (error larger 0.05).')
+
+
+
+
 
 
 @opencl_missing
@@ -1720,7 +1912,7 @@ def test_invalid_calculation_call():
 
 
 if __name__ == '__main__':
-
+    
     test_invalid_calculation_call()
 
     # all estimators
@@ -1764,14 +1956,22 @@ if __name__ == '__main__':
 
     test_local_values_kraskov()
     test_local_values_gaussian()
+    test_local_values_gaussian2()
     test_local_values_discrete()
+    
+    
+    test_mi_correlated_gaussians_two_chunks_kraskov()
+    test_mi_correlated_gaussians_two_chunks_gaussian()
+    
+    
+    #test_amd_data_padding_kraskov()
+    #test_amd_data_padding_gaussian()
 
+    
+    
     # only kraskov
-    test_amd_data_padding()
-    test_mi_correlated_gaussians_two_chunks()
     test_debug_setting()
-    test_insufficient_no_points
+    test_insufficient_no_points()
 
     test_multi_gpu()
-
-
+    
