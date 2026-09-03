@@ -1,7 +1,7 @@
 """EasyIDTxl is a graphical user interface (GUI) for IDTxl2.0
 
-EasyIDTxl can be used to easily generate analysis scripts for 
-several idtxl estimators and analysis types:
+EasyIDTxl can be used to easily generate, save and run analysis 
+scripts for several idtxl estimators and analysis types:
     - mutual information (MI)
     - transfer entropy (TE)
     - conditional MI and TE (CMI and CTE)
@@ -9,6 +9,7 @@ several idtxl estimators and analysis types:
     - network analysis
     - active information storage (AIS)
     - partial information decomposition (PID)
+    - MPI scripts
 
 Requirements:
     - working python environment where IDTxl is running properly.
