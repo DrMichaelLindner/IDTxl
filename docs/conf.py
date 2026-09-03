@@ -117,8 +117,13 @@ darkbrown = "#6c5a50"
 html_theme_options = {
     "bgcolor": background,
     "sidebarbgcolor": lightblue,
+    "sidebartextcolor": "#000000",
+    "sidebarlinkcolor": darkbrown,
+    
+    
+
     "sidebarbtncolor": red,
-    "linkcolor": darkblue,
+    "linkcolor": darkbrown,
     "codebgcolor": brown,
     "footerbgcolor": yellow,
     "headtextcolor": "#000000",

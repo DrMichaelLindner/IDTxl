@@ -7,7 +7,7 @@ Python Estimators (CPU)
     :members:
     :noindex:
 
-OpenCL Estimators (GPU)
+OpenCL Estimators (GPU + CPU)
 -----------------------
 .. automodule:: idtxl.estimators_opencl
     :members:

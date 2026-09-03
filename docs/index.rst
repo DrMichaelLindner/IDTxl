@@ -7,11 +7,11 @@ Welcome to IDTxl2.0 documentation!
 ===================================
 
 Welcome to the IDTxl2.0 user documentation. IDTxl2.0 is being hosted at
-`GitHub <https://github.com/pwollstadt/IDTxl>`_.
+`GitHub <https://github.com/DrMichaelLindner/IDTxl2.0.git>`_.
 
-Have a look at the `wiki <https://github.com/pwollstadt/IDTxl/wiki>`_
+Have a look at the `wiki <https://github.com/DrMichaelLindner/IDTxl2.0/wiki>`_
 for more information and user tutorials. If you want to report a problem, head
-to the `issue tracker <https://github.com/pwollstadt/IDTxl/issues>`_ or have a
+to the `issue tracker <https://github.com/DrMichaelLindner/IDTxl2.0/issues>`_ or have a
 look at the IDTxl `google discussion group <https://groups.google.com/forum/#!forum/idtxl>`_.
 
 .. toctree::
