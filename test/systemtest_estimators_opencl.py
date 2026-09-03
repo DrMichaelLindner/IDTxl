@@ -3454,7 +3454,7 @@ if __name__ == '__main__':
 	
 	testhead("GaussianCMI local values")
 	test_gaussian_cmi_local_values()
-
+	
 	testhead("GaussianAIS")
 	test_gaussian_ais()
 	
@@ -3523,11 +3523,10 @@ if __name__ == '__main__':
 
 	#### Test bi- and multivariate analysis (single target)
 	# Gaussian CMI
-	"""
+
 	testhead("BivariateMI GaussianCMI (analyse_single_target)")
 	test_single_target_analysis("BivariateMI","Gaussian", samples=10000)
-"
-		
+	"""			
 	testhead("BivariateTE GaussianCMI (analyse_single_target)")
 	test_single_target_analysis("BivariateTE","Gaussian", samples=10000)
 	
