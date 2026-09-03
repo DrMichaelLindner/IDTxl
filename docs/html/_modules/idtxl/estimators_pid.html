@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.estimators_pid &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.estimators_pid &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.estimators_pid</a></li> 
       </ul>
@@ -51,15 +44,18 @@
 <span class="sd">Bertschinger, N., Rauh, J., Olbrich, E., Jost, J., &amp; Ay, N. (2014). Quantifying</span>
 <span class="sd">Unique Information. Entropy, 16(4), 2161–2183. http://doi.org/10.3390/e16042161</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">synergy_tartu</span>
-<span class="kn">from</span> <span class="nn">.estimator</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">synergy_tartu</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.estimator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.lazy_array</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyArray</span>
 
 <span class="c1"># TODO add support for multivariate estimation for Tartu and Sydney estimator</span>
 
 
-<div class="viewcode-block" id="SydneyPID"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID">[docs]</a><span class="k">class</span> <span class="nc">SydneyPID</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Estimate partial information decomposition of discrete variables.</span>
+<div class="viewcode-block" id="SydneyPID">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SydneyPID</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate partial information decomposition of discrete variables.</span>
 
 <span class="sd">    Fast implementation of the BROJA partial information decomposition (PID)</span>
 <span class="sd">    estimator for discrete data (Bertschinger, 2014). The estimator does not</span>
@@ -117,7 +113,7 @@
 <span class="sd">              (default=False)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;alph_s1&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
@@ -157,14 +153,22 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SydneyPID.is_parallel"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.is_parallel">[docs]</a>    <span class="k">def</span> <span class="nf">is_parallel</span><span class="p">():</span>
+<div class="viewcode-block" id="SydneyPID.is_parallel">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.is_parallel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_parallel</span><span class="p">():</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="SydneyPID.is_analytic_null_estimator"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.is_analytic_null_estimator">[docs]</a>    <span class="k">def</span> <span class="nf">is_analytic_null_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="SydneyPID.is_analytic_null_estimator">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.is_analytic_null_estimator">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_analytic_null_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="SydneyPID.estimate"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.estimate">[docs]</a>    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SydneyPID.estimate">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.SydneyPID.estimate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            s1 : numpy array</span>
 <span class="sd">                1D array containing realizations of a discrete random variable</span>
@@ -421,7 +425,8 @@
             <span class="s2">&quot;syn_s1_s2&quot;</span><span class="p">:</span> <span class="n">syn_s1_s2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
         <span class="p">}</span></div>
 
-    <span class="k">def</span> <span class="nf">_cmi_prob</span><span class="p">(</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cmi_prob</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">s2cond_prob</span><span class="p">,</span>
         <span class="n">joint_t_s2cond_prob</span><span class="p">,</span>
@@ -459,8 +464,8 @@
 
         <span class="k">return</span> <span class="n">total</span>
 
-    <span class="k">def</span> <span class="nf">_mi_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1_prob</span><span class="p">,</span> <span class="n">s2_prob</span><span class="p">,</span> <span class="n">joint_s1_s2_prob</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;MI estimator in the prob domain.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mi_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1_prob</span><span class="p">,</span> <span class="n">s2_prob</span><span class="p">,</span> <span class="n">joint_s1_s2_prob</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;MI estimator in the prob domain.&quot;&quot;&quot;</span>
         <span class="n">total</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;longdouble&quot;</span><span class="p">)</span>
         <span class="p">[</span><span class="n">alph_s1</span><span class="p">,</span> <span class="n">alph_s2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">joint_s1_s2_prob</span><span class="p">)</span>
 
@@ -483,8 +488,8 @@
 
         <span class="k">return</span> <span class="n">total</span>
 
-    <span class="k">def</span> <span class="nf">_joint_mi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">alph_s1</span><span class="p">,</span> <span class="n">alph_s2</span><span class="p">,</span> <span class="n">alph_t</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Joint MI estimator in the samples domain.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_joint_mi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">alph_s1</span><span class="p">,</span> <span class="n">alph_s2</span><span class="p">,</span> <span class="n">alph_t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Joint MI estimator in the samples domain.&quot;&quot;&quot;</span>
 
         <span class="p">[</span><span class="n">s12</span><span class="p">,</span> <span class="n">alph_s12</span><span class="p">]</span> <span class="o">=</span> <span class="n">_join_variables</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">alph_s1</span><span class="p">,</span> <span class="n">alph_s2</span><span class="p">)</span>
 
@@ -508,8 +513,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mi_prob</span><span class="p">(</span><span class="n">t_prob</span><span class="p">,</span> <span class="n">s12_prob</span><span class="p">,</span> <span class="n">joint_t_s12_prob</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">_join_variables</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">alph_a</span><span class="p">,</span> <span class="n">alph_b</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Join two variables into a new one.&quot;&quot;&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_join_variables</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">alph_a</span><span class="p">,</span> <span class="n">alph_b</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Join two variables into a new one.&quot;&quot;&quot;</span>
     <span class="n">alph_new</span> <span class="o">=</span> <span class="n">alph_a</span> <span class="o">*</span> <span class="n">alph_b</span>
 
     <span class="k">if</span> <span class="n">alph_b</span> <span class="o">&lt;</span> <span class="n">alph_a</span><span class="p">:</span>
@@ -521,8 +527,10 @@
     <span class="k">return</span> <span class="n">ab</span><span class="p">,</span> <span class="n">alph_new</span>
 
 
-<div class="viewcode-block" id="TartuPID"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID">[docs]</a><span class="k">class</span> <span class="nc">TartuPID</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for two inputs and one output</span>
+<div class="viewcode-block" id="TartuPID">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TartuPID</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for two inputs and one output</span>
 
 <span class="sd">    Implementation of the partial information decomposition (PID) estimator for</span>
 <span class="sd">    discrete data. The estimator finds shared information, unique information</span>
@@ -552,21 +560,29 @@
 <span class="sd">            - solver_args : dict [optional] - solver arguments (default={})</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
         <span class="c1"># get estimation parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;cone_solver&quot;</span><span class="p">,</span> <span class="s2">&quot;ECOS&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;solver_args&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;keep_solver_object&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
 
-<div class="viewcode-block" id="TartuPID.is_parallel"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.is_parallel">[docs]</a>    <span class="k">def</span> <span class="nf">is_parallel</span><span class="p">():</span>
+<div class="viewcode-block" id="TartuPID.is_parallel">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.is_parallel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_parallel</span><span class="p">():</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="TartuPID.is_analytic_null_estimator"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.is_analytic_null_estimator">[docs]</a>    <span class="k">def</span> <span class="nf">is_analytic_null_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="TartuPID.is_analytic_null_estimator">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.is_analytic_null_estimator">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_analytic_null_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="TartuPID.estimate"><a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.estimate">[docs]</a>    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TartuPID.estimate">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_pid.TartuPID.estimate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            s1 : numpy array</span>
 <span class="sd">                1D array containing realizations of a discrete random variable</span>
@@ -597,10 +613,12 @@
             <span class="s2">&quot;unq_s1&quot;</span><span class="p">:</span> <span class="n">retval</span><span class="p">[</span><span class="s2">&quot;UIY&quot;</span><span class="p">],</span>
             <span class="s2">&quot;unq_s2&quot;</span><span class="p">:</span> <span class="n">retval</span><span class="p">[</span><span class="s2">&quot;UIZ&quot;</span><span class="p">],</span>
         <span class="p">}</span>
-        <span class="k">return</span> <span class="n">results</span></div></div>
+        <span class="k">return</span> <span class="n">results</span></div>
+</div>
 
 
-<span class="k">def</span> <span class="nf">_get_pdf_dict</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_pdf_dict</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
     <span class="c1"># Create dictionary with probability mass function</span>
     <span class="n">counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="n">n_samples</span> <span class="o">=</span> <span class="n">s1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -619,11 +637,14 @@
     <span class="k">return</span> <span class="n">pmf</span>
 
 
-<span class="k">def</span> <span class="nf">_check_input</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Check input to PID estimators.&quot;&quot;&quot;</span>
-    <span class="c1"># Check if inputs are numpy arrays.</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">s2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;All inputs, s1, s2, t, must be numpy arrays.&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_input</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check input to PID estimators.&quot;&quot;&quot;</span>
+    <span class="c1"># Check if inputs are numpy arrays or idtxl LazyArrays </span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">LazyArray</span><span class="p">))</span> <span class="ow">or</span> \
+       <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s2</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">LazyArray</span><span class="p">))</span> <span class="ow">or</span> \
+       <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">LazyArray</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;All inputs, s1, s2, t, must be numpy arrays or LazyArrays.&quot;</span><span class="p">)</span>
+        
 
     <span class="c1"># In general, IDTxl expects 2D inputs because JIDT/JPYPE only accepts those</span>
     <span class="c1"># and we have a multivariate approach, i.e., a vector is a special case of</span>
@@ -687,9 +708,9 @@
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -697,13 +718,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -712,14 +733,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.estimators_pid</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

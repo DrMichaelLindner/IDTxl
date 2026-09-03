@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.idtxl_utils &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.idtxl_utils &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.idtxl_utils</a></li> 
       </ul>
@@ -44,15 +37,48 @@
             
   <h1>Source code for idtxl.idtxl_utils</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provide IDTxl utility functions.&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
-<span class="kn">import</span> <span class="nn">pprint</span>
-<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="c1">#import logging.config</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="setup_logging">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_utils.setup_logging">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_logging</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logging_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
+    <span class="c1"># if config_path is None:</span>
+    <span class="c1">#     config_path = resource_filename(__name__, &#39;logging.json&#39;)</span>
+    <span class="c1"># with open(config_path, &#39;rt&#39;) as f:</span>
+    <span class="c1">#     config = json.load(f)</span>
+    <span class="c1"># logging.config.dictConfig(config)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)-4s</span><span class="s1">  [</span><span class="si">%(filename)s</span><span class="s1">:</span><span class="si">%(funcName)20s</span><span class="s1">():l </span><span class="si">%(lineno)d</span><span class="s1">] </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">:%H:%M:%S&#39;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging_level</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="swap_chars"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.swap_chars">[docs]</a><span class="k">def</span> <span class="nf">swap_chars</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">i_1</span><span class="p">,</span> <span class="n">i_2</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Swap to characters in a string.</span>
+<div class="viewcode-block" id="get_cuda_lib">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_utils.get_cuda_lib">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_cuda_lib</span><span class="p">():</span>
+    <span class="n">libnames</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;libcuda.so&#39;</span><span class="p">,</span> <span class="s1">&#39;libcuda.dylib&#39;</span><span class="p">,</span> <span class="s1">&#39;nvcuda.dll&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">libname</span> <span class="ow">in</span> <span class="n">libnames</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="n">libname</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s2">&quot;could not load any of: &quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">libnames</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="swap_chars">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.swap_chars">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">swap_chars</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">i_1</span><span class="p">,</span> <span class="n">i_2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Swap to characters in a string.</span>
 
 <span class="sd">    Example:</span>
 <span class="sd">        &gt;&gt;&gt; print(swap_chars(&#39;heLlotHere&#39;, 2, 6))</span>
@@ -63,14 +89,20 @@
     <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">i_1</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="n">i_2</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="n">i_1</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">i_2</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="n">i_1</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="n">i_2</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]])</span></div>
 
 
-<div class="viewcode-block" id="print_dict"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.print_dict">[docs]</a><span class="k">def</span> <span class="nf">print_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Use Python&#39;s pretty printer to print dictionaries to the console.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="print_dict">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.print_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">print_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Python&#39;s pretty printer to print dictionaries to the console.&quot;&quot;&quot;</span>
     <span class="n">pp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">)</span>
     <span class="n">pp</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="standardise"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.standardise">[docs]</a><span class="k">def</span> <span class="nf">standardise</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Z-standardise a numpy array along a given dimension.</span>
+
+<div class="viewcode-block" id="standardise">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.standardise">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">standardise</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Z-standardise a numpy array along a given dimension.</span>
 
 <span class="sd">    Standardise array along the axis defined in dimension using the denominator</span>
 <span class="sd">    (N - df) for the calculation of the standard deviation.</span>
@@ -95,22 +127,31 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">dimension</span><span class="p">))</span> <span class="o">/</span> <span class="n">a_sd</span></div>
 
 
-<div class="viewcode-block" id="sort_descending"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.sort_descending">[docs]</a><span class="k">def</span> <span class="nf">sort_descending</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Sort array in descending order.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="sort_descending">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.sort_descending">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sort_descending</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sort array in descending order.&quot;&quot;&quot;</span>
     <span class="c1"># http://stackoverflow.com/questions/26984414/</span>
     <span class="c1">#       efficiently-sorting-a-numpy-array-in-descending-order</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">a</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="argsort_descending"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.argsort_descending">[docs]</a><span class="k">def</span> <span class="nf">argsort_descending</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Sort array in descending order and return sortind indices.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="argsort_descending">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.argsort_descending">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">argsort_descending</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sort array in descending order and return sortind indices.&quot;&quot;&quot;</span>
     <span class="c1"># http://stackoverflow.com/questions/16486252/</span>
     <span class="c1">#       is-it-possible-to-use-argsort-in-descending-order</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="remove_row"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.remove_row">[docs]</a><span class="k">def</span> <span class="nf">remove_row</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Remove a row from a numpy array.</span>
+
+<div class="viewcode-block" id="remove_row">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.remove_row">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_row</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a row from a numpy array.</span>
 
 <span class="sd">    This is faster than logical indexing (&#39;25 times faster&#39;), because it does</span>
 <span class="sd">    not make copies, see</span>
@@ -128,8 +169,11 @@
     <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span></div>
 
 
-<div class="viewcode-block" id="remove_column"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.remove_column">[docs]</a><span class="k">def</span> <span class="nf">remove_column</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Remove a column from a numpy array.</span>
+
+<div class="viewcode-block" id="remove_column">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.remove_column">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_column</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a column from a numpy array.</span>
 
 <span class="sd">    This is faster than logical indexing (&#39;25 times faster&#39;), because it does</span>
 <span class="sd">    not make copies, see</span>
@@ -147,13 +191,19 @@
     <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span></div>
 
 
-<div class="viewcode-block" id="autocorrelation"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.autocorrelation">[docs]</a><span class="k">def</span> <span class="nf">autocorrelation</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Calculate autocorrelation of a vector.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="autocorrelation">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.autocorrelation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">autocorrelation</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate autocorrelation of a vector.&quot;&quot;&quot;</span>
     <span class="k">pass</span></div>
 
 
-<div class="viewcode-block" id="discretise"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.discretise">[docs]</a><span class="k">def</span> <span class="nf">discretise</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Discretise continuous data.</span>
+
+<div class="viewcode-block" id="discretise">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.discretise">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">discretise</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Discretise continuous data.</span>
 
 <span class="sd">    Discretise continuous data into discrete values (with 0 as lowest) by</span>
 <span class="sd">    evenly partitioning the range of the data, one dimension at a time.</span>
@@ -203,8 +253,11 @@
     <span class="k">return</span> <span class="n">discretised_values</span></div>
 
 
-<div class="viewcode-block" id="discretise_max_ent"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.discretise_max_ent">[docs]</a><span class="k">def</span> <span class="nf">discretise_max_ent</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Discretise continuous data using maximum entropy partitioning.</span>
+
+<div class="viewcode-block" id="discretise_max_ent">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.discretise_max_ent">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">discretise_max_ent</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Discretise continuous data using maximum entropy partitioning.</span>
 
 <span class="sd">    Discretise continuous data into discrete values (with 0 as lowest) by</span>
 <span class="sd">    making a maximum entropy partitioning, one dimension at a time. Adapted</span>
@@ -256,8 +309,11 @@
     <span class="k">return</span> <span class="n">discretised_values</span></div>
 
 
-<div class="viewcode-block" id="separate_arrays"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.separate_arrays">[docs]</a><span class="k">def</span> <span class="nf">separate_arrays</span><span class="p">(</span><span class="n">idx_all</span><span class="p">,</span> <span class="n">idx_single</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Separate a single column from all other columns in a 2D-array.</span>
+
+<div class="viewcode-block" id="separate_arrays">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.separate_arrays">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">separate_arrays</span><span class="p">(</span><span class="n">idx_all</span><span class="p">,</span> <span class="n">idx_single</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Separate a single column from all other columns in a 2D-array.</span>
 
 <span class="sd">    Return the separated single column and the remaining columns of a 2D-</span>
 <span class="sd">    array.</span>
@@ -289,8 +345,11 @@
     <span class="k">return</span> <span class="n">real_remaining</span><span class="p">,</span> <span class="n">real_single</span></div>
 
 
-<div class="viewcode-block" id="combine_discrete_dimensions"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.combine_discrete_dimensions">[docs]</a><span class="k">def</span> <span class="nf">combine_discrete_dimensions</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Combine multi-dimensional discrete variable into a single dimension.</span>
+
+<div class="viewcode-block" id="combine_discrete_dimensions">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.combine_discrete_dimensions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">combine_discrete_dimensions</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numBins</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Combine multi-dimensional discrete variable into a single dimension.</span>
 
 <span class="sd">    Combine all dimensions for a discrete variable down into a single</span>
 <span class="sd">    dimensional value for each sample. This is done basically by multiplying</span>
@@ -335,8 +394,11 @@
     <span class="k">return</span> <span class="n">combined_values</span></div>
 
 
-<div class="viewcode-block" id="equal_dicts"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.equal_dicts">[docs]</a><span class="k">def</span> <span class="nf">equal_dicts</span><span class="p">(</span><span class="n">dict_1</span><span class="p">,</span> <span class="n">dict_2</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Test two dictionaries for equality.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="equal_dicts">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.equal_dicts">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">equal_dicts</span><span class="p">(</span><span class="n">dict_1</span><span class="p">,</span> <span class="n">dict_2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test two dictionaries for equality.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">dict_1</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">!=</span> <span class="n">dict_2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dict_1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -349,8 +411,11 @@
     <span class="k">return</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="conflicting_entries"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.conflicting_entries">[docs]</a><span class="k">def</span> <span class="nf">conflicting_entries</span><span class="p">(</span><span class="n">dict_1</span><span class="p">,</span> <span class="n">dict_2</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Test two dictionaries for unequal entries.</span>
+
+<div class="viewcode-block" id="conflicting_entries">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.conflicting_entries">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">conflicting_entries</span><span class="p">(</span><span class="n">dict_1</span><span class="p">,</span> <span class="n">dict_2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test two dictionaries for unequal entries.</span>
 
 <span class="sd">    Note that only keys that are present in both dicts are compared. If one</span>
 <span class="sd">    dictionary contains an entry not present in the other dictionary, the</span>
@@ -368,13 +433,19 @@
     <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="calculate_mi"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.calculate_mi">[docs]</a><span class="k">def</span> <span class="nf">calculate_mi</span><span class="p">(</span><span class="n">corr</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Calculate mutual information from correlation coefficient.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="calculate_mi">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.calculate_mi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_mi</span><span class="p">(</span><span class="n">corr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate mutual information from correlation coefficient.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">corr</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="timeout"><a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.timeout">[docs]</a><span class="k">class</span> <span class="nc">timeout</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Context manager for a timeout using threading module.</span>
+
+<div class="viewcode-block" id="timeout">
+<a class="viewcode-back" href="../../idtxl_helper.html#idtxl.idtxl_utils.timeout">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">timeout</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager for a timeout using threading module.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        timeout_duration: float</span>
@@ -383,29 +454,33 @@
 <span class="sd">            message to put in the exception</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout_duration</span><span class="p">,</span> <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Timeout&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout_duration</span><span class="p">,</span> <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Timeout&quot;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeout_duration</span> <span class="o">=</span> <span class="n">timeout_duration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exception_message</span> <span class="o">=</span> <span class="n">exception_message</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Timer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout_duration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout_handler</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 
-<div class="viewcode-block" id="timeout.timeout_handler"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_utils.timeout.timeout_handler">[docs]</a>    <span class="k">def</span> <span class="nf">timeout_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exception_message</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="timeout.timeout_handler">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_utils.timeout.timeout_handler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timeout_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exception_message</span><span class="p">)</span></div>
+</div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -413,13 +488,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -428,14 +503,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.idtxl_utils</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

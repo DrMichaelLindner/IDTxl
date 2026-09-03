@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.bivariate_pid &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.bivariate_pid &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.bivariate_pid</a></li> 
       </ul>
@@ -50,14 +43,16 @@
 <span class="sd">Note:</span>
 <span class="sd">    Written for Python 3.4+</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">.single_process_analysis</span> <span class="kn">import</span> <span class="n">SingleProcessAnalysis</span>
-<span class="kn">from</span> <span class="nn">.estimator</span> <span class="kn">import</span> <span class="n">get_estimator</span>
-<span class="kn">from</span> <span class="nn">.results</span> <span class="kn">import</span> <span class="n">ResultsPID</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.single_process_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">SingleProcessAnalysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.estimator</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_estimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.results</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultsPID</span>
 
 
-<div class="viewcode-block" id="BivariatePID"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID">[docs]</a><span class="k">class</span> <span class="nc">BivariatePID</span><span class="p">(</span><span class="n">SingleProcessAnalysis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Perform partial information decomposition for individual processes.</span>
+<div class="viewcode-block" id="BivariatePID">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BivariatePID</span><span class="p">(</span><span class="n">SingleProcessAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform partial information decomposition for individual processes.</span>
 
 <span class="sd">    Perform partial information decomposition (PID) for two source processes</span>
 <span class="sd">    and one target process in the network. Estimate unique, shared, and</span>
@@ -86,15 +81,17 @@
 <span class="sd">            estimated PID</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pid_estimator</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sources</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-<div class="viewcode-block" id="BivariatePID.analyse_network"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID.analyse_network">[docs]</a>    <span class="k">def</span> <span class="nf">analyse_network</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for network nodes.</span>
+<div class="viewcode-block" id="BivariatePID.analyse_network">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID.analyse_network">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_network</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for network nodes.</span>
 
 <span class="sd">        Estimate partial information decomposition (PID) for multiple nodes in</span>
 <span class="sd">        the network.</span>
@@ -180,8 +177,11 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="BivariatePID.analyse_single_target"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID.analyse_single_target">[docs]</a>    <span class="k">def</span> <span class="nf">analyse_single_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for a network node.</span>
+
+<div class="viewcode-block" id="BivariatePID.analyse_single_target">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.bivariate_pid.BivariatePID.analyse_single_target">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_single_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate partial information decomposition for a network node.</span>
 
 <span class="sd">        Estimate partial information decomposition (PID) for a target node in</span>
 <span class="sd">        the network.</span>
@@ -253,8 +253,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-    <span class="k">def</span> <span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
         <span class="c1"># Check requested PID estimator.</span>
         <span class="k">assert</span> <span class="s2">&quot;pid_estimator&quot;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">,</span> <span class="s2">&quot;Estimator was not specified!&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pid_estimator</span> <span class="o">=</span> <span class="n">get_estimator</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;pid_estimator&quot;</span><span class="p">],</span> <span class="n">settings</span><span class="p">)</span>
@@ -298,7 +299,7 @@
             <span class="p">]</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="c1"># TODO Discuss how and if the following statistical testing should be</span>
         <span class="c1"># included included. Remove dummy results.</span>
         <span class="c1"># [orig_pid, sign_1, p_val_1,</span>
@@ -310,14 +311,14 @@
         <span class="c1"># p_val_1 = p_val_2 = p_val_shd = p_val_syn = 1.0</span>
 
         <span class="n">target_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">]</span>
-        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
+                                            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">])</span>
         <span class="n">source_1_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
+                                            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
         <span class="n">source_2_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
-        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
+                                             <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
         <span class="n">orig_pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pid_estimator</span><span class="o">.</span><span class="n">estimate</span><span class="p">(</span>
             <span class="n">s1</span><span class="o">=</span><span class="n">source_1_realisations</span><span class="p">,</span> <span class="n">s2</span><span class="o">=</span><span class="n">source_2_realisations</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">target_realisations</span>
         <span class="p">)</span>
@@ -350,21 +351,22 @@
         <span class="c1"># it becomes an arbitrary permutation test where one argument gets</span>
         <span class="c1"># shuffled and then all arguments are passed to the provided estimator</span>
 
-    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pid_estimator</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -372,13 +374,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -387,14 +389,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.bivariate_pid</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

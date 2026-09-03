@@ -85,6 +85,14 @@ idtxl.estimators_Rudelt module
     :undoc-members:
     :show-inheritance:
 
+idtxl.estimators_python module
+------------------------------
+
+.. automodule:: idtxl.estimators_python
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 idtxl.estimators_jidt module
 ----------------------------
 
@@ -101,6 +109,14 @@ idtxl.estimators_opencl module
     :undoc-members:
     :show-inheritance:
 
+idtxl.estimators_cuda module
+------------------------------
+
+.. automodule:: idtxl.estimators_cuda
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 idtxl.estimators_mpi module
 ------------------------------
@@ -109,16 +125,6 @@ idtxl.estimators_mpi module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-idtxl.estimators_python module
-------------------------------
-
-.. automodule:: idtxl.estimators_python
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 idtxl.estimators_multivariate_pid module
 ----------------------------------------
@@ -213,6 +219,23 @@ idtxl.visualise_graph module
 ----------------------------
 
 .. automodule:: idtxl.visualise_graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+idtxl.get_distribution_likelihood module
+----------------------------
+
+.. automodule:: idtxl.get_distribution_likelihood
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+idtxl.EasyIDTxl module
+----------------------------
+
+.. automodule:: idtxl.EasyIDTxl
     :members:
     :undoc-members:
     :show-inheritance:

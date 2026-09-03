@@ -1,6 +1,7 @@
 Helper functions
 ================================
 
+
 utils module
 ------------
 .. automodule:: idtxl.idtxl_utils

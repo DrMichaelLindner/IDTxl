@@ -1,29 +1,22 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>idtxl &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/pyramid.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
+    <title>idtxl &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=d920527c" />
+    
+    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -32,7 +25,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl</a></li> 
       </ul>
     </div>  
@@ -43,37 +36,796 @@
           <div class="body" role="main">
             
   <section id="idtxl">
-<h1>idtxl<a class="headerlink" href="#idtxl" title="Permalink to this headline">¶</a></h1>
+<h1>idtxl<a class="headerlink" href="#idtxl" title="Link to this heading">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="idtxl.html">idtxl package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.data">idtxl.data module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_te">idtxl.bivariate_te module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_mi">idtxl.bivariate_mi module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_pid">idtxl.bivariate_pid module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_te">idtxl.multivariate_te module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_mi">idtxl.multivariate_mi module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_pid">idtxl.multivariate_pid module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.active_information_storage">idtxl.active_information_storage module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.embedding_optimization_ais_Rudelt">idtxl.embedding_optimization_ais_Rudelt module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_Rudelt">idtxl.estimators_Rudelt module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_jidt">idtxl.estimators_jidt module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_opencl">idtxl.estimators_opencl module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_mpi">idtxl.estimators_mpi module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_python">idtxl.estimators_python module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_multivariate_pid">idtxl.estimators_multivariate_pid module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_pid">idtxl.estimators_pid module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_exceptions">idtxl.idtxl_exceptions module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_io">idtxl.idtxl_io module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_utils">idtxl.idtxl_utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_analysis">idtxl.network_analysis module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_inference">idtxl.network_inference module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.single_process_analysis">idtxl.single_process_analysis module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_comparison">idtxl.network_comparison module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.results">idtxl.results module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.stats">idtxl.stats module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.visualise_graph">idtxl.visualise_graph module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.data">idtxl.data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.data.Data"><code class="docutils literal notranslate"><span class="pre">Data</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.data"><code class="docutils literal notranslate"><span class="pre">Data.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.generate_logistic_maps_data"><code class="docutils literal notranslate"><span class="pre">Data.generate_logistic_maps_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.generate_mute_data"><code class="docutils literal notranslate"><span class="pre">Data.generate_mute_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.generate_nonlinear_data"><code class="docutils literal notranslate"><span class="pre">Data.generate_nonlinear_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.generate_var_data"><code class="docutils literal notranslate"><span class="pre">Data.generate_var_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_lin_and_nonlin_conditionals"><code class="docutils literal notranslate"><span class="pre">Data.get_lin_and_nonlin_conditionals()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_lin_and_nonlin_targets_and_sources"><code class="docutils literal notranslate"><span class="pre">Data.get_lin_and_nonlin_targets_and_sources()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_nonlinear_status"><code class="docutils literal notranslate"><span class="pre">Data.get_nonlinear_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_realisations"><code class="docutils literal notranslate"><span class="pre">Data.get_realisations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_rgb_count"><code class="docutils literal notranslate"><span class="pre">Data.get_rgb_count()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_rgb_key"><code class="docutils literal notranslate"><span class="pre">Data.get_rgb_key()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_seed"><code class="docutils literal notranslate"><span class="pre">Data.get_seed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.get_state"><code class="docutils literal notranslate"><span class="pre">Data.get_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.n_realisations"><code class="docutils literal notranslate"><span class="pre">Data.n_realisations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.n_realisations_repl"><code class="docutils literal notranslate"><span class="pre">Data.n_realisations_repl()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.n_realisations_samples"><code class="docutils literal notranslate"><span class="pre">Data.n_realisations_samples()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.permute_replications"><code class="docutils literal notranslate"><span class="pre">Data.permute_replications()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.permute_samples"><code class="docutils literal notranslate"><span class="pre">Data.permute_samples()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.prepare_nonlinear"><code class="docutils literal notranslate"><span class="pre">Data.prepare_nonlinear()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.set_data"><code class="docutils literal notranslate"><span class="pre">Data.set_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.slice_permute_replications"><code class="docutils literal notranslate"><span class="pre">Data.slice_permute_replications()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.data.Data.slice_permute_samples"><code class="docutils literal notranslate"><span class="pre">Data.slice_permute_samples()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_te">idtxl.bivariate_te module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.bivariate_te.BivariateTE"><code class="docutils literal notranslate"><span class="pre">BivariateTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_te.BivariateTE.analyse_network"><code class="docutils literal notranslate"><span class="pre">BivariateTE.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_te.BivariateTE.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">BivariateTE.analyse_single_target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_mi">idtxl.bivariate_mi module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.bivariate_mi.BivariateMI"><code class="docutils literal notranslate"><span class="pre">BivariateMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_mi.BivariateMI.analyse_network"><code class="docutils literal notranslate"><span class="pre">BivariateMI.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_mi.BivariateMI.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">BivariateMI.analyse_single_target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.bivariate_pid">idtxl.bivariate_pid module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.bivariate_pid.BivariatePID"><code class="docutils literal notranslate"><span class="pre">BivariatePID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_pid.BivariatePID.analyse_network"><code class="docutils literal notranslate"><span class="pre">BivariatePID.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.bivariate_pid.BivariatePID.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">BivariatePID.analyse_single_target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_te">idtxl.multivariate_te module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.multivariate_te.MultivariateTE"><code class="docutils literal notranslate"><span class="pre">MultivariateTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_te.MultivariateTE.analyse_network"><code class="docutils literal notranslate"><span class="pre">MultivariateTE.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_te.MultivariateTE.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">MultivariateTE.analyse_single_target()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_te.MultivariateTE.getit"><code class="docutils literal notranslate"><span class="pre">MultivariateTE.getit()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_mi">idtxl.multivariate_mi module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.multivariate_mi.MultivariateMI"><code class="docutils literal notranslate"><span class="pre">MultivariateMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_mi.MultivariateMI.analyse_network"><code class="docutils literal notranslate"><span class="pre">MultivariateMI.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_mi.MultivariateMI.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">MultivariateMI.analyse_single_target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.multivariate_pid">idtxl.multivariate_pid module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.multivariate_pid.MultivariatePID"><code class="docutils literal notranslate"><span class="pre">MultivariatePID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_pid.MultivariatePID.analyse_network"><code class="docutils literal notranslate"><span class="pre">MultivariatePID.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.multivariate_pid.MultivariatePID.analyse_single_target"><code class="docutils literal notranslate"><span class="pre">MultivariatePID.analyse_single_target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.active_information_storage">idtxl.active_information_storage module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.active_information_storage.ActiveInformationStorage"><code class="docutils literal notranslate"><span class="pre">ActiveInformationStorage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.active_information_storage.ActiveInformationStorage.analyse_network"><code class="docutils literal notranslate"><span class="pre">ActiveInformationStorage.analyse_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.active_information_storage.ActiveInformationStorage.analyse_single_process"><code class="docutils literal notranslate"><span class="pre">ActiveInformationStorage.analyse_single_process()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.embedding_optimization_ais_Rudelt">idtxl.embedding_optimization_ais_Rudelt module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.analyse_auto_MI"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.analyse_auto_MI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.check_inputs"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.check_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.compute_CIs"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.compute_CIs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_R_tot"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_R_tot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_auto_MI"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_auto_MI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_bootstrap_history_dependence"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_bootstrap_history_dependence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_embeddings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings_that_maximise_R"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_embeddings_that_maximise_R()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_history_dependence"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_history_dependence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_information_timescale_tau_R"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_information_timescale_tau_R()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_past_range"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_past_range()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_set_of_scalings"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_set_of_scalings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_temporal_depth_T_D"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.get_temporal_depth_T_D()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.optimize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize_single_run"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.optimize_single_run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.remove_subresults_single_process"><code class="docutils literal notranslate"><span class="pre">OptimizationRudelt.remove_subresults_single_process()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_Rudelt">idtxl.estimators_Rudelt module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_median_number_of_spikes_per_bin"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_median_number_of_spikes_per_bin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_multiplicities"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_multiplicities()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_past_range"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_past_range()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_raw_symbols"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_raw_symbols()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_symbol_counts"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_symbol_counts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.get_window_delimiters"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.get_window_delimiters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.is_parallel"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.is_parallel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.symbol_array_to_binary"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.symbol_array_to_binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractEstimator.symbol_binary_to_array"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractEstimator.symbol_binary_to_array()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.H1"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.H1()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.alpha_ML"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.alpha_ML()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d2_log_rho"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d2_log_rho()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d2_log_rho_xi"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d2_log_rho_xi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d2_xi"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d2_xi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d3_xi"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d3_xi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d_log_rho"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d_log_rho()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d_log_rho_xi"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d_log_rho_xi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.d_xi"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.d_xi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.get_beta_MAP"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.get_beta_MAP()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.get_integration_bounds"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.get_integration_bounds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.log_likelihood_DP_alpha"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.log_likelihood_DP_alpha()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.nsb_entropy"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.nsb_entropy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.rho"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.rho()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltAbstractNSBEstimator.unnormalized_posterior"><code class="docutils literal notranslate"><span class="pre">RudeltAbstractNSBEstimator.unnormalized_posterior()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltBBCEstimator"><code class="docutils literal notranslate"><span class="pre">RudeltBBCEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltBBCEstimator.bayesian_bias_criterion"><code class="docutils literal notranslate"><span class="pre">RudeltBBCEstimator.bayesian_bias_criterion()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltBBCEstimator.estimate"><code class="docutils literal notranslate"><span class="pre">RudeltBBCEstimator.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltBBCEstimator.get_bbc_term"><code class="docutils literal notranslate"><span class="pre">RudeltBBCEstimator.get_bbc_term()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltNSBEstimatorSymbolsMI"><code class="docutils literal notranslate"><span class="pre">RudeltNSBEstimatorSymbolsMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltNSBEstimatorSymbolsMI.estimate"><code class="docutils literal notranslate"><span class="pre">RudeltNSBEstimatorSymbolsMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltNSBEstimatorSymbolsMI.nsb_estimator"><code class="docutils literal notranslate"><span class="pre">RudeltNSBEstimatorSymbolsMI.nsb_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltPluginEstimatorSymbolsMI"><code class="docutils literal notranslate"><span class="pre">RudeltPluginEstimatorSymbolsMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltPluginEstimatorSymbolsMI.estimate"><code class="docutils literal notranslate"><span class="pre">RudeltPluginEstimatorSymbolsMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltPluginEstimatorSymbolsMI.plugin_entropy"><code class="docutils literal notranslate"><span class="pre">RudeltPluginEstimatorSymbolsMI.plugin_entropy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltPluginEstimatorSymbolsMI.plugin_estimator"><code class="docutils literal notranslate"><span class="pre">RudeltPluginEstimatorSymbolsMI.plugin_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.estimate"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_H0_X_past_cond_X"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_H0_X_past_cond_X()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_H0_X_past_cond_X_eq_x"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_H0_X_past_cond_X_eq_x()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_H_X_past_cond_X"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_H_X_past_cond_X()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_H_X_past_uncond"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_H_X_past_uncond()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_P_X_past_cond_X"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_P_X_past_cond_X()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_P_X_past_uncond"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_P_X_past_uncond()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_P_X_uncond"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_P_X_uncond()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_marginal_frequencies_of_spikes_in_bins"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_marginal_frequencies_of_spikes_in_bins()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.get_shuffled_symbol_counts"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.get_shuffled_symbol_counts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_Rudelt.RudeltShufflingEstimator.shuffling_MI"><code class="docutils literal notranslate"><span class="pre">RudeltShufflingEstimator.shuffling_MI()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_python">idtxl.estimators_python module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscrete"><code class="docutils literal notranslate"><span class="pre">PythonDiscrete</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscrete.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">PythonDiscrete.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscrete.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonDiscrete.get_analytic_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscrete.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">PythonDiscrete.is_analytic_null_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteAIS"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteAIS.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteAIS.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteAIS.estimate"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteAIS.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteAIS.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteAIS.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteCMI"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteCMI.calculateLocalCMI"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteCMI.calculateLocalCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteCMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteCMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteCMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI.calculateAverageMI"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI.calculateAverageMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI.calculateLocalMI"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI.calculateLocalMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteTE"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteTE.combine_embedding_dimensions"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteTE.combine_embedding_dimensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteTE.estimate"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonDiscreteTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonDiscreteTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator"><code class="docutils literal notranslate"><span class="pre">PythonEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.computeStartTimeForFirstDestEmbedding"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.computeStartTimeForFirstDestEmbedding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.get_data"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.get_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.is_parallel"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.is_parallel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.makeDelayEmbeddingVector"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.makeDelayEmbeddingVector()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.makeDelayEmbeddingVectorCurrent"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.makeDelayEmbeddingVectorCurrent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.remove_data"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.remove_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonEstimator.set_data"><code class="docutils literal notranslate"><span class="pre">PythonEstimator.set_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian"><code class="docutils literal notranslate"><span class="pre">PythonGaussian</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian.cov_reg"><code class="docutils literal notranslate"><span class="pre">PythonGaussian.cov_reg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">PythonGaussian.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">PythonGaussian.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian.logdet_cholesky"><code class="docutils literal notranslate"><span class="pre">PythonGaussian.logdet_cholesky()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussian.logpdf_gaussian"><code class="docutils literal notranslate"><span class="pre">PythonGaussian.logpdf_gaussian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianAIS"><code class="docutils literal notranslate"><span class="pre">PythonGaussianAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianAIS.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonGaussianAIS.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianAIS.estimate"><code class="docutils literal notranslate"><span class="pre">PythonGaussianAIS.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianAIS.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonGaussianAIS.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI.calculateAverageCMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI.calculateAverageCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI.calculateLocalCMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI.calculateLocalCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCTE"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCTE.estimate"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianCTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonGaussianCTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI.calculateAverageMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI.calculateAverageMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI.calculateLocalMI"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI.calculateLocalMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonGaussianMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianTE"><code class="docutils literal notranslate"><span class="pre">PythonGaussianTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">PythonGaussianTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianTE.estimate"><code class="docutils literal notranslate"><span class="pre">PythonGaussianTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonGaussianTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">PythonGaussianTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskov"><code class="docutils literal notranslate"><span class="pre">PythonKraskov</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskov.getCountsCMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskov.getCountsCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskov.getCountsMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskov.getCountsMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskov.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">PythonKraskov.is_analytic_null_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovAIS"><code class="docutils literal notranslate"><span class="pre">PythonKraskovAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovAIS.estimate"><code class="docutils literal notranslate"><span class="pre">PythonKraskovAIS.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCMI.calculateAverageCMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCMI.calculateAverageCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCMI.calculateLocalCMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCMI.calculateLocalCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCTE"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovCTE.estimate"><code class="docutils literal notranslate"><span class="pre">PythonKraskovCTE.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovMI.calculateAverageMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovMI.calculateAverageMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovMI.calculateLocalMI"><code class="docutils literal notranslate"><span class="pre">PythonKraskovMI.calculateLocalMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovMI.estimate"><code class="docutils literal notranslate"><span class="pre">PythonKraskovMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovTE"><code class="docutils literal notranslate"><span class="pre">PythonKraskovTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.PythonKraskovTE.estimate"><code class="docutils literal notranslate"><span class="pre">PythonKraskovTE.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_python.common_estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">common_estimate_surrogates_analytic()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_jidt">idtxl.estimators_jidt module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscrete"><code class="docutils literal notranslate"><span class="pre">JidtDiscrete</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscrete.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">JidtDiscrete.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscrete.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtDiscrete.get_analytic_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscrete.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">JidtDiscrete.is_analytic_null_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteAIS"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteAIS.estimate"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteAIS.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteAIS.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteAIS.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteCMI"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteCMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteMI"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteTE"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteTE.estimate"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtDiscreteTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtDiscreteTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtEstimator"><code class="docutils literal notranslate"><span class="pre">JidtEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtEstimator.is_parallel"><code class="docutils literal notranslate"><span class="pre">JidtEstimator.is_parallel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussian"><code class="docutils literal notranslate"><span class="pre">JidtGaussian</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussian.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">JidtGaussian.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussian.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtGaussian.get_analytic_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussian.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">JidtGaussian.is_analytic_null_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianAIS"><code class="docutils literal notranslate"><span class="pre">JidtGaussianAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianAIS.estimate"><code class="docutils literal notranslate"><span class="pre">JidtGaussianAIS.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCMI"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCTE"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCTE.estimate"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianCTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">JidtGaussianCTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianMI"><code class="docutils literal notranslate"><span class="pre">JidtGaussianMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtGaussianMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianTE"><code class="docutils literal notranslate"><span class="pre">JidtGaussianTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtGaussianTE.estimate"><code class="docutils literal notranslate"><span class="pre">JidtGaussianTE.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskov"><code class="docutils literal notranslate"><span class="pre">JidtKraskov</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskov.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">JidtKraskov.is_analytic_null_estimator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovAIS"><code class="docutils literal notranslate"><span class="pre">JidtKraskovAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovAIS.estimate"><code class="docutils literal notranslate"><span class="pre">JidtKraskovAIS.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovCMI"><code class="docutils literal notranslate"><span class="pre">JidtKraskovCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovCMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtKraskovCMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovCTE"><code class="docutils literal notranslate"><span class="pre">JidtKraskovCTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovCTE.estimate"><code class="docutils literal notranslate"><span class="pre">JidtKraskovCTE.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovMI"><code class="docutils literal notranslate"><span class="pre">JidtKraskovMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovMI.estimate"><code class="docutils literal notranslate"><span class="pre">JidtKraskovMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovTE"><code class="docutils literal notranslate"><span class="pre">JidtKraskovTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.JidtKraskovTE.estimate"><code class="docutils literal notranslate"><span class="pre">JidtKraskovTE.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_jidt.common_estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">common_estimate_surrogates_analytic()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_opencl">idtxl.estimators_opencl module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete.encode_multidim_states"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete.encode_multidim_states()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete.get_analytic_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscrete.is_parallel"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscrete.is_parallel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteAIS"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteAIS.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteAIS.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteAIS.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteAIS.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteAIS.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteAIS.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteCMI.calculateLocalCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteCMI.calculateLocalCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteCMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteCMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteCMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI.calculateAverageMI"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI.calculateAverageMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI.calculateLocalMI"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI.calculateLocalMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteTE"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteTE.combine_embedding_dimensions"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteTE.combine_embedding_dimensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteTE.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLDiscreteTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLDiscreteTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.computeStartTimeForFirstDestEmbedding"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.computeStartTimeForFirstDestEmbedding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.get_data"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.get_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.makeDelayEmbeddingVector"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.makeDelayEmbeddingVector()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.makeDelayEmbeddingVectorCurrent"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.makeDelayEmbeddingVectorCurrent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.remove_data"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.remove_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLEstimator.set_data"><code class="docutils literal notranslate"><span class="pre">OpenCLEstimator.set_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussian"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussian</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussian.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussian.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussian.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussian.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussian.is_parallel"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussian.is_parallel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussian.round_up"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussian.round_up()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianAIS"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianAIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianAIS.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianAIS.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianAIS.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianAIS.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianAIS.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianAIS.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI.calculateAverageCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI.calculateAverageCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI.calculateLocalCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI.calculateLocalCMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCTE"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCTE.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianCTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianCTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianMI"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianMI.calculateLocalMI"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianMI.calculateLocalMI()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianMI.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianMI.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianMI.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianMI.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianMI.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianTE"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianTE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianTE.computeSignificance"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianTE.computeSignificance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianTE.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianTE.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLGaussianTE.get_analytic_distribution"><code class="docutils literal notranslate"><span class="pre">OpenCLGaussianTE.get_analytic_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskov"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskov</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskov.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskov.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskov.is_parallel"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskov.is_parallel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskovCMI"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskovCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskovCMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskovCMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskovMI"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskovMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.OpenCLKraskovMI.estimate"><code class="docutils literal notranslate"><span class="pre">OpenCLKraskovMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_opencl.common_estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">common_estimate_surrogates_analytic()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_cuda">idtxl.estimators_cuda module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskov"><code class="docutils literal notranslate"><span class="pre">CudaKraskov</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskov.cudaFindKnnSetGPU"><code class="docutils literal notranslate"><span class="pre">CudaKraskov.cudaFindKnnSetGPU()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskov.cudaFindRSAllSetGPU"><code class="docutils literal notranslate"><span class="pre">CudaKraskov.cudaFindRSAllSetGPU()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskov.knn_search"><code class="docutils literal notranslate"><span class="pre">CudaKraskov.knn_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskov.range_search"><code class="docutils literal notranslate"><span class="pre">CudaKraskov.range_search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskovCMI"><code class="docutils literal notranslate"><span class="pre">CudaKraskovCMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskovCMI.estimate"><code class="docutils literal notranslate"><span class="pre">CudaKraskovCMI.estimate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskovMI"><code class="docutils literal notranslate"><span class="pre">CudaKraskovMI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_cuda.CudaKraskovMI.estimate"><code class="docutils literal notranslate"><span class="pre">CudaKraskovMI.estimate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_mpi">idtxl.estimators_mpi module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator"><code class="docutils literal notranslate"><span class="pre">MPIEstimator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.compute_batch_sizes"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.compute_batch_sizes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.estimate"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.estimate_parallel"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.estimate_parallel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.estimate_surrogates_analytic"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.estimate_surrogates_analytic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.MPIEstimator.is_parallel"><code class="docutils literal notranslate"><span class="pre">MPIEstimator.is_parallel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.tags"><code class="docutils literal notranslate"><span class="pre">tags</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.tags.DONE"><code class="docutils literal notranslate"><span class="pre">tags.DONE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.tags.ESTIMATE"><code class="docutils literal notranslate"><span class="pre">tags.ESTIMATE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.tags.SET_DATA"><code class="docutils literal notranslate"><span class="pre">tags.SET_DATA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_mpi.tags.SET_ESTIMATOR"><code class="docutils literal notranslate"><span class="pre">tags.SET_ESTIMATOR</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_multivariate_pid">idtxl.estimators_multivariate_pid module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_multivariate_pid.SxPID"><code class="docutils literal notranslate"><span class="pre">SxPID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_multivariate_pid.SxPID.estimate"><code class="docutils literal notranslate"><span class="pre">SxPID.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_multivariate_pid.SxPID.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">SxPID.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_multivariate_pid.SxPID.is_parallel"><code class="docutils literal notranslate"><span class="pre">SxPID.is_parallel()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.estimators_pid">idtxl.estimators_pid module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.SydneyPID"><code class="docutils literal notranslate"><span class="pre">SydneyPID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.SydneyPID.estimate"><code class="docutils literal notranslate"><span class="pre">SydneyPID.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.SydneyPID.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">SydneyPID.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.SydneyPID.is_parallel"><code class="docutils literal notranslate"><span class="pre">SydneyPID.is_parallel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.TartuPID"><code class="docutils literal notranslate"><span class="pre">TartuPID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.TartuPID.estimate"><code class="docutils literal notranslate"><span class="pre">TartuPID.estimate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.TartuPID.is_analytic_null_estimator"><code class="docutils literal notranslate"><span class="pre">TartuPID.is_analytic_null_estimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.estimators_pid.TartuPID.is_parallel"><code class="docutils literal notranslate"><span class="pre">TartuPID.is_parallel()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_exceptions">idtxl.idtxl_exceptions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_exceptions.AlgorithmExhaustedError"><code class="docutils literal notranslate"><span class="pre">AlgorithmExhaustedError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_exceptions.BROJA_2PID_Exception"><code class="docutils literal notranslate"><span class="pre">BROJA_2PID_Exception</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_exceptions.JidtOutOfMemoryError"><code class="docutils literal notranslate"><span class="pre">JidtOutOfMemoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_exceptions.package_missing"><code class="docutils literal notranslate"><span class="pre">package_missing()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_io">idtxl.idtxl_io module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.export_brain_net_viewer"><code class="docutils literal notranslate"><span class="pre">export_brain_net_viewer()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.export_networkx_graph"><code class="docutils literal notranslate"><span class="pre">export_networkx_graph()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.export_networkx_source_graph"><code class="docutils literal notranslate"><span class="pre">export_networkx_source_graph()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.import_fieldtrip"><code class="docutils literal notranslate"><span class="pre">import_fieldtrip()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.import_matarray"><code class="docutils literal notranslate"><span class="pre">import_matarray()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.load_json"><code class="docutils literal notranslate"><span class="pre">load_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.load_pickle"><code class="docutils literal notranslate"><span class="pre">load_pickle()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.save_json"><code class="docutils literal notranslate"><span class="pre">save_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_io.save_pickle"><code class="docutils literal notranslate"><span class="pre">save_pickle()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.idtxl_utils">idtxl.idtxl_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.argsort_descending"><code class="docutils literal notranslate"><span class="pre">argsort_descending()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.autocorrelation"><code class="docutils literal notranslate"><span class="pre">autocorrelation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.calculate_mi"><code class="docutils literal notranslate"><span class="pre">calculate_mi()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.combine_discrete_dimensions"><code class="docutils literal notranslate"><span class="pre">combine_discrete_dimensions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.conflicting_entries"><code class="docutils literal notranslate"><span class="pre">conflicting_entries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.discretise"><code class="docutils literal notranslate"><span class="pre">discretise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.discretise_max_ent"><code class="docutils literal notranslate"><span class="pre">discretise_max_ent()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.equal_dicts"><code class="docutils literal notranslate"><span class="pre">equal_dicts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.get_cuda_lib"><code class="docutils literal notranslate"><span class="pre">get_cuda_lib()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.print_dict"><code class="docutils literal notranslate"><span class="pre">print_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.remove_column"><code class="docutils literal notranslate"><span class="pre">remove_column()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.remove_row"><code class="docutils literal notranslate"><span class="pre">remove_row()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.separate_arrays"><code class="docutils literal notranslate"><span class="pre">separate_arrays()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.setup_logging"><code class="docutils literal notranslate"><span class="pre">setup_logging()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.sort_descending"><code class="docutils literal notranslate"><span class="pre">sort_descending()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.standardise"><code class="docutils literal notranslate"><span class="pre">standardise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.swap_chars"><code class="docutils literal notranslate"><span class="pre">swap_chars()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.timeout"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.idtxl_utils.timeout.timeout_handler"><code class="docutils literal notranslate"><span class="pre">timeout.timeout_handler()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_analysis">idtxl.network_analysis module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis.current_value"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis.current_value</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis.resume_checkpoint"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis.resume_checkpoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis.selected_vars_full"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis.selected_vars_full</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis.selected_vars_sources"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis.selected_vars_sources</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_analysis.NetworkAnalysis.selected_vars_target"><code class="docutils literal notranslate"><span class="pre">NetworkAnalysis.selected_vars_target</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_inference">idtxl.network_inference module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_inference.NetworkInference"><code class="docutils literal notranslate"><span class="pre">NetworkInference</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_inference.NetworkInferenceBivariate"><code class="docutils literal notranslate"><span class="pre">NetworkInferenceBivariate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_inference.NetworkInferenceMI"><code class="docutils literal notranslate"><span class="pre">NetworkInferenceMI</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_inference.NetworkInferenceMultivariate"><code class="docutils literal notranslate"><span class="pre">NetworkInferenceMultivariate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_inference.NetworkInferenceTE"><code class="docutils literal notranslate"><span class="pre">NetworkInferenceTE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.single_process_analysis">idtxl.single_process_analysis module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.single_process_analysis.SingleProcessAnalysis"><code class="docutils literal notranslate"><span class="pre">SingleProcessAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.network_comparison">idtxl.network_comparison module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.network_comparison.NetworkComparison"><code class="docutils literal notranslate"><span class="pre">NetworkComparison</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_comparison.NetworkComparison.calculate_link_te"><code class="docutils literal notranslate"><span class="pre">NetworkComparison.calculate_link_te()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_comparison.NetworkComparison.compare_between"><code class="docutils literal notranslate"><span class="pre">NetworkComparison.compare_between()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_comparison.NetworkComparison.compare_links_within"><code class="docutils literal notranslate"><span class="pre">NetworkComparison.compare_links_within()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.network_comparison.NetworkComparison.compare_within"><code class="docutils literal notranslate"><span class="pre">NetworkComparison.compare_within()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.results">idtxl.results module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.add_edge"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.add_edge()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.add_edge_list"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.add_edge_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.add_nonlinear_edge_list"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.add_nonlinear_edge_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.get_edge_list"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.get_edge_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.get_type_list"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.get_type_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.n_edges"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.n_edges()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.n_nodes"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.n_nodes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.AdjacencyMatrix.print_matrix"><code class="docutils literal notranslate"><span class="pre">AdjacencyMatrix.print_matrix()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.DotDict"><code class="docutils literal notranslate"><span class="pre">DotDict</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.Results"><code class="docutils literal notranslate"><span class="pre">Results</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.Results.combine_results"><code class="docutils literal notranslate"><span class="pre">Results.combine_results()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsMultivariatePID"><code class="docutils literal notranslate"><span class="pre">ResultsMultivariatePID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsMultivariatePID.get_single_target"><code class="docutils literal notranslate"><span class="pre">ResultsMultivariatePID.get_single_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis.get_nonlinear_target_sources"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis.get_nonlinear_target_sources()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis.get_single_target"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis.get_single_target()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis.get_target_source_types"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis.get_target_source_types()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis.get_target_sources"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis.get_target_sources()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkAnalysis.targets_analysed"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkAnalysis.targets_analysed</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkComparison"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkComparison</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkComparison.get_adjacency_matrix"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkComparison.get_adjacency_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkComparison.get_single_target"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkComparison.get_single_target()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkComparison.get_target_sources"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkComparison.get_target_sources()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkComparison.print_edge_list"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkComparison.print_edge_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_adjacency_matrix"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_adjacency_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_nonlinear_adjacency_matrix"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_nonlinear_adjacency_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_nonlinear_source_variables"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_nonlinear_source_variables()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_nonlinear_target_delays"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_nonlinear_target_delays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_source_variables"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_source_variables()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.get_target_delays"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.get_target_delays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.print_edge_list"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.print_edge_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsNetworkInference.print_nonlinear_edge_list"><code class="docutils literal notranslate"><span class="pre">ResultsNetworkInference.print_nonlinear_edge_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsPID"><code class="docutils literal notranslate"><span class="pre">ResultsPID</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsPID.get_single_target"><code class="docutils literal notranslate"><span class="pre">ResultsPID.get_single_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessAnalysis"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessAnalysis</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessAnalysis.get_significant_processes"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessAnalysis.get_significant_processes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessAnalysis.get_single_process"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessAnalysis.get_single_process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessAnalysis.processes_analysed"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessAnalysis.processes_analysed</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessRudelt"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessRudelt</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessRudelt.get_single_process"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessRudelt.get_single_process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.results.ResultsSingleProcessRudelt.processes_analysed"><code class="docutils literal notranslate"><span class="pre">ResultsSingleProcessRudelt.processes_analysed</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.stats">idtxl.stats module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.ais_fdr"><code class="docutils literal notranslate"><span class="pre">ais_fdr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.check_n_perm"><code class="docutils literal notranslate"><span class="pre">check_n_perm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.max_statistic"><code class="docutils literal notranslate"><span class="pre">max_statistic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.max_statistic_sequential"><code class="docutils literal notranslate"><span class="pre">max_statistic_sequential()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.max_statistic_sequential_bivariate"><code class="docutils literal notranslate"><span class="pre">max_statistic_sequential_bivariate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.mi_against_surrogates"><code class="docutils literal notranslate"><span class="pre">mi_against_surrogates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.min_statistic"><code class="docutils literal notranslate"><span class="pre">min_statistic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.network_fdr"><code class="docutils literal notranslate"><span class="pre">network_fdr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.omnibus_test"><code class="docutils literal notranslate"><span class="pre">omnibus_test()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.syn_shd_against_surrogates"><code class="docutils literal notranslate"><span class="pre">syn_shd_against_surrogates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.stats.unq_against_surrogates"><code class="docutils literal notranslate"><span class="pre">unq_against_surrogates()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.visualise_graph">idtxl.visualise_graph module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.visualise_graph.plot_mute_graph"><code class="docutils literal notranslate"><span class="pre">plot_mute_graph()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.visualise_graph.plot_network"><code class="docutils literal notranslate"><span class="pre">plot_network()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.visualise_graph.plot_network_comparison"><code class="docutils literal notranslate"><span class="pre">plot_network_comparison()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.visualise_graph.plot_selected_vars"><code class="docutils literal notranslate"><span class="pre">plot_selected_vars()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#idtxl-get-distribution-likelihood-module">idtxl.get_distribution_likelihood module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_aic"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_aic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_best_dist"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_best_dist()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_bic"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_bic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_dists"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_dists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_parameters"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_pval"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_pval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_sse"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.get_sse()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.print_summary"><code class="docutils literal notranslate"><span class="pre">ResultsDistributionLikelihood.print_summary()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.fit"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.fit_single_distribution"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.fit_single_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.get_common_distributions"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.get_common_distributions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.get_fit_distributions"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.get_fit_distributions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.show_distributions"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.show_distributions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.summary"><code class="docutils literal notranslate"><span class="pre">get_distribution_likelihood.summary()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl.EasyIDTxl">idtxl.EasyIDTxl module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.AISWindow"><code class="docutils literal notranslate"><span class="pre">AISWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.CMIWindow"><code class="docutils literal notranslate"><span class="pre">CMIWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.ClickableLineEdit"><code class="docutils literal notranslate"><span class="pre">ClickableLineEdit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.ClickableLineEdit.clicked"><code class="docutils literal notranslate"><span class="pre">ClickableLineEdit.clicked</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.ClickableLineEdit.mousePressEvent"><code class="docutils literal notranslate"><span class="pre">ClickableLineEdit.mousePressEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MIWindow"><code class="docutils literal notranslate"><span class="pre">MIWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow"><code class="docutils literal notranslate"><span class="pre">MainWindow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.ais_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.ais_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.cmi_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.cmi_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.mi_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.mi_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.mmi_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.mmi_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.net_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.net_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.pid_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.pid_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MainWindow.te_button"><code class="docutils literal notranslate"><span class="pre">MainWindow.te_button()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.MultivariateWindow"><code class="docutils literal notranslate"><span class="pre">MultivariateWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.NetworkWindow"><code class="docutils literal notranslate"><span class="pre">NetworkWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.PIDWindow"><code class="docutils literal notranslate"><span class="pre">PIDWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.TEWindow"><code class="docutils literal notranslate"><span class="pre">TEWindow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window"><code class="docutils literal notranslate"><span class="pre">Window</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.bi_multi_type"><code class="docutils literal notranslate"><span class="pre">Window.bi_multi_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.checkSTPLInput"><code class="docutils literal notranslate"><span class="pre">Window.checkSTPLInput()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.checkStringInput"><code class="docutils literal notranslate"><span class="pre">Window.checkStringInput()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.cleanOutput"><code class="docutils literal notranslate"><span class="pre">Window.cleanOutput()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.cleanProcess"><code class="docutils literal notranslate"><span class="pre">Window.cleanProcess()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.cleanScript"><code class="docutils literal notranslate"><span class="pre">Window.cleanScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.createMPIScript"><code class="docutils literal notranslate"><span class="pre">Window.createMPIScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.createScript"><code class="docutils literal notranslate"><span class="pre">Window.createScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.editScript"><code class="docutils literal notranslate"><span class="pre">Window.editScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getAISEstimator"><code class="docutils literal notranslate"><span class="pre">Window.getAISEstimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getDataOrder"><code class="docutils literal notranslate"><span class="pre">Window.getDataOrder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getEstimatorToolTips"><code class="docutils literal notranslate"><span class="pre">Window.getEstimatorToolTips()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getPIDEstimator"><code class="docutils literal notranslate"><span class="pre">Window.getPIDEstimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptEstimator"><code class="docutils literal notranslate"><span class="pre">Window.getScriptEstimator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptImports"><code class="docutils literal notranslate"><span class="pre">Window.getScriptImports()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptLoadData"><code class="docutils literal notranslate"><span class="pre">Window.getScriptLoadData()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptPIDlag"><code class="docutils literal notranslate"><span class="pre">Window.getScriptPIDlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptSaveResults"><code class="docutils literal notranslate"><span class="pre">Window.getScriptSaveResults()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptSettings"><code class="docutils literal notranslate"><span class="pre">Window.getScriptSettings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.getScriptStartAnalysis"><code class="docutils literal notranslate"><span class="pre">Window.getScriptStartAnalysis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.loadSettings"><code class="docutils literal notranslate"><span class="pre">Window.loadSettings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.messageBox"><code class="docutils literal notranslate"><span class="pre">Window.messageBox()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.nonlin_granger"><code class="docutils literal notranslate"><span class="pre">Window.nonlin_granger()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.openFileDialog"><code class="docutils literal notranslate"><span class="pre">Window.openFileDialog()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.parameter_defaults_in_settings"><code class="docutils literal notranslate"><span class="pre">Window.parameter_defaults_in_settings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.runScript"><code class="docutils literal notranslate"><span class="pre">Window.runScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.saveRes"><code class="docutils literal notranslate"><span class="pre">Window.saveRes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.saveResDialog"><code class="docutils literal notranslate"><span class="pre">Window.saveResDialog()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.saveScript"><code class="docutils literal notranslate"><span class="pre">Window.saveScript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.setAISProcessTooltips"><code class="docutils literal notranslate"><span class="pre">Window.setAISProcessTooltips()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.setPIDProcessTooltips"><code class="docutils literal notranslate"><span class="pre">Window.setPIDProcessTooltips()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="idtxl.html#idtxl.EasyIDTxl.Window.setSingleVsNetwork"><code class="docutils literal notranslate"><span class="pre">Window.setSingleVsNetwork()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="idtxl.html#module-idtxl">Module contents</a></li>
 </ul>
 </li>
@@ -86,7 +838,7 @@
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -95,7 +847,7 @@
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -103,13 +855,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -118,13 +870,13 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

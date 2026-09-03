@@ -7,13 +7,7 @@ Python Estimators (CPU)
     :members:
     :noindex:
 
-JIDT Estimators (CPU)
----------------------
-.. automodule:: idtxl.estimators_jidt
-    :members:
-    :noindex:
-
-OpenCL Estimators (GPU)
+OpenCL Estimators (GPU + CPU)
 -----------------------
 .. automodule:: idtxl.estimators_opencl
     :members:
@@ -22,6 +16,18 @@ OpenCL Estimators (GPU)
 CUDA Estimators (GPU)
 -----------------------
 .. automodule:: idtxl.estimators_cuda
+    :members:
+    :noindex:
+
+JIDT Estimators (CPU)
+---------------------
+.. automodule:: idtxl.estimators_jidt
+    :members:
+    :noindex:
+
+Rudelt Estimators (CPU)
+---------------------
+.. automodule:: idtxl.estimators_rudelt
     :members:
     :noindex:
 

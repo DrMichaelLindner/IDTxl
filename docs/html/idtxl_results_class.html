@@ -1,31 +1,24 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The Results Class &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/pyramid.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
+    <title>The Results Class &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=d920527c" />
+    
+    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Information theoretic estimators" href="idtxl_estimators.html" />
-    <link rel="prev" title="Network comparison" href="idtxl_network_comparison.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="prev" title="Network comparison" href="idtxl_network_comparison.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,7 +33,7 @@
         <li class="right" >
           <a href="idtxl_network_comparison.html" title="Network comparison"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The Results Class</a></li> 
       </ul>
     </div>  
@@ -51,12 +44,12 @@
           <div class="body" role="main">
             
   <section id="the-results-class">
-<h1>The Results Class<a class="headerlink" href="#the-results-class" title="Permalink to this headline">¶</a></h1>
+<h1>The Results Class<a class="headerlink" href="#the-results-class" title="Link to this heading">¶</a></h1>
 <section id="results-network-inference">
-<h2>Results network inference<a class="headerlink" href="#results-network-inference" title="Permalink to this headline">¶</a></h2>
+<h2>Results network inference<a class="headerlink" href="#results-network-inference" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsNetworkInference</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsNetworkInference</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of network inference.</p>
 <p>Provide a container for results of network inference algorithms, e.g.,
 MultivariateTE or Bivariate TE.</p>
@@ -136,6 +129,114 @@ uncorrected results. Multiple options for the weight are available.</p>
 </dl>
 </dd>
 <dt>Returns:</dt><dd><p>AdjacencyMatrix instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_nonlinear_adjacency_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fdr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference.get_nonlinear_adjacency_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Return adjacency matrix.</p>
+<p>This function works only for results of nonlinear granger analysis!</p>
+<p>Return adjacency matrix resulting from network inference. The adjacency
+matrix can either be generated from FDR-corrected results or
+uncorrected results. Multiple options for the weight are available.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>weights<span class="classifier">str</span></dt><dd><p>can either be</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>‘max_te_lag’: the weights represent the source -&gt; target</dt><dd><p>lag corresponding to the maximum tranfer entropy value
+(see documentation for method get_target_delays for details)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>‘max_p_lag’: the weights represent the source -&gt; target</dt><dd><p>lag corresponding to the maximum p-value
+(see documentation for method get_target_delays for details)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>‘vars_count’: the weights represent the number of</dt><dd><p>statistically-significant source -&gt; target lags</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>‘binary’: return unweighted adjacency matrix with binary</dt><dd><p>entries</p>
+<ul>
+<li><p>1 = significant information transfer;</p></li>
+<li><p>0 = no significant information transfer.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>fdr<span class="classifier">bool [optional]</span></dt><dd><p>return FDR-corrected results (default=True)</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>AdjacencyMatrix instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_nonlinear_source_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fdr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference.get_nonlinear_source_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Return list of inferred past source variables for all targets.</p>
+<p>This function works only for results of nonlinear granger analysis!</p>
+<p>Return a list of dictionaries, where each dictionary holds the selected
+past source variables for one analysed target. The list may be used as
+and input to significant subgraph mining in the postprocessing module.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>fdr<span class="classifier">bool [optional]</span></dt><dd><p>return FDR-corrected results (default=True)</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>list of dicts</dt><dd><p>selected past source variables for each target</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_nonlinear_target_delays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'max_te'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fdr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference.get_nonlinear_target_delays"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Return list of information-transfer delays for a given target.</p>
+<p>This function works only for results of nonlinear granger analysis!</p>
+<p>Return a list of information-transfer delays for a given target.
+Information-transfer delays are determined by the lag of the variable
+in a source past that has the highest information transfer into the
+target process. There are two ways of identifying the variable with
+maximum information transfer:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>use the variable with the highest absolute TE value (highest
+information transfer),</p></li>
+<li><p>use the variable with the smallest p-value (highest statistical
+significance).</p></li>
+</ol>
+</div></blockquote>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>target<span class="classifier">int</span></dt><dd><p>target index</p>
+</dd>
+<dt>criterion<span class="classifier">str [optional]</span></dt><dd><p>use maximum TE value (‘max_te’) or p-value (‘max_p’) to
+determine the source-target delay (default=’max_te’)</p>
+</dd>
+<dt>fdr<span class="classifier">bool [optional]</span></dt><dd><p>return FDR-corrected results (default=True)</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>numpy array</dt><dd><p>information-transfer delays for each source</p>
+</dd>
+</dl>
 </dd>
 </dl>
 </dd></dl>
@@ -226,14 +327,43 @@ for details)</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">print_nonlinear_edge_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fdr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkInference.print_nonlinear_edge_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Print results of network inference of nonlinear granger analysis to console.</p>
+<p>Print edge list resulting from network inference to console.
+Output may look like this:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_te_lag</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;orig&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="n">max_te_lag</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;squared&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mi">3</span><span class="p">,</span> <span class="n">max_te_lag</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;squared&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">3</span> <span class="o">-&gt;</span> <span class="mi">4</span><span class="p">,</span> <span class="n">max_te_lag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;orig&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">4</span> <span class="o">-&gt;</span> <span class="mi">3</span><span class="p">,</span> <span class="n">max_te_lag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;orig&quot;</span>
+</pre></div>
+</div>
+<p>The edge list can either be generated from FDR-corrected results
+or uncorrected results. Multiple options for the weight
+are available (see documentation of method get_adjacency_matrix for
+details).</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>weights<span class="classifier">str</span></dt><dd><p>link weights (see documentation of method get_adjacency_matrix
+for details)</p>
+</dd>
+<dt>fdr<span class="classifier">bool [optional]</span></dt><dd><p>return FDR-corrected results (default=True)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
 <section id="results-network-comparison">
-<h2>Results network comparison<a class="headerlink" href="#results-network-comparison" title="Permalink to this headline">¶</a></h2>
+<h2>Results network comparison<a class="headerlink" href="#results-network-comparison" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsNetworkComparison</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkComparison"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsNetworkComparison</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsNetworkComparison"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of network comparison.</p>
 <p>Provide a container for results of network comparison algorithms.</p>
 <p>Note that for convenience all dictionaries in this class can additionally
@@ -385,10 +515,10 @@ get_adjacency_matrix for details)</p>
 
 </section>
 <section id="results-node-dynamics">
-<h2>Results node dynamics<a class="headerlink" href="#results-node-dynamics" title="Permalink to this headline">¶</a></h2>
+<h2>Results node dynamics<a class="headerlink" href="#results-node-dynamics" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsSingleProcessAnalysis</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsSingleProcessAnalysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsSingleProcessAnalysis</span></span><a class="reference internal" href="_modules/idtxl/results.html#ResultsSingleProcessAnalysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of single process analysis.</p>
 <p>Provide a container for the results of algorithms for the analysis of
 individual processes (nodes) in a multivariate stochastic process,
@@ -498,7 +628,7 @@ dictionary entries can either be accessed via keywords
 
 <dl class="py property">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">processes_analysed</span></span></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">processes_analysed</span></span></dt>
 <dd><p>Get index of the current_value.</p>
 </dd></dl>
 
@@ -506,7 +636,7 @@ dictionary entries can either be accessed via keywords
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsPID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_realisations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalised</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsPID"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsPID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_realisations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalised</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsPID"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of Partial Information Decomposition (PID) analysis.</p>
 <p>Provide a container for results of Partial Information Decomposition (PID)
 algorithms.</p>
@@ -581,7 +711,7 @@ dictionary entries can either be accessed via keywords
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsMultivariatePID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_realisations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalised</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsMultivariatePID"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsMultivariatePID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_realisations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalised</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsMultivariatePID"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of Multivariate Partial Information Decomposition (PID)
 analysis.</p>
 <blockquote>
@@ -659,7 +789,7 @@ dictionary entries can either be accessed via keywords
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsSingleProcessRudelt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">processes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsSingleProcessRudelt"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.results.</span></span><span class="sig-name descname"><span class="pre">ResultsSingleProcessRudelt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">processes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/results.html#ResultsSingleProcessRudelt"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Store results of single process analysis.</p>
 <p>Provides a container for the results Rudelt optimization algorithm. To
 obtain results for individual processes, call the .get_single_process()
@@ -794,7 +924,7 @@ dependence similar to an autocorrelation time.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">processes_analysed</span></span></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">processes_analysed</span></span></dt>
 <dd><p>Get index of the current_value.</p>
 </dd></dl>
 
@@ -808,7 +938,7 @@ dependence similar to an autocorrelation time.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -839,7 +969,7 @@ dependence similar to an autocorrelation time.</p>
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -847,13 +977,13 @@ dependence similar to an autocorrelation time.</p>
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -868,13 +998,13 @@ dependence similar to an autocorrelation time.</p>
         <li class="right" >
           <a href="idtxl_network_comparison.html" title="Network comparison"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The Results Class</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

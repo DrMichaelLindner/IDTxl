@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.idtxl_io &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.idtxl_io &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.idtxl_io</a></li> 
       </ul>
@@ -48,20 +41,20 @@
 <span class="sd">Provide functions to load and save IDTxl data, provide import functions (e.g.,</span>
 <span class="sd">mat-files, FieldTrip) and export functions (e.g., networkx, BrainNet Viewer).</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">import</span> <span class="nn">h5py</span>
-<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
-<span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
-<span class="kn">from</span> <span class="nn">scipy.io</span> <span class="kn">import</span> <span class="n">loadmat</span>
-<span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">Data</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">idtxl_exceptions</span> <span class="k">as</span> <span class="n">ex</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">loadmat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">idtxl_exceptions</span> <span class="k">as</span> <span class="n">ex</span>
 
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
 <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
     <span class="n">ex</span><span class="o">.</span><span class="n">package_missing</span><span class="p">(</span>
         <span class="n">err</span><span class="p">,</span>
@@ -75,8 +68,10 @@
 <span class="n">DEBUG</span> <span class="o">=</span> <span class="kc">False</span>
 
 
-<div class="viewcode-block" id="save_json"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.save_json">[docs]</a><span class="k">def</span> <span class="nf">save_json</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Save dictionary to disk as JSON file.</span>
+<div class="viewcode-block" id="save_json">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.save_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_json</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save dictionary to disk as JSON file.</span>
 
 <span class="sd">    Writes dictionary to disk at the specified file path.</span>
 
@@ -94,8 +89,11 @@
         <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">data_json</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="n">outfile</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="load_json"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.load_json">[docs]</a><span class="k">def</span> <span class="nf">load_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load dictionary saved as JSON file from disk.</span>
+
+<div class="viewcode-block" id="load_json">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.load_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load dictionary saved as JSON file from disk.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        file_path : str</span>
@@ -115,8 +113,9 @@
     <span class="k">return</span> <span class="n">d</span></div>
 
 
-<span class="k">def</span> <span class="nf">_remove_numpy</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Replace numpy data types with basic Python types in a dictionary.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_remove_numpy</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replace numpy data types with basic Python types in a dictionary.</span>
 
 <span class="sd">    JSON can not handle numpy types and data structures, they have to be</span>
 <span class="sd">    converted to native python types first.</span>
@@ -182,8 +181,10 @@
 <span class="c1">#         return d</span>
 
 
-<div class="viewcode-block" id="save_pickle"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.save_pickle">[docs]</a><span class="k">def</span> <span class="nf">save_pickle</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Save objects using Python&#39;s pickle module.</span>
+<div class="viewcode-block" id="save_pickle">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.save_pickle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_pickle</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save objects using Python&#39;s pickle module.</span>
 
 <span class="sd">    Note:</span>
 <span class="sd">        pickle.HIGHEST_PROTOCOL is a binary format, which may be inconvenient,</span>
@@ -193,14 +194,20 @@
         <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="load_pickle"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.load_pickle">[docs]</a><span class="k">def</span> <span class="nf">load_pickle</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load objects that have been saved using Python&#39;s pickle module.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="load_pickle">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.load_pickle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_pickle</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load objects that have been saved using Python&#39;s pickle module.&quot;&quot;&quot;</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="import_fieldtrip"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.import_fieldtrip">[docs]</a><span class="k">def</span> <span class="nf">import_fieldtrip</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">,</span> <span class="n">file_version</span><span class="p">,</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Convert FieldTrip-style MATLAB-file into an IDTxl Data object.</span>
+
+<div class="viewcode-block" id="import_fieldtrip">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.import_fieldtrip">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">import_fieldtrip</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">,</span> <span class="n">file_version</span><span class="p">,</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert FieldTrip-style MATLAB-file into an IDTxl Data object.</span>
 
 <span class="sd">    Import a MATLAB structure with fields  &quot;trial&quot; (data), &quot;label&quot; (channel</span>
 <span class="sd">    labels), &quot;time&quot; (time stamps for data samples), and &quot;fsample&quot; (sampling</span>
@@ -255,8 +262,9 @@
     <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">,</span> <span class="n">fsample</span></div>
 
 
-<span class="k">def</span> <span class="nf">_ft_import_trial</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Import FieldTrip trial data into Python.&quot;&quot;&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ft_import_trial</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import FieldTrip trial data into Python.&quot;&quot;&quot;</span>
     <span class="n">ft_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
     <span class="n">ft_struct</span> <span class="o">=</span> <span class="n">ft_file</span><span class="p">[</span><span class="n">ft_struct_name</span><span class="p">]</span>  <span class="c1"># TODO: ft_struct_name = automagic...</span>
 
@@ -290,8 +298,8 @@
     <span class="k">return</span> <span class="n">trial_data</span>
 
 
-<span class="k">def</span> <span class="nf">_ft_import_label</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Import FieldTrip labels into Python.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ft_import_label</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import FieldTrip labels into Python.&quot;&quot;&quot;</span>
     <span class="c1"># for details of the data handling see comments in _ft_import_trial</span>
     <span class="n">ft_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
     <span class="n">ft_struct</span> <span class="o">=</span> <span class="n">ft_file</span><span class="p">[</span><span class="n">ft_struct_name</span><span class="p">]</span>
@@ -315,8 +323,8 @@
     <span class="k">return</span> <span class="n">label</span>
 
 
-<span class="k">def</span> <span class="nf">_ft_import_time</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Import FieldTrip time stamps into Python.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ft_import_time</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import FieldTrip time stamps into Python.&quot;&quot;&quot;</span>
     <span class="c1"># for details of the data handling see comments in ft_trial_2_numpyarray</span>
     <span class="n">ft_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
     <span class="n">ft_struct</span> <span class="o">=</span> <span class="n">ft_file</span><span class="p">[</span><span class="n">ft_struct_name</span><span class="p">]</span>
@@ -334,7 +342,7 @@
     <span class="k">return</span> <span class="n">timestamps</span>
 
 
-<span class="k">def</span> <span class="nf">_ft_fsample_2_float</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ft_fsample_2_float</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">ft_struct_name</span><span class="p">):</span>
     <span class="n">ft_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
     <span class="n">ft_struct</span> <span class="o">=</span> <span class="n">ft_file</span><span class="p">[</span><span class="n">ft_struct_name</span><span class="p">]</span>
     <span class="n">FTfsample</span> <span class="o">=</span> <span class="n">ft_struct</span><span class="p">[</span><span class="s2">&quot;fsample&quot;</span><span class="p">]</span>
@@ -344,8 +352,10 @@
     <span class="k">return</span> <span class="n">fsample</span>
 
 
-<div class="viewcode-block" id="import_matarray"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.import_matarray">[docs]</a><span class="k">def</span> <span class="nf">import_matarray</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">array_name</span><span class="p">,</span> <span class="n">file_version</span><span class="p">,</span> <span class="n">dim_order</span><span class="p">,</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read Matlab hdf5 file into IDTxl.</span>
+<div class="viewcode-block" id="import_matarray">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.import_matarray">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">import_matarray</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">array_name</span><span class="p">,</span> <span class="n">file_version</span><span class="p">,</span> <span class="n">dim_order</span><span class="p">,</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read Matlab hdf5 file into IDTxl.</span>
 
 <span class="sd">    reads a matlab hdf5 file (&quot;-v7.3&#39; or higher, .mat) or non-hdf5 files with a</span>
 <span class="sd">    SINGLE array inside and returns an IDTxl Data() object.</span>
@@ -413,8 +423,11 @@
     <span class="k">return</span> <span class="n">data</span></div>
 
 
-<div class="viewcode-block" id="export_networkx_graph"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_networkx_graph">[docs]</a><span class="k">def</span> <span class="nf">export_networkx_graph</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Export networkx graph object for an inferred network.</span>
+
+<div class="viewcode-block" id="export_networkx_graph">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_networkx_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_networkx_graph</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export networkx graph object for an inferred network.</span>
 
 <span class="sd">    Export a weighted, directed graph object from the network of inferred</span>
 <span class="sd">    (multivariate) interactions (e.g., multivariate TE), using the networkx</span>
@@ -442,8 +455,11 @@
     <span class="k">return</span> <span class="n">G</span></div>
 
 
-<div class="viewcode-block" id="export_networkx_source_graph"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_networkx_source_graph">[docs]</a><span class="k">def</span> <span class="nf">export_networkx_source_graph</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sign_sources</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fdr</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Export graph object of source variables for a single target.</span>
+
+<div class="viewcode-block" id="export_networkx_source_graph">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_networkx_source_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_networkx_source_graph</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sign_sources</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fdr</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export graph object of source variables for a single target.</span>
 
 <span class="sd">    Export graph object from the network of (multivariate) interactions (e.g.,</span>
 <span class="sd">    multivariate TE) between single source variables and a target process using</span>
@@ -536,8 +552,11 @@
     <span class="k">return</span> <span class="n">graph</span></div>
 
 
-<div class="viewcode-block" id="export_brain_net_viewer"><a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_brain_net_viewer">[docs]</a><span class="k">def</span> <span class="nf">export_brain_net_viewer</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">mni_coord</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Export network to BrainNet Viewer.</span>
+
+<div class="viewcode-block" id="export_brain_net_viewer">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.idtxl_io.export_brain_net_viewer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_brain_net_viewer</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">mni_coord</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export network to BrainNet Viewer.</span>
 
 <span class="sd">    Export networks to BrainNet Viewer (project home page:</span>
 <span class="sd">    http://www.nitrc.org/projects/bnv/). BrainNet Viewer is a MATLAB</span>
@@ -612,15 +631,16 @@
                     <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -628,13 +648,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -643,14 +663,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.idtxl_io</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

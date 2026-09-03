@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.network_inference &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.network_inference &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.network_inference</a></li> 
       </ul>
@@ -44,15 +37,18 @@
             
   <h1>Source code for idtxl.network_inference</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Parent class for all network inference.&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">idtxl_exceptions</span> <span class="k">as</span> <span class="n">ex</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">stats</span>
-<span class="kn">from</span> <span class="nn">.network_analysis</span> <span class="kn">import</span> <span class="n">NetworkAnalysis</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">idtxl_exceptions</span> <span class="k">as</span> <span class="n">ex</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.network_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">NetworkAnalysis</span>
 
 
-<div class="viewcode-block" id="NetworkInference"><a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInference">[docs]</a><span class="k">class</span> <span class="nc">NetworkInference</span><span class="p">(</span><span class="n">NetworkAnalysis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parent class for network inference algorithms.</span>
+<div class="viewcode-block" id="NetworkInference">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInference">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkInference</span><span class="p">(</span><span class="n">NetworkAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for network inference algorithms.</span>
 
 <span class="sd">    Hold variables that are relevant for network inference using for example</span>
 <span class="sd">    bivariate and multivariate transfer entropy.</span>
@@ -73,7 +69,7 @@
 <span class="sd">            indices of the set of conditionals coming from source processes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Create class attributes for estimation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statistic_omnibus</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sign_omnibus</span> <span class="o">=</span> <span class="kc">False</span>
@@ -84,8 +80,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_check_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">n_processes</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set and check the target provided by the user.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">n_processes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set and check the target provided by the user.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">target</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The index of the target process (</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">) has to &quot;</span> <span class="s2">&quot;be an int &gt;= 0.&quot;</span>
@@ -97,8 +93,34 @@
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
 
-    <span class="k">def</span> <span class="nf">_check_source_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">n_processes</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set default if no source set was provided by the user.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_lin_and_nonlin_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">n_processes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set and check the targets provided by the user.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The multiple targets need to be given as a list of integers.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The multiple targets need to be given as a list of integers.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;targets list need to contain positive integers.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">n_processes</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Trying to analyse target with index </span><span class="si">{</span><span class="n">targets</span><span class="si">}</span><span class="s2">, which greater than the &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;number of processes in the data (</span><span class="si">{</span><span class="n">n_processes</span><span class="si">}</span><span class="s2">).&quot;</span>
+                <span class="p">)</span>
+        <span class="c1"># for nonlinear analysis squared data are added after original processes</span>
+        <span class="c1"># Hence, original target always has the smallest index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_source_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">n_processes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set default if no source set was provided by the user.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">sources</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
             <span class="n">sources</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_processes</span><span class="p">))</span>
             <span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
@@ -127,10 +149,13 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span> <span class="o">=</span> <span class="n">sources</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Target: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}</span><span class="s2"> - testing sources </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source_set</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;nonlinear_prepared&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Targets: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="si">}</span><span class="s2"> - testing sources </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source_set</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Target: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}</span><span class="s2"> - testing sources </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source_set</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_include_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate_set</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Include informative candidates into the conditioning set.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_include_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate_set</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Include informative candidates into the conditioning set.</span>
 
 <span class="sd">        Loop over each candidate in the candidate set and test if it has</span>
 <span class="sd">        significant mutual information with the current value, conditional</span>
@@ -155,20 +180,14 @@
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;candidate set: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">while</span> <span class="n">candidate_set</span><span class="p">:</span>
             <span class="c1"># Get realisations for all candidates.</span>
-            <span class="n">cand_real</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">candidate_set</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="c1"># Reshape candidates to a 1D-array, where realisations for a single</span>
-            <span class="c1"># candidate are treated as one chunk.</span>
-            <span class="n">cand_real</span> <span class="o">=</span> <span class="n">cand_real</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cand_real</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">cand_real</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">candidate_idx</span><span class="p">])</span> <span class="k">for</span> <span class="n">candidate_idx</span> <span class="ow">in</span> <span class="n">candidate_set</span><span class="p">]</span>
 
             <span class="c1"># Calculate the (C)MI for each candidate and the target.</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">temp_te</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span><span class="o">.</span><span class="n">estimate_parallel</span><span class="p">(</span>
-                    <span class="n">n_chunks</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">),</span>
-                    <span class="n">re_use</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span>
-                    <span class="n">var1</span><span class="o">=</span><span class="n">cand_real</span><span class="p">,</span>
-                    <span class="n">var2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">,</span>
-                    <span class="n">conditional</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_realisations</span><span class="p">,</span>
-                <span class="p">)</span>
+                                <span class="n">var1</span><span class="o">=</span><span class="n">cand_real</span><span class="p">,</span>
+                                <span class="n">var2</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">),</span>
+                                <span class="n">conditional</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">))</span>
             <span class="k">except</span> <span class="n">ex</span><span class="o">.</span><span class="n">AlgorithmExhaustedError</span> <span class="k">as</span> <span class="n">aee</span><span class="p">:</span>
                 <span class="c1"># The algorithm cannot continue here, so</span>
                 <span class="c1">#  we&#39;ll terminate the search for more candidates,</span>
@@ -219,11 +238,8 @@
                 <span class="c1">#     print(&#39; -- significant&#39;)</span>
                 <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">candidate_set</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">temp_te</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span>
-                    <span class="p">[</span><span class="n">max_candidate</span><span class="p">],</span>
-                    <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">max_candidate</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;write_ckp&quot;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">max_candidate</span><span class="p">])</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;write_ckp&#39;</span><span class="p">]:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_write_checkpoint</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
@@ -231,8 +247,8 @@
                 <span class="k">break</span>
         <span class="k">return</span> <span class="n">success</span>
 
-    <span class="k">def</span> <span class="nf">_force_conditionals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Enforce a given conditioning set.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_force_conditionals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enforce a given conditioning set.</span>
 
 <span class="sd">        Manually add variables to the conditioning set before analysis. Added</span>
 <span class="sd">        variables are not tested in the inclusion step of the algorithm, but</span>
@@ -255,13 +271,10 @@
             <span class="c1"># Get realisations and indices of source variables with lag 0. Note</span>
             <span class="c1"># that _define_candidates returns tuples with absolute indices and</span>
             <span class="c1"># not lags.</span>
-            <span class="k">if</span> <span class="n">cond</span> <span class="o">==</span> <span class="s2">&quot;faes&quot;</span><span class="p">:</span>
-                <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_variable_list</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span>
-                    <span class="n">cond</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">cond</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">cond</span> <span class="o">==</span> <span class="s1">&#39;faes&#39;</span><span class="p">:</span>
+                <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_variable_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_set</span><span class="p">,</span>
+                                                 <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cond</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If specific variables for conditioning were provided, convert</span>
             <span class="c1"># lags to absolute sample indices and add variables.</span>
@@ -274,31 +287,32 @@
                     <span class="k">return</span>  <span class="c1"># no additional variables for the current target</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adding the following variables to the conditioning set: </span><span class="si">{</span><span class="n">cond</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
             <span class="n">cond_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lag_to_idx</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span>
-                <span class="n">cond_idx</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">cond_idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cond_idx</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_remove_non_significant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_non_significant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">):</span>
         <span class="c1"># Remove non-significant sources from the candidate set. Loop</span>
         <span class="c1"># backwards over the candidates to remove them iteratively.</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;removing </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">s</span><span class="p">))</span><span class="si">}</span><span class="s2"> variables after seq. max stats&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
                 <span class="n">stat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">stat</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span></div>
 
 
-<div class="viewcode-block" id="NetworkInferenceMI"><a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceMI">[docs]</a><span class="k">class</span> <span class="nc">NetworkInferenceMI</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parent class for mutual information network inference algorithms.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NetworkInferenceMI">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceMI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkInferenceMI</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for mutual information network inference algorithms.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="s2">&quot;mi&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
         <span class="c1"># Check analysis settings and set defaults.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
@@ -368,15 +382,11 @@
             <span class="sa">f</span><span class="s2">&quot;lag (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;max_lag_sources&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;max_lag_sources&quot;</span><span class="p">])</span>
-        <span class="p">[</span><span class="n">cv_realisation</span><span class="p">,</span> <span class="n">repl_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="n">current_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">idx_list</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;max_lag_sources&#39;</span><span class="p">])</span>
+        <span class="n">cv_realisation</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                                             <span class="n">current_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
+                                             <span class="n">idx_list</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span> <span class="o">=</span> <span class="n">cv_realisation</span>
-
-        <span class="c1"># Remember which realisations come from which replication. This may be</span>
-        <span class="c1"># needed for surrogate creation at a later point.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_replication_index</span> <span class="o">=</span> <span class="n">repl_idx</span>
 
         <span class="c1"># Check the permutation type and no. permutations requested by the</span>
         <span class="c1"># user. This tests if there is sufficient data to do all tests.</span>
@@ -406,8 +416,8 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;add_conditionals&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_force_conditionals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;add_conditionals&quot;</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span>
@@ -419,15 +429,18 @@
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span></div>
 
 
-<div class="viewcode-block" id="NetworkInferenceTE"><a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceTE">[docs]</a><span class="k">class</span> <span class="nc">NetworkInferenceTE</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parent class for transfer entropy network inference algorithms.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NetworkInferenceTE">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceTE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkInferenceTE</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for transfer entropy network inference algorithms.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="s2">&quot;te&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check input, set initial or default values for analysis settings.&quot;&quot;&quot;</span>
         <span class="c1"># Check analysis settings and set defaults.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
@@ -503,8 +516,13 @@
         <span class="c1"># Set CMI estimator.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_cmi_estimator</span><span class="p">()</span>
 
-        <span class="c1"># Check the provided target and sources.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_target</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">n_processes</span><span class="p">)</span>
+        <span class="c1"># Check the provided target(s) depending on usage.</span>
+        <span class="k">if</span> <span class="s2">&quot;nonlinear_prepared&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get_nonlinear_status</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_lin_and_nonlin_targets</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">n_processes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_target</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">n_processes</span><span class="p">)</span>
+
+        <span class="c1"># Check the provided sources.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_source_set</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">n_processes</span><span class="p">)</span>
 
         <span class="c1"># Check provided search depths (lags) for source and target, set the</span>
@@ -517,14 +535,10 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">max_lag</span><span class="p">)</span>
-        <span class="p">[</span><span class="n">cv_realisation</span><span class="p">,</span> <span class="n">repl_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="n">current_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">idx_list</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">cv_realisation</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                                             <span class="n">current_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
+                                             <span class="n">idx_list</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span> <span class="o">=</span> <span class="n">cv_realisation</span>
-
-        <span class="c1"># Remember which realisations come from which replication. This may be</span>
-        <span class="c1"># needed for surrogate creation at a later point.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_replication_index</span> <span class="o">=</span> <span class="n">repl_idx</span>
 
         <span class="c1"># Check the permutation type and no. permutations requested by the</span>
         <span class="c1"># user. This tests if there is sufficient data to do all tests.</span>
@@ -555,8 +569,8 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;add_conditionals&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_force_conditionals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;add_conditionals&quot;</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_include_target_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Test candidates from the target&#39;s past.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_include_target_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test candidates from the target&#39;s past.&quot;&quot;&quot;</span>
         <span class="n">procs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">]</span>
         <span class="c1"># Make samples</span>
         <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
@@ -575,11 +589,32 @@
                 <span class="s2">&quot;adding target sample with lag 1.&quot;</span>
             <span class="p">)</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">idx</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">([</span><span class="n">idx</span><span class="p">],</span> <span class="n">realisations</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">idx</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_include_lin_and_nonlin_target_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test candidates from the target&#39;s past.&quot;&quot;&quot;</span>
+        <span class="n">procs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span>
+        <span class="c1"># Make samples</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;max_lag_target&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;tau_target&quot;</span><span class="p">],</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_define_candidates</span><span class="p">(</span><span class="n">procs</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+        <span class="n">sources_found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_candidates</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># If no candidates were found in the target&#39;s past, add at least one</span>
+        <span class="c1"># sample so we are still calculating a proper TE.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sources_found</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">No informative sources in the target&#39;s past - &quot;</span>
+                <span class="s2">&quot;adding target sample with lag 1.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span>
@@ -591,14 +626,17 @@
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span></div>
 
 
-<div class="viewcode-block" id="NetworkInferenceBivariate"><a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceBivariate">[docs]</a><span class="k">class</span> <span class="nc">NetworkInferenceBivariate</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parent class for bivariate network inference algorithms.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NetworkInferenceBivariate">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceBivariate">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkInferenceBivariate</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for bivariate network inference algorithms.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_include_source_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Inlcude informative candidates into the conditioning set.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_include_source_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inlcude informative candidates into the conditioning set.</span>
 
 <span class="sd">        Loop over each candidate in the candidate set and test if it has</span>
 <span class="sd">        significant mutual information with the current value, conditional</span>
@@ -626,7 +664,8 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">conditional_realisations_target</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">conditional_realisations_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target_realisations</span>
+            <span class="n">conditional_realisations_target</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target</span><span class="p">)</span>
 
         <span class="c1"># Iterate over all potential sources in the analysis. This way, the</span>
         <span class="c1"># conditioning uses past variables from the current source only</span>
@@ -650,20 +689,14 @@
 
             <span class="k">while</span> <span class="n">candidate_set</span><span class="p">:</span>
                 <span class="c1"># Get realisations for all candidates.</span>
-                <span class="n">cand_real</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">candidate_set</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c1"># Reshape candidates to a 1D-array, where realisations for a</span>
-                <span class="c1"># single candidate are treated as one chunk.</span>
-                <span class="n">cand_real</span> <span class="o">=</span> <span class="n">cand_real</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cand_real</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">cand_real</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">candidate</span><span class="p">])</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">candidate_set</span><span class="p">]</span>
 
                 <span class="c1"># Calculate the (C)MI for each candidate and the target.</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">temp_te</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span><span class="o">.</span><span class="n">estimate_parallel</span><span class="p">(</span>
-                        <span class="n">n_chunks</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">),</span>
-                        <span class="n">re_use</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span>
-                        <span class="n">var1</span><span class="o">=</span><span class="n">cand_real</span><span class="p">,</span>
-                        <span class="n">var2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">,</span>
-                        <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">,</span>
-                    <span class="p">)</span>
+                                <span class="n">var1</span><span class="o">=</span><span class="n">cand_real</span><span class="p">,</span>
+                                <span class="n">var2</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">),</span>
+                                <span class="n">conditional</span><span class="o">=</span><span class="p">[</span><span class="n">conditional_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate_set</span><span class="p">))</span>
                 <span class="k">except</span> <span class="n">ex</span><span class="o">.</span><span class="n">AlgorithmExhaustedError</span> <span class="k">as</span> <span class="n">aee</span><span class="p">:</span>
                     <span class="c1"># The algorithm cannot continue here, so</span>
                     <span class="c1">#  we&#39;ll terminate the search for more candidates,</span>
@@ -716,9 +749,8 @@
                     <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">candidate_set</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">temp_te</span><span class="p">))</span>
                     <span class="n">candidate_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">max_candidate</span><span class="p">]</span>
-                    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">([</span><span class="n">max_candidate</span><span class="p">],</span> <span class="n">candidate_realisations</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">max_candidate</span><span class="p">])</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_selected_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">max_candidate</span><span class="p">])</span>
                     <span class="c1"># Update conditioning set for max. statistics in the next</span>
                     <span class="c1"># round.</span>
                     <span class="k">if</span> <span class="n">conditional_realisations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -736,8 +768,8 @@
                     <span class="k">break</span>
         <span class="k">return</span> <span class="n">success</span>
 
-    <span class="k">def</span> <span class="nf">_prune_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Remove uninformative candidates from the final conditional set.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prune_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove uninformative candidates from the final conditional set.</span>
 
 <span class="sd">        For each sample in the final conditioning set, check if it is</span>
 <span class="sd">        informative about the current value given all other samples in the</span>
@@ -752,15 +784,6 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no sources selected, nothing to prune ...&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Check if target variables were selected to distinguish between TE</span>
-        <span class="c1"># and MI analysis.</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">conditional_realisations_target</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">cond_target_dim</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">conditional_realisations_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target_realisations</span>
-            <span class="n">cond_target_dim</span> <span class="o">=</span> <span class="n">conditional_realisations_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="c1"># Prune all selected sources separately. This way, the conditioning</span>
         <span class="c1"># uses past variables from the current source only (opposed to past</span>
@@ -788,52 +811,16 @@
                 <span class="c1"># Allocate memory, collect realisations, and calculate TE/MI</span>
                 <span class="c1"># in parallel for all selected variables in the current</span>
                 <span class="c1"># process.</span>
-                <span class="n">temp_te</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">))</span>
-                <span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_target_dim</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-                <span class="n">candidate_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-                    <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_type</span><span class="p">)</span>
-                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-                    <span class="p">(</span>
-                        <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">),</span>
-                        <span class="n">cond_dim</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_type</span><span class="p">)</span>
-
-                <span class="n">i_1</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">i_2</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">source_vars</span><span class="p">:</span>
-                    <span class="n">temp_cond</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span>
-                        <span class="nb">set</span><span class="p">(</span><span class="n">source_vars</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">candidate</span><span class="p">])),</span>
-                    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">temp_cand</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">candidate</span><span class="p">])[</span>
-                        <span class="mi">0</span>
-                    <span class="p">]</span>
-
-                    <span class="k">if</span> <span class="n">temp_cond</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">conditional_realisations_target</span>
-                        <span class="n">re_use</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">]</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">re_use</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">]</span>
-                        <span class="k">if</span> <span class="n">conditional_realisations_target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                            <span class="n">conditional_realisations</span><span class="p">[</span><span class="n">i_1</span><span class="p">:</span><span class="n">i_2</span><span class="p">,]</span> <span class="o">=</span> <span class="n">temp_cond</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">conditional_realisations</span><span class="p">[</span><span class="n">i_1</span><span class="p">:</span><span class="n">i_2</span><span class="p">,]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
-                                <span class="p">(</span><span class="n">temp_cond</span><span class="p">,</span> <span class="n">conditional_realisations_target</span><span class="p">)</span>
-                            <span class="p">)</span>
-                    <span class="n">candidate_realisations</span><span class="p">[</span><span class="n">i_1</span><span class="p">:</span><span class="n">i_2</span><span class="p">,]</span> <span class="o">=</span> <span class="n">temp_cand</span>
-                    <span class="n">i_1</span> <span class="o">=</span> <span class="n">i_2</span>
-                    <span class="n">i_2</span> <span class="o">+=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
+                <span class="n">candidate_realisations</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">candidate</span><span class="p">])</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">source_vars</span><span class="p">]</span>
+                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> 
+                                            <span class="p">[</span><span class="n">other</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">source_vars</span> <span class="k">if</span> <span class="n">other</span> <span class="o">!=</span> <span class="n">candidate</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target</span><span class="p">)</span>
+                                            <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">source_vars</span><span class="p">]</span>
 
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">temp_te</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span><span class="o">.</span><span class="n">estimate_parallel</span><span class="p">(</span>
-                        <span class="n">n_chunks</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">),</span>
-                        <span class="n">re_use</span><span class="o">=</span><span class="n">re_use</span><span class="p">,</span>
-                        <span class="n">var1</span><span class="o">=</span><span class="n">candidate_realisations</span><span class="p">,</span>
-                        <span class="n">var2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">,</span>
-                        <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">,</span>
-                    <span class="p">)</span>
+                                    <span class="n">var1</span><span class="o">=</span><span class="n">candidate_realisations</span><span class="p">,</span>
+                                    <span class="n">var2</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">),</span>
+                                    <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">ex</span><span class="o">.</span><span class="n">AlgorithmExhaustedError</span> <span class="k">as</span> <span class="n">aee</span><span class="p">:</span>
                     <span class="c1"># The algorithm cannot continue here, so</span>
                     <span class="c1">#  we&#39;ll terminate the pruning check,</span>
@@ -851,29 +838,13 @@
                 <span class="c1"># for minimum statistics by removing the minimum candidate.</span>
                 <span class="n">te_min_candidate</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">temp_te</span><span class="p">)</span>
                 <span class="n">min_candidate</span> <span class="o">=</span> <span class="n">source_vars</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">temp_te</span><span class="p">)]</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
-                    <span class="nb">print</span><span class="p">(</span>
-                        <span class="s2">&quot;testing candidate: </span><span class="si">{0}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">([</span><span class="n">min_candidate</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-                        <span class="p">),</span>
-                        <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;testing candidate: </span><span class="si">{0}</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">([</span><span class="n">min_candidate</span><span class="p">])[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    
+                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">other</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">source_vars</span> <span class="k">if</span> <span class="n">other</span> <span class="o">!=</span> <span class="n">min_candidate</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_vars_target</span><span class="p">)</span>
 
-                <span class="n">remaining_candidates</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">source_vars</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">min_candidate</span><span class="p">]))</span>
-                <span class="n">conditional_realisations_sources</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">remaining_candidates</span>
-                <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">conditional_realisations_target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">conditional_realisations_sources</span>
-                <span class="k">elif</span> <span class="n">conditional_realisations_sources</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">conditional_realisations_target</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
-                        <span class="p">(</span>
-                            <span class="n">conditional_realisations_target</span><span class="p">,</span>
-                            <span class="n">conditional_realisations_sources</span><span class="p">,</span>
-                        <span class="p">)</span>
-                    <span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="p">[</span><span class="n">significant</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">surr_table</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">min_statistic</span><span class="p">(</span>
                         <span class="bp">self</span><span class="p">,</span>
@@ -900,7 +871,7 @@
                 <span class="c1"># other sources will be significant as well (b/c they have</span>
                 <span class="c1"># higher TE/MI).</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">significant</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="n">min_candidate</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_candidate</span><span class="p">)</span>
                     <span class="n">source_vars</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">temp_te</span><span class="p">))</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_vars</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No remaining candidates after pruning.&quot;</span><span class="p">)</span>
@@ -911,8 +882,8 @@
                         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; -- significant&quot;</span><span class="p">)</span>
                     <span class="k">break</span>
 
-    <span class="k">def</span> <span class="nf">_test_final_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Perform statistical test on the final conditional set.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_test_final_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform statistical test on the final conditional set.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no sources selected ...&quot;</span><span class="p">)</span>
@@ -953,8 +924,9 @@
                 <span class="c1"># If there is an ex.AlgorithmExhaustedError exception inside</span>
                 <span class="c1">#  max_stats_sequential, it will catch it and return</span>
                 <span class="c1">#  everything as not significant:</span>
-                <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">max_statistic_sequential_bivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-                <span class="n">p</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_non_significant</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span>
+                <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">max_statistic_sequential_bivariate</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="n">p</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_non_significant</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">pvalues_sign_sources</span> <span class="o">=</span> <span class="n">p</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">statistic_sign_sources</span> <span class="o">=</span> <span class="n">stat</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">==</span> <span class="s2">&quot;te&quot;</span><span class="p">:</span>
@@ -994,14 +966,17 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">statistic_single_link</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="NetworkInferenceMultivariate"><a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceMultivariate">[docs]</a><span class="k">class</span> <span class="nc">NetworkInferenceMultivariate</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parent class for multivariate network inference algorithms.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NetworkInferenceMultivariate">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.network_inference.NetworkInferenceMultivariate">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkInferenceMultivariate</span><span class="p">(</span><span class="n">NetworkInference</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for multivariate network inference algorithms.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_include_source_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Test candidates in the source&#39;s past.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_include_source_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test candidates in the source&#39;s past.&quot;&quot;&quot;</span>
         <span class="n">procs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_set</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;max_lag_sources&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
@@ -1017,8 +992,8 @@
         <span class="c1"># synergies.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_include_candidates</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_prune_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Remove uninformative candidates from the final conditional set.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prune_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove uninformative candidates from the final conditional set.</span>
 
 <span class="sd">        For each sample in the final conditioning set, check if it is</span>
 <span class="sd">        informative about the current value given all other samples in the</span>
@@ -1048,50 +1023,15 @@
             <span class="k">return</span>
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">:</span>
             <span class="c1"># Find the candidate with the minimum TE into the target.</span>
-            <span class="n">temp_te</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">))</span>
-            <span class="n">cond_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-            <span class="n">candidate_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
-                    <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">),</span>
-                    <span class="mi">1</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_type</span><span class="p">)</span>
-            <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
-                    <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">),</span>
-                    <span class="n">cond_dim</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_type</span><span class="p">)</span>
 
-            <span class="c1"># calculate TE simultaneously for all candidates</span>
-            <span class="n">i_1</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">i_2</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">:</span>
-                <span class="c1"># Separate the candidate realisations and all other</span>
-                <span class="c1"># realisations to test the candidate&#39;s individual contribution.</span>
-                <span class="p">[</span><span class="n">temp_cond</span><span class="p">,</span> <span class="n">temp_cand</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_separate_realisations</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span><span class="p">,</span> <span class="n">candidate</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">temp_cond</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="kc">None</span>
-                    <span class="n">re_use</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">conditional_realisations</span><span class="p">[</span><span class="n">i_1</span><span class="p">:</span><span class="n">i_2</span><span class="p">,]</span> <span class="o">=</span> <span class="n">temp_cond</span>
-                    <span class="n">re_use</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">]</span>
-                <span class="n">candidate_realisations</span><span class="p">[</span><span class="n">i_1</span><span class="p">:</span><span class="n">i_2</span><span class="p">,]</span> <span class="o">=</span> <span class="n">temp_cand</span>
-                <span class="n">i_1</span> <span class="o">=</span> <span class="n">i_2</span>
-                <span class="n">i_2</span> <span class="o">+=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">)</span>
+            <span class="n">candidate_realisations</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">candidate</span><span class="p">])</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">]</span>
+            <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="p">[</span><span class="n">other</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span> <span class="k">if</span> <span class="n">other</span> <span class="o">!=</span> <span class="n">candidate</span><span class="p">])</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">]</span>
 
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">temp_te</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span><span class="o">.</span><span class="n">estimate_parallel</span><span class="p">(</span>
-                    <span class="n">n_chunks</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">),</span>
-                    <span class="n">re_use</span><span class="o">=</span><span class="n">re_use</span><span class="p">,</span>
-                    <span class="n">var1</span><span class="o">=</span><span class="n">candidate_realisations</span><span class="p">,</span>
-                    <span class="n">var2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">,</span>
-                    <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">,</span>
-                <span class="p">)</span>
+                                <span class="n">var1</span><span class="o">=</span><span class="n">candidate_realisations</span><span class="p">,</span>
+                                <span class="n">var2</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_value_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">),</span>
+                                <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">ex</span><span class="o">.</span><span class="n">AlgorithmExhaustedError</span> <span class="k">as</span> <span class="n">aee</span><span class="p">:</span>
                 <span class="c1"># The algorithm cannot continue here, so</span>
                 <span class="c1">#  we&#39;ll terminate the pruning check,</span>
@@ -1118,14 +1058,11 @@
                     <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="n">remaining_candidates</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span>
-                <span class="nb">set</span><span class="p">([</span><span class="n">min_candidate</span><span class="p">])</span>
-            <span class="p">)</span>
+            <span class="n">remaining_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">other</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span> <span class="k">if</span> <span class="n">other</span> <span class="o">!=</span> <span class="n">min_candidate</span><span class="p">]</span>
             <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">remaining_candidates</span>
-            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">current_value</span><span class="p">,</span> <span class="n">remaining_candidates</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="p">[</span><span class="n">significant</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">surr_table</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">min_statistic</span><span class="p">(</span>
+                <span class="n">significant</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">surr_table</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">min_statistic</span><span class="p">(</span>
                     <span class="bp">self</span><span class="p">,</span>
                     <span class="n">data</span><span class="p">,</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">,</span>
@@ -1151,7 +1088,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">significant</span><span class="p">:</span>
                 <span class="c1"># if self.settings[&#39;verbose&#39;]:</span>
                 <span class="c1">#     print(&#39; -- not significant\n&#39;)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="n">min_candidate</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_remove_selected_var</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_candidate</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No remaining candidates after pruning.&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;write_ckp&quot;</span><span class="p">]:</span>
@@ -1162,8 +1099,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_min_stats_surr_table</span> <span class="o">=</span> <span class="n">surr_table</span>
                 <span class="k">break</span>
 
-    <span class="k">def</span> <span class="nf">_test_final_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Perform statistical test on the final conditional set.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_test_final_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform statistical test on the final conditional set.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_sources</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no sources selected ...&quot;</span><span class="p">)</span>
@@ -1176,9 +1113,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
                 <span class="nb">print</span><span class="p">(</span>
-                    <span class="s2">&quot;selected variables: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span><span class="p">)</span>
-                    <span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">&quot;selected variables: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_vars_full</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">omnibus_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
@@ -1186,8 +1121,8 @@
                 <span class="c1"># The algorithm cannot continue here, so</span>
                 <span class="c1">#  we&#39;ll set the results to zero</span>
                 <span class="nb">print</span><span class="p">(</span>
-                    <span class="s2">&quot;AlgorithmExhaustedError encountered in estimations: </span><span class="si">{}</span><span class="s2">. &quot;</span>
-                    <span class="s2">&quot;Halting current estimation set.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">aee</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                    <span class="s2">&quot;AlgorithmExhaustedError encountered in estimations: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">aee</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">. Halting current estimation set.&quot;</span>
                 <span class="p">)</span>
                 <span class="c1"># For now we don&#39;t need a stack trace:</span>
                 <span class="c1"># traceback.print_tb(aee.__traceback__)</span>
@@ -1204,7 +1139,7 @@
                 <span class="c1">#  max_stats_sequential, it will catch it and return</span>
                 <span class="c1">#  everything as not significant:</span>
                 <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">max_statistic_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-                <span class="n">p</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_non_significant</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span>
+                <span class="n">p</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_non_significant</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">pvalues_sign_sources</span> <span class="o">=</span> <span class="n">p</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">statistic_sign_sources</span> <span class="o">=</span> <span class="n">stat</span>
                 <span class="c1"># Calculate TE for all links in the network. Calculate local TE</span>
@@ -1240,15 +1175,16 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">pvalues_sign_sources</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">statistic_sign_sources</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">statistic_single_link</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -1256,13 +1192,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1271,14 +1207,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.network_inference</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>idtxl.estimators_cuda &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">idtxl.estimators_cuda</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for idtxl.estimators_cuda</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pkg_resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">resource_filename</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.estimators_gpu</span><span class="w"> </span><span class="kn">import</span> <span class="n">GPUKraskov</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.idtxl_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_cuda_lib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.results</span><span class="w"> </span><span class="kn">import</span> <span class="n">DotDict</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CudaKraskov">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskov">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CudaKraskov</span><span class="p">(</span><span class="n">GPUKraskov</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract class for implementation of CUDA estimators.</span>
+
+<span class="sd">    Abstract class for implementation of CUDA estimators, child classes</span>
+<span class="sd">    implement estimators for mutual information (MI) and conditional mutual</span>
+<span class="sd">    information (CMI) using the Kraskov-Grassberger-Stoegbauer estimator for</span>
+<span class="sd">    continuous data.</span>
+
+<span class="sd">    References:</span>
+
+<span class="sd">    - Kraskov, A., Stoegbauer, H., &amp; Grassberger, P. (2004). Estimating mutual</span>
+<span class="sd">      information. Phys Rev E, 69(6), 066138.</span>
+<span class="sd">    - Lizier, Joseph T., Mikhail Prokopenko, and Albert Y. Zomaya. (2012).</span>
+<span class="sd">      Local measures of information storage in complex distributed computation.</span>
+<span class="sd">      Inform Sci, 208, 39-54.</span>
+<span class="sd">    - Schreiber, T. (2000). Measuring information transfer. Phys Rev Lett,</span>
+<span class="sd">      85(2), 461.</span>
+
+<span class="sd">    Estimators can be used to perform multiple, independent searches in</span>
+<span class="sd">    parallel. Each of these parallel searches is called a &#39;chunk&#39;. To search</span>
+<span class="sd">    multiple chunks, provide point sets as 2D arrays, where the first</span>
+<span class="sd">    dimension represents samples or points, and the second dimension</span>
+<span class="sd">    represents the points&#39; dimensions. Concatenate chunk data in the first</span>
+<span class="sd">    dimension and pass the number of chunks to the estimators. Chunks must be</span>
+<span class="sd">    of equal size.</span>
+
+<span class="sd">    Set common estimation parameters for CUDA estimators. For usage of these</span>
+<span class="sd">    estimators see documentation for the child classes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        settings : dict [optional]</span>
+<span class="sd">            set estimator parameters:</span>
+
+<span class="sd">            - gpuid : int [optional] - device ID used for estimation (if more</span>
+<span class="sd">              than one device is available on the current platform) (default=0)</span>
+<span class="sd">            - kraskov_k : int [optional] - no. nearest neighbours for KNN</span>
+<span class="sd">              search (default=4)</span>
+<span class="sd">            - normalise : bool [optional] - z-standardise data (default=False)</span>
+<span class="sd">            - theiler_t : int [optional] - no. next temporal neighbours ignored</span>
+<span class="sd">              in KNN and range searches (default=0)</span>
+<span class="sd">            - noise_level : float [optional] - random noise added to the data</span>
+<span class="sd">              (default=1e-8)</span>
+<span class="sd">            - debug : bool [optional] - calculate intermediate results, i.e.</span>
+<span class="sd">              neighbour counts from range searches and KNN distances, print</span>
+<span class="sd">              debug output to console (default=False)</span>
+<span class="sd">            - return_counts : bool [optional] - return intermediate results,</span>
+<span class="sd">              i.e. neighbour counts from range searches and KNN distances</span>
+<span class="sd">              (default=False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>  <span class="c1"># set defaults</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">devices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_device</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_library_path</span> <span class="o">=</span> <span class="n">resource_filename</span><span class="p">(</span>
+            <span class="vm">__name__</span><span class="p">,</span> <span class="s1">&#39;gpuKnnLibrary.so&#39;</span><span class="p">)</span>
+        <span class="c1"># create __cudaFindKnnSetGPU function with get_cudaFindKnnSetGPU()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__cudaFindKnnSetGPU</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_cudaFindKnnSetGPU</span><span class="p">()</span>
+        <span class="c1"># create __cudaFindRSAllSetGPU function with get_cudaFindRSAllSetGPU()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__cudaFindRSAllSetGPU</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_cudaFindRSAllSetGPU</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return GPU devices, test requested GPU id.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span> <span class="o">=</span> <span class="n">get_cuda_lib</span><span class="p">()</span>  <span class="c1"># load CUDA library</span>
+
+        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuInit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">success</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;cuInit failed with error code </span><span class="si">{0}</span><span class="s1">: </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">success</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_error_str</span><span class="p">(</span><span class="n">success</span><span class="p">)))</span>
+
+        <span class="c1"># Test if requested GPU ID is available</span>
+        <span class="n">n_devices</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">()</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuDeviceGetCount</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">n_devices</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">gpuid</span> <span class="o">&gt;</span> <span class="n">n_devices</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s1">&#39;No device with gpuid </span><span class="si">{0}</span><span class="s1"> (available device IDs: </span><span class="si">{1}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">gpuid</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_devices</span><span class="o">.</span><span class="n">value</span><span class="p">)))</span>
+
+        <span class="c1"># Get global memory for available devices</span>
+        <span class="n">my_gpu_devices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">()</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="mi">100</span>
+        <span class="n">free_mem</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_size_t</span><span class="p">()</span>
+        <span class="n">total_mem</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_size_t</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_devices</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuDeviceGet</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">i</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuDeviceGetName</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">device</span><span class="p">)</span>
+            <span class="n">device_name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\0</span><span class="s1">&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuCtxCreate</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">context</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">success</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s1">&#39;Couldn&#39;&#39;t create context for device: </span><span class="si">{}</span><span class="s1"> - </span><span class="si">{}</span><span class="s1">, failed with error code </span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">i</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_error_str</span><span class="p">(</span><span class="n">success</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuMemGetInfo</span><span class="p">(</span>
+                <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">free_mem</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">total_mem</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuCtxDetach</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+
+            <span class="n">my_gpu_devices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">DotDict</span><span class="p">()</span>
+            <span class="n">my_gpu_devices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">device_name</span>
+            <span class="n">my_gpu_devices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">global_mem_size</span> <span class="o">=</span> <span class="n">total_mem</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">my_gpu_devices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">free_mem_size</span> <span class="o">=</span> <span class="n">free_mem</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selected Device: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">my_gpu_devices</span><span class="p">[</span><span class="n">gpuid</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">my_gpu_devices</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_error_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_code</span><span class="p">):</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cuGetErrorString</span><span class="p">(</span><span class="n">error_code</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">error_str</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">error_str</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_cudaFindKnnSetGPU</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get knn search function pointer from shared library.&quot;&quot;&quot;</span>
+        <span class="n">dll</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shared_library_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">ctypes</span><span class="o">.</span><span class="n">RTLD_GLOBAL</span><span class="p">)</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">dll</span><span class="o">.</span><span class="n">cudaFindKnnSetGPU</span>
+        <span class="n">func</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int32</span><span class="p">),</span>  <span class="c1"># indexes</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># distances</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># pointset</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># queryset</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># kraskov_k</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># theiler</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># n_chunks</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># pointdim</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># signallength</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">]</span>  <span class="c1"># gpuid</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+<div class="viewcode-block" id="CudaKraskov.cudaFindKnnSetGPU">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskov.cudaFindKnnSetGPU">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cudaFindKnnSetGPU</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indexes</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">kth</span><span class="p">,</span>
+                          <span class="n">theiler_t</span><span class="p">,</span> <span class="n">nchunks</span><span class="p">,</span> <span class="n">pointsdim</span><span class="p">,</span> <span class="n">signallengthpergpu</span><span class="p">,</span>
+                          <span class="n">gpuid</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper for CUDA knn search to handle type conversions.&quot;&quot;&quot;</span>
+        <span class="n">indexes_p</span> <span class="o">=</span> <span class="n">indexes</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int32</span><span class="p">))</span>
+        <span class="n">distances_p</span> <span class="o">=</span> <span class="n">distances</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+        <span class="n">pointset_p</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+        <span class="n">queryset_p</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+
+        <span class="nb">bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__cudaFindKnnSetGPU</span><span class="p">(</span>
+            <span class="n">indexes_p</span><span class="p">,</span> <span class="n">distances_p</span><span class="p">,</span> <span class="n">pointset_p</span><span class="p">,</span> <span class="n">queryset_p</span><span class="p">,</span> <span class="n">kth</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span>
+            <span class="n">nchunks</span><span class="p">,</span> <span class="n">pointsdim</span><span class="p">,</span> <span class="n">signallengthpergpu</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span></div>
+
+
+<div class="viewcode-block" id="CudaKraskov.knn_search">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskov.knn_search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">knn_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">knn_k</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="n">gpuid</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interface with CUDA knn search from Python/IDTxl.</span>
+
+<span class="sd">        Note: pointset and queryset are expected to have orientation</span>
+<span class="sd">        [variable dim x points] and to be of type float32.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_points</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">n_dims</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;pointset shape (dim x n_points): </span><span class="si">{}</span><span class="s1">, type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">pointset</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">pointset</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s1">&#39;GPU input data is not of type float32.&#39;</span><span class="p">)</span>
+
+        <span class="n">indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">knn_k</span><span class="p">,</span> <span class="n">n_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">knn_k</span><span class="p">,</span> <span class="n">n_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cudaFindKnnSetGPU</span><span class="p">(</span>
+            <span class="n">indexes</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">knn_k</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">n_dims</span><span class="p">,</span> <span class="n">n_points</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">)</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">distances</span><span class="p">[</span><span class="n">knn_k</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">assert</span> <span class="n">distances</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n_points</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;distances shape: </span><span class="si">{}</span><span class="s1">, </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">distances</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">distances</span><span class="p">[:</span><span class="mi">4</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">indexes</span><span class="p">,</span> <span class="n">distances</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Error in CUDA kNN-search.&#39;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_cudaFindRSAllSetGPU</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get range search function pointer from shared library.&quot;&quot;&quot;</span>
+        <span class="n">dll</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shared_library_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">ctypes</span><span class="o">.</span><span class="n">RTLD_GLOBAL</span><span class="p">)</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">dll</span><span class="o">.</span><span class="n">cudaFindRSAllSetGPU</span>
+        <span class="n">func</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int32</span><span class="p">),</span>  <span class="c1"># n_neighbors</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># pointset</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># queryset</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">),</span>  <span class="c1"># distances</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># theiler</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># n_chunks</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># pointdim</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>  <span class="c1"># signallength</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">]</span>  <span class="c1"># gpuid</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+<div class="viewcode-block" id="CudaKraskov.cudaFindRSAllSetGPU">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskov.cudaFindRSAllSetGPU">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cudaFindRSAllSetGPU</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npointsrange</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">vecradius</span><span class="p">,</span>
+                            <span class="n">theiler_t</span><span class="p">,</span> <span class="n">nchunkspergpu</span><span class="p">,</span> <span class="n">pointsdim</span><span class="p">,</span>
+                            <span class="n">datalengthpergpu</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper for CUDA range search to handle type conversions.&quot;&quot;&quot;</span>
+        <span class="n">npointsrange_p</span> <span class="o">=</span> <span class="n">npointsrange</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span>
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int32</span><span class="p">))</span>
+        <span class="n">pointset_p</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+        <span class="n">queryset_p</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+        <span class="n">vecradius_p</span> <span class="o">=</span> <span class="n">vecradius</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_float</span><span class="p">))</span>
+
+        <span class="nb">bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__cudaFindRSAllSetGPU</span><span class="p">(</span>
+            <span class="n">npointsrange_p</span><span class="p">,</span> <span class="n">pointset_p</span><span class="p">,</span> <span class="n">queryset_p</span><span class="p">,</span> <span class="n">vecradius_p</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span>
+            <span class="n">nchunkspergpu</span><span class="p">,</span> <span class="n">pointsdim</span><span class="p">,</span> <span class="n">datalengthpergpu</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span></div>
+
+
+<div class="viewcode-block" id="CudaKraskov.range_search">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskov.range_search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">range_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">gpuid</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interface with CUDA range search from Python/IDTxl.</span>
+
+<span class="sd">        Note: pointset and queryset are expected to have orientation</span>
+<span class="sd">        [variable dim x points] and to be of type float32.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_points</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">n_dims</span> <span class="o">=</span> <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;pointset shape (dim x n_points): </span><span class="si">{}</span><span class="s1">, type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">pointset</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">pointset</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s1">&#39;GPU input data is not of type float32.&#39;</span><span class="p">)</span>
+
+        <span class="n">pointcount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+        <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cudaFindRSAllSetGPU</span><span class="p">(</span>
+            <span class="n">pointcount</span><span class="p">,</span> <span class="n">pointset</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">theiler_t</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">n_dims</span><span class="p">,</span> <span class="n">n_points</span><span class="p">,</span> <span class="n">gpuid</span><span class="p">)</span>
+        <span class="n">pointcount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">pointcount</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pointcount</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Error in CUDA kNN-search.&#39;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CudaKraskovMI">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskovMI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CudaKraskovMI</span><span class="p">(</span><span class="n">CudaKraskov</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate mutual information with CUDA Kraskov implementation.</span>
+
+<span class="sd">    Calculate the mutual information (MI) between two variables using CUDA</span>
+<span class="sd">    GPU-code. See parent class for references.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        settings : dict [optional]</span>
+<span class="sd">            set estimator parameters:</span>
+
+<span class="sd">            - gpuid : int [optional] - device ID used for estimation (if more</span>
+<span class="sd">              than one device is available on the current platform) (default=0)</span>
+<span class="sd">            - kraskov_k : int [optional] - no. nearest neighbours for KNN</span>
+<span class="sd">              search (default=4)</span>
+<span class="sd">            - normalise : bool [optional] - z-standardise data (default=False)</span>
+<span class="sd">            - theiler_t : int [optional] - no. next temporal neighbours ignored</span>
+<span class="sd">              in KNN and range searches (default=0)</span>
+<span class="sd">            - noise_level : float [optional] - random noise added to the data</span>
+<span class="sd">              (default=1e-8)</span>
+<span class="sd">            - debug : bool [optional] - return intermediate results, i.e.</span>
+<span class="sd">              neighbour counts from range searches and KNN distances</span>
+<span class="sd">              (default=False)</span>
+<span class="sd">            - return_counts : bool [optional] - return intermediate results,</span>
+<span class="sd">              i.e. neighbour counts from range searches and KNN distances</span>
+<span class="sd">              (default=False)</span>
+<span class="sd">            - lag_mi : int [optional] - time difference in samples to calculate</span>
+<span class="sd">              the lagged MI between processes (default=0)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>  <span class="c1"># set defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;lag_mi&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CudaKraskovMI.estimate">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskovMI.estimate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate mutual information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            var1 : numpy array</span>
+<span class="sd">                realisations of first variable, either a 2D numpy array where</span>
+<span class="sd">                array dimensions represent [(realisations * n_chunks) x</span>
+<span class="sd">                variable dimension] or a 1D array representing [realisations],</span>
+<span class="sd">                array type should be int32</span>
+<span class="sd">            var2 : numpy array</span>
+<span class="sd">                realisations of the second variable (similar to var1)</span>
+<span class="sd">            n_chunks : int</span>
+<span class="sd">                number of data chunks, no. data points has to be the same for</span>
+<span class="sd">                each chunk</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float | numpy array</span>
+<span class="sd">                average MI over all samples or local MI for individual</span>
+<span class="sd">                samples if &#39;local_values&#39;=True</span>
+<span class="sd">            numpy arrays</span>
+<span class="sd">                distances and neighborhood counts for var1 and var2 if</span>
+<span class="sd">                debug=True and return_counts=True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Prepare data: check if variable realisations are passed as 1D or 2D</span>
+        <span class="c1"># arrays and have equal no. observations.</span>
+        <span class="n">data_checked</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_data</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">,</span> <span class="n">var1</span><span class="o">=</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="o">=</span><span class="n">var2</span><span class="p">)</span>
+        <span class="n">var1</span> <span class="o">=</span> <span class="n">data_checked</span><span class="p">[</span><span class="s1">&#39;var1&#39;</span><span class="p">]</span>
+        <span class="n">var2</span> <span class="o">=</span> <span class="n">data_checked</span><span class="p">[</span><span class="s1">&#39;var2&#39;</span><span class="p">]</span>
+        <span class="n">var1</span><span class="p">,</span> <span class="n">var2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_mi_lag</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">)</span>
+
+        <span class="c1"># Check memory requirements and calculate no. chunks that fit into GPU</span>
+        <span class="c1"># main memory for a single run.</span>
+        <span class="n">signallength</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">chunklength</span> <span class="o">=</span> <span class="n">signallength</span> <span class="o">//</span> <span class="n">n_chunks</span>
+        <span class="n">var1dim</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">var2dim</span> <span class="o">=</span> <span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">chunks_per_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_chunks_per_run</span><span class="p">(</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">dim_pointset</span><span class="o">=</span><span class="n">var1dim</span> <span class="o">+</span> <span class="n">var2dim</span><span class="p">,</span>
+            <span class="n">chunklength</span><span class="o">=</span><span class="n">chunklength</span><span class="p">)</span>
+
+        <span class="n">mi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+            <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">count_var1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">count_var2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">,</span> <span class="n">chunks_per_run</span><span class="p">):</span>
+            <span class="n">startidx</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">chunklength</span>
+            <span class="n">stopidx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">r</span><span class="o">+</span><span class="n">chunks_per_run</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span><span class="o">*</span><span class="n">chunklength</span>
+            <span class="n">subset1</span> <span class="o">=</span> <span class="n">var1</span><span class="p">[</span><span class="n">startidx</span><span class="p">:</span><span class="n">stopidx</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">subset2</span> <span class="o">=</span> <span class="n">var2</span><span class="p">[</span><span class="n">startidx</span><span class="p">:</span><span class="n">stopidx</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">n_chunks_current_run</span> <span class="o">=</span> <span class="n">subset1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">chunklength</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_single_run</span><span class="p">(</span><span class="n">subset1</span><span class="p">,</span> <span class="n">subset2</span><span class="p">,</span>
+                                                <span class="n">n_chunks_current_run</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;MI estimation results - MI: </span><span class="si">{}</span><span class="s1"> - Distances: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">4</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]))</span>
+                <span class="n">mi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">mi_array</span><span class="p">,</span>   <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">distances</span><span class="p">,</span>  <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">count_var1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">count_var1</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">count_var2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">count_var2</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">mi_array</span><span class="p">,</span> <span class="n">results</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;return_counts&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">mi_array</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">count_var1</span><span class="p">,</span> <span class="n">count_var2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mi_array</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimate_single_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate mutual information in a single GPU run.</span>
+
+<span class="sd">        This method should not be called directly, only inside estimate()</span>
+<span class="sd">        after memory bounds have been checked.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            var1 : numpy array</span>
+<span class="sd">                realisations of first variable, either a 2D numpy array where</span>
+<span class="sd">                array dimensions represent [(realisations * n_chunks) x</span>
+<span class="sd">                variable dimension] or a 1D array representing [realisations],</span>
+<span class="sd">                array type should be int32</span>
+<span class="sd">            var2 : numpy array</span>
+<span class="sd">                realisations of the second variable (similar to var1)</span>
+<span class="sd">            n_chunks : int</span>
+<span class="sd">                number of data chunks, no. data points has to be the same for</span>
+<span class="sd">                each chunk</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float | numpy array</span>
+<span class="sd">                average MI over all samples or local MI for individual</span>
+<span class="sd">                samples if &#39;local_values&#39;=True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;Unequal no. realisations.&#39;</span>
+        <span class="k">assert</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">n_chunks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s1">&#39;No. samples not divisible by no. chunks&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">var1</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">var2</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="n">pointset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pointset_var1</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pointset_var2</span> <span class="o">=</span> <span class="n">var2</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Perform kNN- and range-search</span>
+        <span class="n">indexes</span><span class="p">,</span> <span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">knn_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset</span><span class="p">,</span>
+            <span class="n">knn_k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;kraskov_k&#39;</span><span class="p">],</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="n">count_var1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset_var1</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset_var1</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">distances</span><span class="p">,</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="n">count_var2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset_var2</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset_var2</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">distances</span><span class="p">,</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Calculate and sum digammas</span>
+        <span class="n">mi_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mi</span><span class="p">(</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">chunklength</span><span class="o">=</span><span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">count_var1</span><span class="o">=</span><span class="n">count_var1</span><span class="p">,</span>
+            <span class="n">count_var2</span><span class="o">=</span><span class="n">count_var2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">mi_array</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">count_var1</span><span class="p">,</span> <span class="n">count_var2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mi_array</span></div>
+
+
+
+<div class="viewcode-block" id="CudaKraskovCMI">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskovCMI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CudaKraskovCMI</span><span class="p">(</span><span class="n">CudaKraskov</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate conditional mutual inform with CUDA Kraskov implementation.</span>
+
+<span class="sd">    Calculate the conditional mutual information (CMI) between three variables</span>
+<span class="sd">    using CUDA GPU-code. If no conditional is given (is None), the function</span>
+<span class="sd">    returns the mutual information between var1 and var2. See parent class for</span>
+<span class="sd">    references.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        settings : dict [optional]</span>
+<span class="sd">            set estimator parameters:</span>
+
+<span class="sd">            - gpuid : int [optional] - device ID used for estimation (if more</span>
+<span class="sd">              than one device is available on the current platform) (default=0)</span>
+<span class="sd">            - kraskov_k : int [optional] - no. nearest neighbours for KNN</span>
+<span class="sd">              search (default=4)</span>
+<span class="sd">            - normalise : bool [optional] - z-standardise data (default=False)</span>
+<span class="sd">            - theiler_t : int [optional] - no. next temporal neighbours ignored</span>
+<span class="sd">              in KNN and range searches (default=0)</span>
+<span class="sd">            - noise_level : float [optional] - random noise added to the data</span>
+<span class="sd">              (default=1e-8)</span>
+<span class="sd">            - debug : bool [optional] - return intermediate results, i.e.</span>
+<span class="sd">              neighbour counts from range searches and KNN distances</span>
+<span class="sd">              (default=False)</span>
+<span class="sd">            - return_counts : bool [optional] - return intermediate results,</span>
+<span class="sd">              i.e. neighbour counts from range searches and KNN distances</span>
+<span class="sd">              (default=False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>  <span class="c1"># set defaults</span>
+
+<div class="viewcode-block" id="CudaKraskovCMI.estimate">
+<a class="viewcode-back" href="../../idtxl_estimators.html#idtxl.estimators_cuda.CudaKraskovCMI.estimate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">conditional</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate conditional mutual information.</span>
+
+<span class="sd">        If conditional is None, the mutual information between var1 and var2 is</span>
+<span class="sd">        calculated.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            var1 : numpy array</span>
+<span class="sd">                realisations of first variable, either a 2D numpy array where</span>
+<span class="sd">                array dimensions represent [(realisations * n_chunks) x</span>
+<span class="sd">                variable dimension] or a 1D array representing [realisations],</span>
+<span class="sd">                array type should be int32</span>
+<span class="sd">            var2 : numpy array</span>
+<span class="sd">                realisations of the second variable (similar to var1)</span>
+<span class="sd">            conditional : numpy array</span>
+<span class="sd">                realisations of conditioning variable (similar to var1)</span>
+<span class="sd">            n_chunks : int</span>
+<span class="sd">                number of data chunks, no. data points has to be the same for</span>
+<span class="sd">                each chunk</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float | numpy array</span>
+<span class="sd">                average CMI over all samples or local CMI for individual</span>
+<span class="sd">                samples if &#39;local_values&#39;=True</span>
+<span class="sd">            numpy arrays</span>
+<span class="sd">                distances and neighborhood counts for var1 and var2 if</span>
+<span class="sd">                debug=True and return_counts=True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">conditional</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">est_mi</span> <span class="o">=</span> <span class="n">CudaKraskovMI</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">est_mi</span><span class="o">.</span><span class="n">estimate</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
+
+        <span class="c1"># Prepare data: check if variable realisations are passed as 1D or 2D</span>
+        <span class="c1"># arrays and have equal no. observations.</span>
+        <span class="n">data_checked</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_data</span><span class="p">(</span>
+            <span class="n">n_chunks</span><span class="p">,</span> <span class="n">var1</span><span class="o">=</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="o">=</span><span class="n">var2</span><span class="p">,</span> <span class="n">conditional</span><span class="o">=</span><span class="n">conditional</span><span class="p">)</span>
+        <span class="n">var1</span> <span class="o">=</span> <span class="n">data_checked</span><span class="p">[</span><span class="s1">&#39;var1&#39;</span><span class="p">]</span>
+        <span class="n">var2</span> <span class="o">=</span> <span class="n">data_checked</span><span class="p">[</span><span class="s1">&#39;var2&#39;</span><span class="p">]</span>
+        <span class="n">conditional</span> <span class="o">=</span> <span class="n">data_checked</span><span class="p">[</span><span class="s1">&#39;conditional&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Check memory requirements and calculate no. chunks that fit into GPU</span>
+        <span class="c1"># main memory for a single run.</span>
+        <span class="n">signallength</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">chunklength</span> <span class="o">=</span> <span class="n">signallength</span> <span class="o">//</span> <span class="n">n_chunks</span>
+        <span class="n">var1dim</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">var2dim</span> <span class="o">=</span> <span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">conddim</span> <span class="o">=</span> <span class="n">conditional</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">chunks_per_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_chunks_per_run</span><span class="p">(</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">dim_pointset</span><span class="o">=</span><span class="n">var1dim</span> <span class="o">+</span> <span class="n">var2dim</span> <span class="o">+</span> <span class="n">conddim</span><span class="p">,</span>
+            <span class="n">chunklength</span><span class="o">=</span><span class="n">chunklength</span><span class="p">)</span>
+
+        <span class="n">cmi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+            <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">count_var1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">count_var2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">count_cond</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">,</span> <span class="n">chunks_per_run</span><span class="p">):</span>
+            <span class="n">startidx</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">chunklength</span>
+            <span class="n">stopidx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">r</span><span class="o">+</span><span class="n">chunks_per_run</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span><span class="o">*</span><span class="n">chunklength</span>
+            <span class="n">subset1</span> <span class="o">=</span> <span class="n">var1</span><span class="p">[</span><span class="n">startidx</span><span class="p">:</span><span class="n">stopidx</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">subset2</span> <span class="o">=</span> <span class="n">var2</span><span class="p">[</span><span class="n">startidx</span><span class="p">:</span><span class="n">stopidx</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">subset3</span> <span class="o">=</span> <span class="n">conditional</span><span class="p">[</span><span class="n">startidx</span><span class="p">:</span><span class="n">stopidx</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">n_chunks_current_run</span> <span class="o">=</span> <span class="n">subset1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">chunklength</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_single_run</span><span class="p">(</span><span class="n">subset1</span><span class="p">,</span> <span class="n">subset2</span><span class="p">,</span> <span class="n">subset3</span><span class="p">,</span>
+                                                <span class="n">n_chunks_current_run</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;CMI estimation results - CMI: </span><span class="si">{}</span><span class="s1"> - Distances: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">4</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]))</span>
+                <span class="n">cmi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cmi_array</span><span class="p">,</span>  <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">distances</span><span class="p">,</span>  <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">count_var1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">count_var1</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">count_var2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">count_var2</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
+                <span class="n">count_cond</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">count_cond</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">4</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cmi_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cmi_array</span><span class="p">,</span> <span class="n">results</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;return_counts&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">cmi_array</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">count_var1</span><span class="p">,</span> <span class="n">count_var2</span><span class="p">,</span> <span class="n">count_cond</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cmi_array</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimate_single_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">conditional</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate conditional mutual information in a single GPU run.</span>
+
+<span class="sd">        This method should not be called directly, only inside estimate()</span>
+<span class="sd">        after memory bounds have been checked.</span>
+
+<span class="sd">        If conditional is None, the mutual information between var1 and var2 is</span>
+<span class="sd">        calculated.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            var1 : numpy array</span>
+<span class="sd">                realisations of first variable, either a 2D numpy array where</span>
+<span class="sd">                array dimensions represent [(realisations * n_chunks) x</span>
+<span class="sd">                variable dimension] or a 1D array representing [realisations],</span>
+<span class="sd">                array type should be int32</span>
+<span class="sd">            var2 : numpy array</span>
+<span class="sd">                realisations of the second variable (similar to var1)</span>
+<span class="sd">            conditional : numpy array</span>
+<span class="sd">                realisations of conditioning variable (similar to var1)</span>
+<span class="sd">            n_chunks : int</span>
+<span class="sd">                number of data chunks, no. data points has to be the same for</span>
+<span class="sd">                each chunk</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float | numpy array</span>
+<span class="sd">                average CMI over all samples or local CMI for individual</span>
+<span class="sd">                samples if &#39;local_values&#39;=True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return MI if no conditional is provided</span>
+        <span class="k">if</span> <span class="n">conditional</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mi_est</span><span class="o">.</span><span class="n">_estimate_mi</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;Unequal no. realisations.&#39;</span>
+        <span class="k">assert</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">conditional</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span>
+            <span class="s1">&#39;Unequal no. realisations.&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">n_chunks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s1">&#39;No. samples not divisible by no. chunks&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">var1</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">var2</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">var2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">conditional</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;noise_level&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">conditional</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="n">pointset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">var1</span><span class="p">,</span> <span class="n">conditional</span><span class="p">,</span> <span class="n">var2</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pointset_var1cond</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">var1</span><span class="p">,</span> <span class="n">conditional</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pointset_condvar2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">conditional</span><span class="p">,</span> <span class="n">var2</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pointset_cond</span> <span class="o">=</span> <span class="n">conditional</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;shape pointset: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pointset</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="c1"># Perform kNN- and range-search</span>
+        <span class="n">indexes</span><span class="p">,</span> <span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">knn_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset</span><span class="p">,</span>
+            <span class="n">knn_k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;kraskov_k&#39;</span><span class="p">],</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="n">count_var1cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset_var1cond</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset_var1cond</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">distances</span><span class="p">,</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="n">count_condvar2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset_condvar2</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset_condvar2</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">distances</span><span class="p">,</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+        <span class="n">count_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_search</span><span class="p">(</span>
+            <span class="n">pointset</span><span class="o">=</span><span class="n">pointset_cond</span><span class="p">,</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">pointset_cond</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">distances</span><span class="p">,</span>
+            <span class="n">theiler_t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;theiler_t&#39;</span><span class="p">],</span>
+            <span class="n">n_chunks</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">gpuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;gpuid&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Calculate and sum digammas</span>
+        <span class="n">cmi_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cmi</span><span class="p">(</span>
+            <span class="n">n_chunks</span><span class="p">,</span> <span class="n">var1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">n_chunks</span><span class="p">,</span> <span class="n">count_cond</span><span class="p">,</span> <span class="n">count_var1cond</span><span class="p">,</span> <span class="n">count_condvar2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">cmi_array</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">count_var1cond</span><span class="p">,</span> <span class="n">count_condvar2</span><span class="p">,</span> <span class="n">count_cond</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cmi_array</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">idtxl.estimators_cuda</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    </div>
+  </body>
+</html>

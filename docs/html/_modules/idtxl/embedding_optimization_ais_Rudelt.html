@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.embedding_optimization_ais_Rudelt &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.embedding_optimization_ais_Rudelt &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.embedding_optimization_ais_Rudelt</a></li> 
       </ul>
@@ -45,19 +38,21 @@
   <h1>Source code for idtxl.embedding_optimization_ais_Rudelt</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; Optimization of embedding parameters of spike times using the history dependence estimators &quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">newton</span>
-<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stderr</span>
-<span class="kn">from</span> <span class="nn">idtxl.estimators_Rudelt</span> <span class="kn">import</span> <span class="n">RudeltBBCEstimator</span><span class="p">,</span> <span class="n">RudeltShufflingEstimator</span>
-<span class="kn">import</span> <span class="nn">idtxl.hde_utils</span> <span class="k">as</span> <span class="nn">utl</span>
-<span class="kn">from</span> <span class="nn">idtxl.results</span> <span class="kn">import</span> <span class="n">DotDict</span><span class="p">,</span> <span class="n">ResultsSingleProcessRudelt</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">idtxl.data_spiketime</span> <span class="kn">import</span> <span class="n">Data_spiketime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">newton</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sys</span><span class="w"> </span><span class="kn">import</span> <span class="n">stderr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.estimators_Rudelt</span><span class="w"> </span><span class="kn">import</span> <span class="n">RudeltBBCEstimator</span><span class="p">,</span> <span class="n">RudeltShufflingEstimator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">idtxl.hde_utils</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">utl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.results</span><span class="w"> </span><span class="kn">import</span> <span class="n">DotDict</span><span class="p">,</span> <span class="n">ResultsSingleProcessRudelt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idtxl.data_spiketime</span><span class="w"> </span><span class="kn">import</span> <span class="n">Data_spiketime</span>
 
 
 <span class="c1"># noinspection PyAttributeOutsideInit</span>
-<div class="viewcode-block" id="OptimizationRudelt"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt">[docs]</a><span class="k">class</span> <span class="nc">OptimizationRudelt</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="OptimizationRudelt">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OptimizationRudelt</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Optimization of embedding parameters of spike times using the history dependence estimators</span>
 
 <span class="sd">    References:</span>
@@ -175,7 +170,7 @@
 <span class="sd">                (default: False)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">settings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -285,8 +280,8 @@
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_check_settings</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set default for settings dictionary.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_settings</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set default for settings dictionary.</span>
 
 <span class="sd">        Check if settings dictionary is None. If None, initialise an empty</span>
 <span class="sd">        dictionary. If not None check if type is dictionary. Function should be</span>
@@ -299,8 +294,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">settings</span>
 
-<div class="viewcode-block" id="OptimizationRudelt.check_inputs"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.check_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">check_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="OptimizationRudelt.check_inputs">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.check_inputs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check input settings for completeness</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -442,13 +439,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;return_averaged_R&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;number_of_bootstraps_R_tot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_embeddings"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">get_embeddings</span><span class="p">(</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_embeddings">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_embeddings</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">embedding_past_range_set</span><span class="p">,</span>
         <span class="n">embedding_number_of_bins_set</span><span class="p">,</span>
         <span class="n">embedding_scaling_exponent_set</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get all combinations of parameters T, d, k, based on the</span>
 <span class="sd">        sets of selected parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -478,7 +478,10 @@
 
         <span class="k">return</span> <span class="n">embeddings</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_set_of_scalings"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_set_of_scalings">[docs]</a>    <span class="k">def</span> <span class="nf">get_set_of_scalings</span><span class="p">(</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_set_of_scalings">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_set_of_scalings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_set_of_scalings</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">past_range_T</span><span class="p">,</span>
         <span class="n">number_of_bins_d</span><span class="p">,</span>
@@ -486,7 +489,7 @@
         <span class="n">min_first_bin_size</span><span class="p">,</span>
         <span class="n">min_step_for_scaling</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get scaling exponents such that the uniform embedding as well as</span>
 <span class="sd">        the embedding for which the first bin has a length of</span>
 <span class="sd">        min_first_bin_size (in seconds), as well as linearly spaced</span>
@@ -521,8 +524,11 @@
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_scaling</span><span class="p">,</span> <span class="n">max_scaling</span><span class="p">,</span> <span class="n">number_of_scalings</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_past_range"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_past_range">[docs]</a>    <span class="k">def</span> <span class="nf">get_past_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number_of_bins_d</span><span class="p">,</span> <span class="n">first_bin_size</span><span class="p">,</span> <span class="n">scaling_k</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_past_range">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_past_range">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_past_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number_of_bins_d</span><span class="p">,</span> <span class="n">first_bin_size</span><span class="p">,</span> <span class="n">scaling_k</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the past range T of the embedding, based on the parameters d, tau_1 and k.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -533,8 +539,11 @@
             <span class="p">]</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_history_dependence"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_history_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">get_history_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_history_dependence">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_history_dependence">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_history_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Estimate the history dependence for each embedding to all given processes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -599,10 +608,13 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;estimation_method&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;shuffling&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">history_dependence</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_bootstrap_history_dependence"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_bootstrap_history_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">get_bootstrap_history_dependence</span><span class="p">(</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_bootstrap_history_dependence">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_bootstrap_history_dependence">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_bootstrap_history_dependence</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">embedding</span><span class="p">,</span> <span class="n">number_of_bootstraps</span><span class="p">,</span> <span class="n">symbol_block_length</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For a given embedding, return bootstrap replications for R.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">estbbc</span> <span class="o">=</span> <span class="n">RudeltBBCEstimator</span><span class="p">()</span>
@@ -648,8 +660,11 @@
 
         <span class="k">return</span> <span class="n">bs_Rs</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_temporal_depth_T_D"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_temporal_depth_T_D">[docs]</a>    <span class="k">def</span> <span class="nf">get_temporal_depth_T_D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_R_thresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_temporal_depth_T_D">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_temporal_depth_T_D">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_temporal_depth_T_D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">get_R_thresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the temporal depth T_D, the past range for the</span>
 <span class="sd">        &#39;optimal&#39; embedding parameters.</span>
 
@@ -693,10 +708,13 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">T_D</span><span class="p">,</span> <span class="n">R_tot_thresh</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_embeddings_that_maximise_R"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings_that_maximise_R">[docs]</a>    <span class="k">def</span> <span class="nf">get_embeddings_that_maximise_R</span><span class="p">(</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_embeddings_that_maximise_R">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_embeddings_that_maximise_R">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_embeddings_that_maximise_R</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">bbc_tolerance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dependent_var</span><span class="o">=</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">get_as_list</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For each T (or d), get the embedding for which R is maximised.</span>
 
 <span class="sd">        For the bbc estimator, here the bbc_tolerance is applied, ie</span>
@@ -763,8 +781,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">embeddings_that_maximise_R</span><span class="p">,</span> <span class="n">max_Rs</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_information_timescale_tau_R"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_information_timescale_tau_R">[docs]</a>    <span class="k">def</span> <span class="nf">get_information_timescale_tau_R</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_information_timescale_tau_R">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_information_timescale_tau_R">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_information_timescale_tau_R</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the information timescale tau_R, a characteristic</span>
 <span class="sd">        timescale of history dependence similar to an autocorrelation</span>
 <span class="sd">        time.</span>
@@ -812,7 +833,10 @@
             <span class="n">tau</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(((</span><span class="n">Ts_0</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">Ts_0</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dRs_0</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm</span>
         <span class="k">return</span> <span class="n">tau</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_R_tot"><a class="viewcode-back" href="../../idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_R_tot">[docs]</a>    <span class="k">def</span> <span class="nf">get_R_tot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_averaged_R</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_R_tot">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_R_tot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_R_tot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_averaged_R</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">max_Rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_Rs</span>
 
         <span class="k">if</span> <span class="n">return_averaged_R</span><span class="p">:</span>
@@ -836,8 +860,11 @@
 
             <span class="k">return</span> <span class="n">max_Rs</span><span class="p">[</span><span class="n">temporal_depth_T_D</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.compute_CIs"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.compute_CIs">[docs]</a>    <span class="k">def</span> <span class="nf">compute_CIs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target_R</span><span class="o">=</span><span class="s2">&quot;R_max&quot;</span><span class="p">,</span> <span class="n">symbol_block_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.compute_CIs">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.compute_CIs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_CIs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target_R</span><span class="o">=</span><span class="s2">&quot;R_max&quot;</span><span class="p">,</span> <span class="n">symbol_block_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute bootstrap replications of the history dependence estimate</span>
 <span class="sd">        which can be used to obtain confidence intervals.</span>
 
@@ -923,8 +950,11 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">bs_history_dependence</span><span class="p">[</span><span class="n">embindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">bs_R</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.analyse_auto_MI"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.analyse_auto_MI">[docs]</a>    <span class="k">def</span> <span class="nf">analyse_auto_MI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.analyse_auto_MI">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.analyse_auto_MI">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_auto_MI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the auto MI for the spike times.  If it is available from file, load</span>
 <span class="sd">        it, else compute it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -946,8 +976,11 @@
         <span class="n">auto_MI_data</span><span class="p">[</span><span class="s2">&quot;auto_MI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">auto_MI_dict</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">auto_MI</span> <span class="o">=</span> <span class="n">auto_MI_data</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.get_auto_MI"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_auto_MI">[docs]</a>    <span class="k">def</span> <span class="nf">get_auto_MI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">,</span> <span class="n">number_of_delays</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.get_auto_MI">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.get_auto_MI">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_auto_MI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">,</span> <span class="n">number_of_delays</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the auto mutual information in the neuron&#39;s activity, a</span>
 <span class="sd">        measure closely related to history dependence.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1000,8 +1033,11 @@
 
         <span class="k">return</span> <span class="n">auto_MIs</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.optimize"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.optimize">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Optimize the embedding parameters of spike time data using the Rudelt history dependence estimator.</span>
 
 <span class="sd">        References:</span>
@@ -1051,7 +1087,7 @@
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;debug&quot;</span><span class="p">]:</span>
-            <span class="kn">import</span> <span class="nn">pprint</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
 
             <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -1085,8 +1121,11 @@
 
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.optimize_single_run"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize_single_run">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_single_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.optimize_single_run">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.optimize_single_run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize_single_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        optimizes a single realisation of spike time data given the process number</span>
 
 <span class="sd">        Args:</span>
@@ -1264,8 +1303,11 @@
 
         <span class="k">return</span> <span class="n">results_d</span></div>
 
-<div class="viewcode-block" id="OptimizationRudelt.remove_subresults_single_process"><a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.remove_subresults_single_process">[docs]</a>    <span class="k">def</span> <span class="nf">remove_subresults_single_process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;delete results from self from single process&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OptimizationRudelt.remove_subresults_single_process">
+<a class="viewcode-back" href="../../idtxl_process_analysis.html#idtxl.embedding_optimization_ais_Rudelt.OptimizationRudelt.remove_subresults_single_process">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_subresults_single_process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;delete results from self from single process&quot;&quot;&quot;</span>
 
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">bs_history_dependence</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_maximising_R_at_T</span>
@@ -1279,16 +1321,18 @@
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_MI</span>
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">H_spiking</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;estimation_method&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;bbc&quot;</span><span class="p">:</span>
-            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbc_term</span></div></div>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbc_term</span></div>
+</div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -1296,13 +1340,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1311,14 +1355,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.embedding_optimization_ais_Rudelt</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>

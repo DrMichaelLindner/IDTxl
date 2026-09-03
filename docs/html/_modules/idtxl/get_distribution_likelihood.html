@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>idtxl.get_distribution_likelihood &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">idtxl.get_distribution_likelihood</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for idtxl.get_distribution_likelihood</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides structure and functions for getting distribution</span>
+<span class="sd">likelihoods of the given data</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">entropy</span><span class="p">,</span> <span class="n">kstest</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">joblib.parallel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">get_distribution_likelihood</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit data to known distributions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">    data : idtxl data object</span>
+<span class="sd">    bins : int [optional] - number of bins for fitting (default=100)</span>
+<span class="sd">    distributions : string or list [optional]</span>
+<span class="sd">                    &quot;all&quot;</span>
+<span class="sd">                        tests all available distributions included in scipy</span>
+<span class="sd">                    &quot;common&quot; (default)</span>
+<span class="sd">                        tests common distributions:</span>
+<span class="sd">                        &quot;cauchy&quot;, &quot;chi2&quot;, &quot;expon&quot;, &quot;exponpow&quot;, &quot;gamma&quot;, &quot;lognorm&quot;, &quot;norm&quot;,</span>
+<span class="sd">                        &quot;powerlaw&quot;, &quot;rayleigh&quot;, &quot;uniform&quot;</span>
+<span class="sd">                    &quot;&lt;your distribution&gt;&quot;</span>
+<span class="sd">                        tests only this distribution</span>
+<span class="sd">                        e.g. &quot;norm&quot; for normal distribution</span>
+<span class="sd">                    list of distributions you want to test</span>
+<span class="sd">                        tests selected distributions in this list</span>
+
+<span class="sd">                    For getting all distributions you can test here use e.g.:</span>
+<span class="sd">                        &gt;&gt;&gt; dl = get_distribution_likelihood()</span>
+<span class="sd">                        &gt;&gt;&gt; dl.show_distributions</span>
+
+<span class="sd">    Usage e.g.:</span>
+<span class="sd">        &gt;&gt;&gt; gdl = get_distribution_likelihood(data)</span>
+
+<span class="sd">    implemented by Michael Lindner, 2025</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                 <span class="n">distributions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="c1"># get data</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;data not specified. &quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_processes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_replications</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">n_replications</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_distributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fit_distributions</span><span class="p">()</span>
+
+        <span class="c1"># Check and set dist inputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_dist_input</span><span class="p">(</span><span class="n">distributions</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bins</span> <span class="o">=</span> <span class="n">bins</span>
+
+        <span class="c1"># get min and max</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_best</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_dist_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dists</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;check if all specified distributions are in the list&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dists</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dists</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_distributions</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The distribution </span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2"> from the list is not in the list of possible &quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot;distributions. </span><span class="se">\n</span><span class="s2">Call:</span><span class="se">\n</span><span class="s2">     &gt;&gt;&gt; &quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot;get_distribution_likelihood.show_distributions()</span><span class="se">\n</span><span class="s2">to get &quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot;a list of all possible distributions.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span> <span class="o">=</span> <span class="n">dists</span>
+        <span class="k">elif</span> <span class="n">dists</span> <span class="o">==</span> <span class="s2">&quot;common&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_common_distributions</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">dists</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fit_distributions</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dists</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">dists</span> <span class="o">!=</span> <span class="s2">&quot;all&quot;</span> <span class="ow">and</span> <span class="n">dists</span> <span class="o">!=</span> <span class="s2">&quot;common&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">dists</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_distributions</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The distribution </span><span class="si">{</span><span class="n">dists</span><span class="si">}</span><span class="s2"> is not in the list of possible distributions. </span><span class="se">\n</span><span class="s2">&quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot;Call:</span><span class="se">\n</span><span class="s2">     &gt;&gt;&gt; get_distribution_likelihood.show_distributions()</span><span class="se">\n</span><span class="s2">to&quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot; get a list of all possible distributions.&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span> <span class="o">=</span> <span class="p">[</span><span class="n">dists</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The distri&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;check if processes are valid&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processes</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The specified process </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span><span class="si">}</span><span class="s2"> is higher then the number &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;of processes in the data </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">procs</span> <span class="o">=</span> <span class="n">processes</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processes</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The specified process </span><span class="si">{</span><span class="n">processes</span><span class="si">}</span><span class="s2"> is higher then the number &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;of processes in the data </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">procs</span> <span class="o">=</span> <span class="p">[</span><span class="n">processes</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">processes</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">procs</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect input for processes </span><span class="si">{</span><span class="n">processes</span><span class="si">}</span><span class="s2">. It need to be an int, &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;a list of ints or </span><span class="se">\&quot;</span><span class="s2">all</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">procs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_data_pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">replication</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># histogram retuns X with N+1 values. So, we rearrange the X output into only N</span>
+        <span class="k">if</span> <span class="n">replication</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:,</span> <span class="n">replication</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="p">[(</span><span class="n">this</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">this</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trim_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">replication</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">replication</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">dat</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xmin</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                                            <span class="n">dat</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xmax</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">min</span><span class="p">())]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="p">:,</span> <span class="n">replication</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">dat</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xmin</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="n">replication</span><span class="p">],</span>
+                                            <span class="n">dat</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xmax</span><span class="p">[</span><span class="n">process</span><span class="p">,</span> <span class="n">replication</span><span class="p">])]</span>
+
+<div class="viewcode-block" id="get_distribution_likelihood.get_fit_distributions">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.get_fit_distributions">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_fit_distributions</span><span class="p">():</span>
+        <span class="n">distributions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;fit&quot;</span> <span class="ow">in</span> <span class="nb">eval</span><span class="p">(</span><span class="s2">&quot;dir(scipy.stats.&quot;</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">):</span>
+                <span class="n">distributions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">distributions</span> <span class="o">=</span> <span class="n">distributions</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">distributions</span></div>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood.get_common_distributions">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.get_common_distributions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_common_distributions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">distributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fit_distributions</span><span class="p">()</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;cauchy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chi2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;expon&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;exponpow&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;gamma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lognorm&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;norm&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;powerlaw&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rayleigh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;uniform&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">distributions</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">common</span></div>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood.show_distributions">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.show_distributions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">show_distributions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_distributions</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You can specify a list of these distributions or a single one you to test.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood.fit_single_distribution">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.fit_single_distribution">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_single_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distribution</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># get scipy distribution</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s2">&quot;scipy.stats.&quot;</span> <span class="o">+</span> <span class="n">distribution</span><span class="p">)</span>
+
+            <span class="c1"># fit</span>
+            <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_with_timeout</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,))</span> <span class="c1">#, timeout=timeout)</span>
+
+            <span class="c1"># get pdf</span>
+            <span class="n">pdf_fitted</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">param</span><span class="p">)</span>
+
+            <span class="c1"># calculate error</span>
+            <span class="n">sq_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">pdf_fitted</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+            <span class="c1"># calculate information criteria</span>
+            <span class="n">logLik</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">param</span><span class="p">))</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">param</span><span class="p">[:])</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">aic</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">logLik</span>
+
+            <span class="c1"># if distribution == &quot;gaussian&quot;:</span>
+            <span class="c1">#     bic = n * np.log(sq_error / n) + k * np.log(n)</span>
+            <span class="c1"># else:</span>
+            <span class="n">bic</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">logLik</span>
+
+            <span class="c1"># calculate Kullback-Leibler divergence</span>
+            <span class="n">kl_div</span> <span class="o">=</span> <span class="n">entropy</span><span class="p">(</span><span class="n">pdf_fitted</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+            <span class="c1"># calculate goodness-of-fit statistic</span>
+            <span class="n">dist_fitted</span> <span class="o">=</span> <span class="n">dist</span><span class="p">(</span><span class="o">*</span><span class="n">param</span><span class="p">)</span>
+            <span class="n">ks_stat</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">kstest</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dist_fitted</span><span class="o">.</span><span class="n">cdf</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">distribution</span><span class="p">,</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">pdf_fitted</span><span class="p">,</span> <span class="n">sq_error</span><span class="p">,</span> <span class="n">aic</span><span class="p">,</span> <span class="n">bic</span><span class="p">,</span> <span class="n">kl_div</span><span class="p">,</span> <span class="n">ks_stat</span><span class="p">,</span> <span class="n">ks_pval</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">distribution</span><span class="p">,</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood.fit">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;over_all_replications&quot;</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; get the likelihoods of distributions of the given data</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">            mode : string [optional]</span>
+<span class="sd">                &quot;over_all_replications&quot; (default)</span>
+<span class="sd">                    fits data over all replications of a process</span>
+<span class="sd">                &quot;per_replication&quot;</span>
+<span class="sd">                    fits data for each replication of a process</span>
+<span class="sd">            processes : int, list of ints or &quot;all&quot; [optional]</span>
+<span class="sd">                processes of the data which should be fitted. (default: &quot;all&quot;)</span>
+<span class="sd">            max_workers : int [optional]</span>
+<span class="sd">                number of parallel workers. (default: -1 for all possible workers)</span>
+
+<span class="sd">            e.g.</span>
+<span class="sd">                &gt;&gt;&gt; dl = gdl.fit()</span>
+
+<span class="sd">            Returns an object containing:</span>
+
+<span class="sd">                .n_data_proceses</span>
+<span class="sd">                .d_data_replications</span>
+<span class="sd">                .results: List</span>
+<span class="sd">                    Depending on the used mode this functions returns a list of size</span>
+<span class="sd">                        nr data processes (mode=&quot;over_all_replications&quot;)</span>
+<span class="sd">                        [nr data processes][nr data replications] (mode=&quot;per_replications&quot;)</span>
+
+<span class="sd">                    Each element of the list contains a structure containing the following information:</span>
+<span class="sd">                        &quot;params&quot; - fitted parameters</span>
+<span class="sd">                        &quot;pdf_fitted&quot; - fitted pdf</span>
+<span class="sd">                        &quot;sse&quot;: sum squared error</span>
+<span class="sd">                        &quot;aic&quot;: aic</span>
+<span class="sd">                        &quot;bic&quot;: bic</span>
+<span class="sd">                        &quot;kldiv&quot;: Kullback-Leibler divergence</span>
+<span class="sd">                        &quot;ks_stat&quot;: ks statistic</span>
+<span class="sd">                        &quot;pval&quot;: ks p-value</span>
+<span class="sd">                        &quot;summary&quot;: summary of stats in panda dataframe</span>
+
+<span class="sd">                    In case of specifying only a subset of processes to test, the not tested processes will</span>
+<span class="sd">                    contain &quot;Not tested&quot; in the output</span>
+
+<span class="sd">            The Object provides a set of functions:</span>
+
+<span class="sd">                .print_summary()</span>
+<span class="sd">                    print results of all processes (and replications) in console</span>
+<span class="sd">                .get_dists(&lt;process&gt;)</span>
+<span class="sd">                    get list of the the 5 best fitted distribution names and a list with their p-values</span>
+<span class="sd">                .get_best_dist(&lt;process&gt;)</span>
+<span class="sd">                    get the name of the best fitted distribution</span>
+<span class="sd">                .get_sse(&lt;process&gt;)</span>
+<span class="sd">                    get the sum of squared errors of all fitted distributions</span>
+<span class="sd">                .get_aic(&lt;process&gt;)</span>
+<span class="sd">                    get aic of all fitted distributions</span>
+<span class="sd">                .get_bic(&lt;process&gt;)</span>
+<span class="sd">                    get bic of all fitted distributions</span>
+<span class="sd">                .get_parameters(&lt;process&gt;)</span>
+<span class="sd">                    get paramters of the fits for all fitted distributions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># check processes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_processes</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span>
+
+        <span class="c1"># initialise distribution likelihood output</span>
+        <span class="n">dl</span> <span class="o">=</span> <span class="n">ResultsDistributionLikelihood</span><span class="p">(</span><span class="n">n_processes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_processes</span><span class="p">,</span>
+                                              <span class="n">n_replications</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_replications</span><span class="p">,</span>
+                                              <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+
+        <span class="c1"># get distribution fits</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Process </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+
+                <span class="n">_fitted_param</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_fitted_pdf</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_fitted_errors</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_aic</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_bic</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_kldiv</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_ks_stat</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">_ks_pval</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trim_data</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_data_pdf</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+                <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distributions</span><span class="p">)</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span> <span class="n">prefer</span><span class="o">=</span><span class="s2">&quot;processes&quot;</span><span class="p">)(</span>
+                    <span class="n">delayed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_single_distribution</span><span class="p">)(</span><span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span>
+                        <span class="n">dist</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">distribution</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">param</span><span class="p">,</span> <span class="n">pdf_fitted</span><span class="p">,</span> <span class="n">sq_error</span><span class="p">,</span> <span class="n">aic</span><span class="p">,</span> <span class="n">bic</span><span class="p">,</span> <span class="n">kullback_leibler</span><span class="p">,</span> <span class="n">ks_stat</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">values</span>
+
+                        <span class="n">_fitted_param</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+                        <span class="n">_fitted_pdf</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">pdf_fitted</span>
+                        <span class="n">_fitted_errors</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">sq_error</span>
+                        <span class="n">_aic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">aic</span>
+                        <span class="n">_bic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">bic</span>
+                        <span class="n">_kldiv</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">kullback_leibler</span>
+                        <span class="n">_ks_stat</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">ks_stat</span>
+                        <span class="n">_ks_pval</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">ks_pval</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">_fitted_param</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">_fitted_pdf</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">_fitted_errors</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                        <span class="n">_aic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                        <span class="n">_bic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                        <span class="n">_kldiv</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                        <span class="n">_ks_stat</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">_ks_pval</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                        <span class="p">{</span>
+                        <span class="s2">&quot;sumsquare_error&quot;</span><span class="p">:</span> <span class="n">_fitted_errors</span><span class="p">,</span>
+                        <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">_aic</span><span class="p">,</span>
+                        <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">_bic</span><span class="p">,</span>
+                        <span class="s2">&quot;kl_div&quot;</span><span class="p">:</span> <span class="n">_kldiv</span><span class="p">,</span>
+                        <span class="s2">&quot;ks_statistic&quot;</span><span class="p">:</span> <span class="n">_ks_stat</span><span class="p">,</span>
+                        <span class="s2">&quot;ks_pvalue&quot;</span><span class="p">:</span> <span class="n">_ks_pval</span><span class="p">})</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+                <span class="c1"># shannon entropy</span>
+                <span class="n">sha_ent_dat</span> <span class="o">=</span> <span class="n">entropy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+
+                <span class="n">dl</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">_fitted_param</span><span class="p">,</span>
+                    <span class="s2">&quot;pdf_fitted&quot;</span><span class="p">:</span> <span class="n">_fitted_pdf</span><span class="p">,</span>
+                    <span class="s2">&quot;sse&quot;</span><span class="p">:</span> <span class="n">_fitted_errors</span><span class="p">,</span>
+                    <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">_aic</span><span class="p">,</span>
+                    <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">_bic</span><span class="p">,</span>
+                    <span class="s2">&quot;kldiv&quot;</span><span class="p">:</span> <span class="n">_kldiv</span><span class="p">,</span>
+                    <span class="s2">&quot;ks_stat&quot;</span><span class="p">:</span> <span class="n">_ks_stat</span><span class="p">,</span>
+                    <span class="s2">&quot;pval&quot;</span><span class="p">:</span> <span class="n">_ks_pval</span><span class="p">,</span>
+                    <span class="s2">&quot;sha_ent_data&quot;</span><span class="p">:</span> <span class="n">sha_ent_dat</span><span class="p">,</span>
+                    <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">}</span>
+
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;per_replication&quot;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_replications</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Replication </span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2">: &quot;</span><span class="p">)</span>
+
+                    <span class="n">_fitted_param</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_fitted_pdf</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_fitted_errors</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_aic</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_bic</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_kldiv</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_ks_stat</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">_ks_pval</span> <span class="o">=</span> <span class="p">{}</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_trim_data</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_update_data_pdf</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+                    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distributions</span><span class="p">)</span>
+                    <span class="n">results</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span> <span class="n">prefer</span><span class="o">=</span><span class="s2">&quot;processes&quot;</span><span class="p">)(</span>
+                        <span class="n">delayed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_single_distribution</span><span class="p">)(</span><span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">dist</span>
+                        <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">distributions</span><span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">distribution</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">param</span><span class="p">,</span> <span class="n">pdf_fitted</span><span class="p">,</span> <span class="n">sq_error</span><span class="p">,</span> <span class="n">aic</span><span class="p">,</span> <span class="n">bic</span><span class="p">,</span> <span class="n">kullback_leibler</span><span class="p">,</span> <span class="n">ks_stat</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">values</span>
+
+                            <span class="n">_fitted_param</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+                            <span class="n">_fitted_pdf</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">pdf_fitted</span>
+                            <span class="n">_fitted_errors</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">sq_error</span>
+                            <span class="n">_aic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">aic</span>
+                            <span class="n">_bic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">bic</span>
+                            <span class="n">_kldiv</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">kullback_leibler</span>
+                            <span class="n">_ks_stat</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">ks_stat</span>
+                            <span class="n">_ks_pval</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">ks_pval</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">_fitted_param</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="n">_fitted_pdf</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="n">_fitted_errors</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                            <span class="n">_aic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                            <span class="n">_bic</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                            <span class="n">_kldiv</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                            <span class="n">_ks_stat</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="n">_ks_pval</span><span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                        <span class="p">{</span>
+                        <span class="s2">&quot;sumsquare_error&quot;</span><span class="p">:</span> <span class="n">_fitted_errors</span><span class="p">,</span>
+                        <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">_aic</span><span class="p">,</span>
+                        <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">_bic</span><span class="p">,</span>
+                        <span class="s2">&quot;kl_div&quot;</span><span class="p">:</span> <span class="n">_kldiv</span><span class="p">,</span>
+                        <span class="s2">&quot;ks_statistic&quot;</span><span class="p">:</span> <span class="n">_ks_stat</span><span class="p">,</span>
+                        <span class="s2">&quot;ks_pvalue&quot;</span><span class="p">:</span> <span class="n">_ks_pval</span>
+                        <span class="p">})</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                    <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+                    <span class="c1"># shannon entropy</span>
+                    <span class="n">sha_ent_dat</span> <span class="o">=</span> <span class="n">entropy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+
+                    <span class="n">dl</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">_fitted_param</span><span class="p">,</span>
+                        <span class="s2">&quot;pdf_fitted&quot;</span><span class="p">:</span> <span class="n">_fitted_pdf</span><span class="p">,</span>
+                        <span class="s2">&quot;sse&quot;</span><span class="p">:</span> <span class="n">_fitted_errors</span><span class="p">,</span>
+                        <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">_aic</span><span class="p">,</span>
+                        <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">_bic</span><span class="p">,</span>
+                        <span class="s2">&quot;kldiv&quot;</span><span class="p">:</span> <span class="n">_kldiv</span><span class="p">,</span>
+                        <span class="s2">&quot;ks_stat&quot;</span><span class="p">:</span> <span class="n">_ks_stat</span><span class="p">,</span>
+                        <span class="s2">&quot;pval&quot;</span><span class="p">:</span> <span class="n">_ks_pval</span><span class="p">,</span>
+                        <span class="s2">&quot;sha_ent_data&quot;</span><span class="p">:</span> <span class="n">sha_ent_dat</span><span class="p">,</span>
+                        <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">}</span>
+
+        <span class="c1"># print results</span>
+        <span class="n">dl</span><span class="o">.</span><span class="n">print_summary</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">dl</span></div>
+
+
+<div class="viewcode-block" id="get_distribution_likelihood.summary">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.get_distribution_likelihood.summary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_best</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;sumsquare_error&quot;</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_best</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distributions</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_errors</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">summary</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_with_timeout</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(),</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{},</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">ThreadPool</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+            <span class="n">async_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">async_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResultsDistributionLikelihood</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;provides output class for the results of the distribution fits</span>
+<span class="sd">    This class is only called from the data function get_distribution_likelihood</span>
+
+<span class="sd">    implemented by Michael Lindner, 2025</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_processes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_replications</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_data_processes</span> <span class="o">=</span> <span class="n">n_processes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span> <span class="o">=</span> <span class="n">n_replications</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+
+        <span class="c1"># prepare result list</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Not tested&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_processes</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;per_replication&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;Not tested&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_processes</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wrong input for mode: </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;use </span><span class="se">\&quot;</span><span class="s2">over_all_replications</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">per_replication</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.print_summary">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.print_summary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">print_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;prints results of distribution fit for all tested processes and replications&quot;&quot;&quot;</span>
+        <span class="c1"># print results</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_processes</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Process </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--------------- fitted over all replications</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Not tested&quot;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not tested&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s2">&quot;summary&quot;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;per_replication&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--------------- fitted for each replication</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Not tested&quot;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not tested&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Replication </span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;summary&quot;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_best_dist">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_best_dist">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_best_dist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get the best fitted distribution of the given process (for all replications depending on the</span>
+<span class="sd">        used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">dist</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_dists">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_dists">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get all fitted distribution of the given process (for all replications depending on the</span>
+<span class="sd">        used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">dist_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dist_names</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">dist_names</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">dist_names</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_pval">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_pval">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get p-values of all all fitted distributions of the given process (for all replications depending on the</span>
+<span class="sd">        used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">pval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;pval&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pval</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">pval</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;pval&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">pval</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_sse">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_sse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get sum of squared errors of all all fitted distributions of the given process (for all replications</span>
+<span class="sd">        depending on the used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">sse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;sse&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sse</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">sse</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;sse&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">sse</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_aic">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_aic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_aic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get aics of all fitted distributions of the given process (for all replications depending on the</span>
+<span class="sd">        used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">aic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;aic&quot;</span><span class="p">]</span>
+            <span class="n">dist_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">aic</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">aic</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;aic&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">aic</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_bic">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_bic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_bic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get aics of all fitted distributions of the given process (for all replications depending on the</span>
+<span class="sd">        used mode)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="n">aic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;bic&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">aic</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="n">aic</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;bic&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">aic</span></div>
+
+
+<div class="viewcode-block" id="ResultsDistributionLikelihood.get_parameters">
+<a class="viewcode-back" href="../../idtxl.html#idtxl.get_distribution_likelihood.ResultsDistributionLikelihood.get_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dists</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get fitted parameters (of all fitted distributions) for a given process&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;over_all_replications&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dists</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+                <span class="n">dist_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dist_names</span><span class="p">:</span>
+                    <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">d</span><span class="p">])</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dists</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">dists</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Distribution </span><span class="si">{</span><span class="n">dists</span><span class="si">}</span><span class="s2"> is not in the results </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">dists</span><span class="p">]</span>
+                    <span class="n">dist_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">dists</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;input con only be a string: </span><span class="se">\&quot;</span><span class="s2">all</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">&lt;your distribution&gt;</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="n">dist_names</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data_replications</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">dists</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+                    <span class="n">dist_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="n">par</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dist_n</span><span class="p">:</span>
+                        <span class="n">par</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">d</span><span class="p">])</span>
+                    <span class="n">params</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">par</span>
+                    <span class="n">dist_names</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist_n</span>
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dists</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">dists</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Distribution </span><span class="si">{</span><span class="n">dists</span><span class="si">}</span><span class="s2"> is not in the results </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">params</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">process</span><span class="p">][</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">dists</span><span class="p">]</span>
+                        <span class="n">dist_names</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">dists</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;input con only be a string: </span><span class="se">\&quot;</span><span class="s2">all</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">&lt;your distribution&gt;</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist_names</span><span class="p">,</span> <span class="n">params</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">idtxl.get_distribution_likelihood</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    </div>
+  </body>
+</html>

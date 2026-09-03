@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>EasyIDTxl &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=d920527c" />
+    
+    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="idtxl package" href="idtxl.html" />
+    <link rel="prev" title="Get distribution likelihood" href="idtxl_get_distribution_likelihood.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="idtxl.html" title="idtxl package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="idtxl_get_distribution_likelihood.html" title="Get distribution likelihood"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">EasyIDTxl</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="easyidtxl">
+<h1>EasyIDTxl<a class="headerlink" href="#easyidtxl" title="Link to this heading">¶</a></h1>
+<section id="id1">
+<h2>EasyIdtxl<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>EasyIDTxl is a graphical user interface (GUI) for IDTxl2.0</p>
+<p>EasyIDTxl can be used to easily generate analysis scripts for
+several idtxl estimators and analysis types:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>mutual information (MI)</p></li>
+<li><p>transfer entropy (TE)</p></li>
+<li><p>conditional MI and TE (CMI and CTE)</p></li>
+<li><p>bi- and multivariate MI and TE</p></li>
+<li><p>network analysis</p></li>
+<li><p>active information storage (AIS)</p></li>
+<li><p>partial information decomposition (PID)</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Requirements:</dt><dd><ul class="simple">
+<li><p>working python environment where IDTxl is running properly.</p></li>
+<li><dl class="simple">
+<dt>additionally:</dt><dd><p>pyqt6 (developed and tested with version 6.9.1 in python 3.12)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Start EasyIDTxl using: python EasyIDTxl.py</p>
+<p>implemented by Michael Lindner, 2025</p>
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">AISWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#AISWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for active information storage (AIS)</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">CMIWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#CMIWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for conditional mutual information (CMI) analysis</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">ClickableLineEdit</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#ClickableLineEdit"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Line edit class for example inputs which remove by clicking on it.</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">mousePressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QMouseEvent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#ClickableLineEdit.mousePressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">MIWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#MIWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for mutual information (MI) analysis</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">MainWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#MainWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Main Window with buttons to select analysis type
+e.g. AIS, PID, network analysis, etc</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">MultivariateWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#MultivariateWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for bi- and multivariate analysis</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">NetworkWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#NetworkWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for network analysis</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">PIDWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#PIDWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for partial information decomposition (PID)</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">TEWindow</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#TEWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Window for transfer entropy (TE) analysis</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">idtxl.EasyIDTxl.</span></span><span class="sig-name descname"><span class="pre">Window</span></span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Abstract class for input windows
+All user input elements (such as layouts, checkboxes, buttons,
+Line edits, etc) and their functions are predefined here.
+Later the appropriate input sections will be made visible (or not)
+depending on if they are needed (or not).</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">checkSTPLInput</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.checkSTPLInput"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>check all STPLR input strings for correct format</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">checkStringInput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputstring</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.checkStringInput"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>check input string concerning correct input of int, list of ints, list of lists of ints</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">cleanOutput</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.cleanOutput"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>clean outpufilename and set specify output file button to red</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">cleanScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.cleanScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>reset script</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">createMPIScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.createMPIScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>create MPI script</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">createScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.createScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>create analysis script.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">editScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.editScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>make script editable</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getDataOrder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getDataOrder"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>get len of data order and show replication, id neccessary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MPI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptEstimator"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: get esstimator (if neccessary)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptImports</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptImports"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: input</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptLoadData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MPI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptLoadData"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: load .npy or .p data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptPIDlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initstring</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptPIDlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>create script part for PID to cut data depending on lags</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptSaveResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MPI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptSaveResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: save results</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MPI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptSettings"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: settings</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getScriptStartAnalysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MPI</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.getScriptStartAnalysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>generate part of Scripts: start analysis</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">loadSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AIS</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.loadSettings"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>load parameter, input fields, tooltips etc. depending on label and selected estimator</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">messageBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.messageBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>message box for missing inputs or input errors</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">openFileDialog</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.openFileDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>get input data file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">runScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.runScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>run last saved script</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">saveRes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.saveRes"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>switch save conditions</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">saveResDialog</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.saveResDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>get result file name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">saveScript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.saveScript"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>save script dialog and propose filename</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setPIDProcessTooltips</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/idtxl/EasyIDTxl.html#Window.setPIDProcessTooltips"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>set source, target, process and lag tooltips for PID depending on selected estimator</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">EasyIDTxl</a><ul>
+<li><a class="reference internal" href="#id1">EasyIdtxl</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="idtxl_get_distribution_likelihood.html"
+                          title="previous chapter">Get distribution likelihood</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="idtxl.html"
+                          title="next chapter">idtxl package</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/idtxl_easyidtxl.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="idtxl.html" title="idtxl package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="idtxl_get_distribution_likelihood.html" title="Get distribution likelihood"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">EasyIDTxl</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    </div>
+  </body>
+</html>

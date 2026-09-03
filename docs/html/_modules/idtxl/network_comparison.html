@@ -1,28 +1,21 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>idtxl.network_comparison &#8212; IDTxl 1.6.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/pyramid.css" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
+    <title>idtxl.network_comparison &#8212; IDTxl2.0 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=b995dfdb" />
+    
+    <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
-<!--[if lte IE 6]>
-<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
-<![endif]-->
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,7 +24,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.network_comparison</a></li> 
       </ul>
@@ -44,18 +37,20 @@
             
   <h1>Source code for idtxl.network_comparison</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Perform inference statistics on groups of data.&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">binom</span>
-<span class="kn">from</span> <span class="nn">.estimator</span> <span class="kn">import</span> <span class="n">get_estimator</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">stats</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">idtxl_utils</span> <span class="k">as</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">.network_analysis</span> <span class="kn">import</span> <span class="n">NetworkAnalysis</span>
-<span class="kn">from</span> <span class="nn">.results</span> <span class="kn">import</span> <span class="n">ResultsNetworkComparison</span><span class="p">,</span> <span class="n">DotDict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">binom</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.estimator</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_estimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">idtxl_utils</span> <span class="k">as</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.network_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">NetworkAnalysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.results</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultsNetworkComparison</span><span class="p">,</span> <span class="n">DotDict</span>
 
 
-<div class="viewcode-block" id="NetworkComparison"><a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison">[docs]</a><span class="k">class</span> <span class="nc">NetworkComparison</span><span class="p">(</span><span class="n">NetworkAnalysis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Set up network comparison between two experimental conditions.</span>
+<div class="viewcode-block" id="NetworkComparison">
+<a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetworkComparison</span><span class="p">(</span><span class="n">NetworkAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up network comparison between two experimental conditions.</span>
 
 <span class="sd">    The class provides methods for the comparison of networks inferred from</span>
 <span class="sd">    data recorded under two experimental conditions A and B. Four statistical</span>
@@ -84,7 +79,7 @@
 <span class="sd">    variables about the target is used as a test statistic.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cmi_surr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -97,8 +92,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pvalue</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-<div class="viewcode-block" id="NetworkComparison.compare_links_within"><a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_links_within">[docs]</a>    <span class="k">def</span> <span class="nf">compare_links_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">link_a</span><span class="p">,</span> <span class="n">link_b</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compare two links within the same network.</span>
+<div class="viewcode-block" id="NetworkComparison.compare_links_within">
+<a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_links_within">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_links_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">link_a</span><span class="p">,</span> <span class="n">link_b</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare two links within the same network.</span>
 
 <span class="sd">        Compare two links within the same network. Check if information</span>
 <span class="sd">        transfer is different from information transfer in a second link.</span>
@@ -201,8 +198,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>  <span class="c1"># remove attributes</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="NetworkComparison.compare_within"><a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_within">[docs]</a>    <span class="k">def</span> <span class="nf">compare_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">network_a</span><span class="p">,</span> <span class="n">network_b</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compare networks inferred under two conditions within one subject.</span>
+
+<div class="viewcode-block" id="NetworkComparison.compare_within">
+<a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_within">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">network_a</span><span class="p">,</span> <span class="n">network_b</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare networks inferred under two conditions within one subject.</span>
 
 <span class="sd">        Compare two networks inferred from data recorded under two different</span>
 <span class="sd">        experimental conditions within one subject (units of observations are</span>
@@ -282,10 +282,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>  <span class="c1"># remove attributes</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="NetworkComparison.compare_between"><a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_between">[docs]</a>    <span class="k">def</span> <span class="nf">compare_between</span><span class="p">(</span>
+
+<div class="viewcode-block" id="NetworkComparison.compare_between">
+<a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.compare_between">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_between</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">network_set_a</span><span class="p">,</span> <span class="n">network_set_b</span><span class="p">,</span> <span class="n">data_set_a</span><span class="p">,</span> <span class="n">data_set_b</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compare networks inferred under two conditions between subjects.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare networks inferred under two conditions between subjects.</span>
 
 <span class="sd">        Compare two sets of networks inferred from two sets of data recorded</span>
 <span class="sd">        under different experimental conditions within multiple subjects, i.e.,</span>
@@ -353,8 +356,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>  <span class="c1"># remove attributes</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="NetworkComparison.calculate_link_te"><a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.calculate_link_te">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_link_te</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the information transfer for whole links into a target.</span>
+
+<div class="viewcode-block" id="NetworkComparison.calculate_link_te">
+<a class="viewcode-back" href="../../idtxl_network_comparison.html#idtxl.network_comparison.NetworkComparison.calculate_link_te">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_link_te</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the information transfer for whole links into a target.</span>
 
 <span class="sd">        Calculate the information transfer for whole links as the joint</span>
 <span class="sd">        information transfer from all variables selected for a single source</span>
@@ -390,8 +396,9 @@
             <span class="n">data</span><span class="p">,</span> <span class="n">current_value</span><span class="p">,</span> <span class="n">source_vars</span><span class="p">,</span> <span class="n">target_vars</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="n">sources</span>
         <span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_check_n_replications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check if no. replications is sufficient request no. permutations.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_n_replications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if no. replications is sufficient request no. permutations.&quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="p">(</span>
             <span class="n">data_a</span><span class="o">.</span><span class="n">n_replications</span> <span class="o">==</span> <span class="n">data_b</span><span class="o">.</span><span class="n">n_replications</span>
         <span class="p">),</span> <span class="s2">&quot;Unequal no. replications in the two data sets.&quot;</span>
@@ -417,8 +424,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unknown &quot;</span> <span class="s2">&quot;stats_type&quot;</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_check_n_subjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set_a</span><span class="p">,</span> <span class="n">data_set_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check if no. subjects is sufficient request no. permutations.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_n_subjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set_a</span><span class="p">,</span> <span class="n">data_set_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if no. subjects is sufficient request no. permutations.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;stats_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;dependent&quot;</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_set_a</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span>
                 <span class="n">data_set_b</span>
@@ -445,15 +452,15 @@
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unknown &quot;</span> <span class="s2">&quot;stats_type&quot;</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;n_subjects&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">data_set_a</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_set_b</span><span class="p">)]</span>
 
-    <span class="k">def</span> <span class="nf">_check_equal_realisations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">data_sets</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check if all data sets have an equal no. realisations.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_equal_realisations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">data_sets</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if all data sets have an equal no. realisations.&quot;&quot;&quot;</span>
         <span class="n">n_realisations</span> <span class="o">=</span> <span class="n">data_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data_sets</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">n_realisations</span><span class="p">()</span> <span class="o">!=</span> <span class="n">n_realisations</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unequal no. realisations between data &quot;</span> <span class="s2">&quot;sets.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_union</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">networks</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create the union from a set of individual networks.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_union</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">networks</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the union from a set of individual networks.&quot;&quot;&quot;</span>
         <span class="c1"># Collect targets over all networks</span>
         <span class="n">targets_union</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">nw</span> <span class="ow">in</span> <span class="n">networks</span><span class="p">:</span>
@@ -522,8 +529,8 @@
                 <span class="p">)</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_cmi_diff_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the difference in CMI between conditions within a subject.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cmi_diff_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the difference in CMI between conditions within a subject.</span>
 
 <span class="sd">        Calculate the difference in the conditional mutual information (CMI)</span>
 <span class="sd">        for each source &gt; target combination in the union network between data</span>
@@ -543,8 +550,8 @@
         <span class="c1"># Compare raw TE values between conditions.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cmi_comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_union_cmi_within</span><span class="p">(</span><span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_cmi_diff_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set_a</span><span class="p">,</span> <span class="n">data_set_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the difference in CMI between two groups of subjects.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cmi_diff_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set_a</span><span class="p">,</span> <span class="n">data_set_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the difference in CMI between two groups of subjects.</span>
 
 <span class="sd">        Calculate the difference in the conditional mutual information (CMI)</span>
 <span class="sd">        for each source &gt; target combination in the union network between data</span>
@@ -579,8 +586,8 @@
         <span class="c1"># unbalanced designs, which is a problem and needs to be changed in the</span>
         <span class="c1"># within function as well</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_diff_of_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set_a</span><span class="p">,</span> <span class="n">cmi_set_b</span><span class="p">,</span> <span class="n">permute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the difference of the means of CMI for two data sets.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_diff_of_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set_a</span><span class="p">,</span> <span class="n">cmi_set_b</span><span class="p">,</span> <span class="n">permute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the difference of the means of CMI for two data sets.</span>
 
 <span class="sd">        Calculate the difference of the mean conditional mutual information</span>
 <span class="sd">        (CMI) of each source &gt; target combination in the union network for a</span>
@@ -615,8 +622,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mean</span><span class="p">(</span><span class="n">cmi_set_a</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mean</span><span class="p">(</span><span class="n">cmi_set_b</span><span class="p">)</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_cmi_all_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">permuted</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate CMI for each source&gt;target combi in the union network.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cmi_all_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">permuted</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate CMI for each source&gt;target combi in the union network.&quot;&quot;&quot;</span>
         <span class="n">cmi</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
             <span class="n">cmi_temp</span> <span class="o">=</span> <span class="p">[]</span>
@@ -631,8 +638,8 @@
             <span class="n">cmi</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_link_te</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cmi</span>
 
-    <span class="k">def</span> <span class="nf">_compare_union_cmi_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set_a</span><span class="p">,</span> <span class="n">cmi_set_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compare mean TE between conditions to get direction of effect.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_union_cmi_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set_a</span><span class="p">,</span> <span class="n">cmi_set_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare mean TE between conditions to get direction of effect.&quot;&quot;&quot;</span>
         <span class="n">cmi_comp</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">cmi_set_a_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mean</span><span class="p">(</span><span class="n">cmi_set_a</span><span class="p">)</span>
         <span class="n">cmi_set_b_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mean</span><span class="p">(</span><span class="n">cmi_set_b</span><span class="p">)</span>
@@ -640,22 +647,22 @@
             <span class="n">cmi_comp</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">cmi_set_a_mean</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">cmi_set_b_mean</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">cmi_comp</span>
 
-    <span class="k">def</span> <span class="nf">_compare_union_cmi_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compare TE between conditions to get direction of effect.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_union_cmi_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare TE between conditions to get direction of effect.&quot;&quot;&quot;</span>
         <span class="n">cmi_comp</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
             <span class="n">cmi_comp</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">cmi_a</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">cmi_b</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">cmi_comp</span>
 
-    <span class="k">def</span> <span class="nf">_get_abs_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_diff</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get the absolute value for each difference in the union network.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_abs_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_diff</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the absolute value for each difference in the union network.&quot;&quot;&quot;</span>
         <span class="n">cmi_diff_abs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
             <span class="n">cmi_diff_abs</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cmi_diff</span><span class="p">[</span><span class="n">t</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">cmi_diff_abs</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_cmi_all_links_permuted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate surrogate CMI for union network.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cmi_all_links_permuted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate surrogate CMI for union network.</span>
 
 <span class="sd">        Calculate conditional mutual information (CMI) for each source &gt; target</span>
 <span class="sd">        combination in the union network after permuting realisations of</span>
@@ -717,8 +724,8 @@
 
         <span class="k">return</span> <span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the mean CMI over multiple data sets for all targets.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the mean CMI over multiple data sets for all targets.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cmi_set</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input needs to be 1-D array-like of dicts.&quot;</span><span class="p">)</span>
         <span class="c1"># The output is a dictionary with targets as keys. The entry for each</span>
@@ -737,8 +744,8 @@
                 <span class="n">cmi_mean</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i_source</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cmi_mean</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the difference between two CMI estimates for all targets.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmi_a</span><span class="p">,</span> <span class="n">cmi_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the difference between two CMI estimates for all targets.</span>
 
 <span class="sd">        Calculate the differene in CMI for each source &gt; target combination in</span>
 <span class="sd">        cmi_a/_b. The inputs are assumed to be dictionaries with one entry for</span>
@@ -750,8 +757,8 @@
             <span class="n">cmi_diff</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">cmi_a</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">cmi_b</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">cmi_diff</span>
 
-    <span class="k">def</span> <span class="nf">_create_surrogate_distribution_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create the surrogate distribution for network inference.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_surrogate_distribution_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the surrogate distribution for network inference.</span>
 
 <span class="sd">        Create distribution by permuting realisations between conditions and</span>
 <span class="sd">        re-calculating the conditional mutual information (CMI). Realisations</span>
@@ -800,7 +807,7 @@
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">_single_target</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">sources</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cmi_surr</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">surrogates_a</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">-</span> <span class="n">surrogates_b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_get_surrogates_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_surrogates_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
         <span class="c1"># Get lists of source and target variables, and the list of significant</span>
         <span class="c1"># sources for current target</span>
         <span class="n">source_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">_single_target</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;selected_vars_sources&quot;</span><span class="p">]</span>
@@ -813,8 +820,7 @@
         <span class="c1"># Get realisations of target variables and the current value, constant</span>
         <span class="c1"># over sources. Permute current value realisations to generate</span>
         <span class="c1"># surrogates if requested.</span>
-        <span class="n">current_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="p">[</span><span class="s2">&quot;max_lag&quot;</span><span class="p">])</span>
-        <span class="n">target_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">target_vars</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">current_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="p">[</span><span class="s1">&#39;max_lag&#39;</span><span class="p">])</span>
         <span class="n">current_value_surrogates</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">_get_surrogates</span><span class="p">(</span>
             <span class="n">data</span><span class="p">,</span>
             <span class="n">current_value</span><span class="p">,</span>
@@ -831,7 +837,8 @@
             <span class="n">link_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">source_vars</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">]</span>
             <span class="n">conditional_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">source_vars</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">s</span><span class="p">]</span>
             <span class="c1"># Get realisations for the current link&#39;s source variables</span>
-            <span class="n">source_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">link_vars</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">source_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                <span class="n">current_value</span><span class="p">,</span> <span class="n">link_vars</span><span class="p">)</span>
             <span class="c1"># Get realisations for the conditioning set, consisting of</span>
             <span class="c1"># remaining source variables and target realisations. Handle empty</span>
             <span class="c1"># sets: these may occur if network comparison is carried out for</span>
@@ -839,30 +846,23 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">conditional_vars</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">target_vars</span><span class="p">:</span>
                 <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="n">conditional_vars</span> <span class="ow">and</span> <span class="n">target_vars</span><span class="p">:</span>
-                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">target_realisations</span>
+                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+            <span class="n">current_value</span><span class="p">,</span> <span class="n">target_vars</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">conditional_vars</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">target_vars</span><span class="p">:</span>
                 <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-                    <span class="n">current_value</span><span class="p">,</span> <span class="n">conditional_vars</span>
-                <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">current_value</span><span class="p">,</span> <span class="n">conditional_vars</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">conditional_vars</span> <span class="ow">and</span> <span class="n">target_vars</span><span class="p">:</span>
-                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
-                    <span class="p">(</span>
-                        <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">conditional_vars</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">target_realisations</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
+                <span class="n">conditional_realisations</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
+                    <span class="n">current_value</span><span class="p">,</span> <span class="n">conditional_vars</span> <span class="o">+</span> <span class="n">target_vars</span><span class="p">)</span>
 
             <span class="n">te_surrogates</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span><span class="o">.</span><span class="n">estimate_parallel</span><span class="p">(</span>
-                <span class="n">n_chunks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;n_perm_comp&quot;</span><span class="p">],</span>
-                <span class="n">re_use</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;conditional&quot;</span><span class="p">],</span>
                 <span class="n">var1</span><span class="o">=</span><span class="n">current_value_surrogates</span><span class="p">,</span>
-                <span class="n">var2</span><span class="o">=</span><span class="n">source_realisations</span><span class="p">,</span>
-                <span class="n">conditional</span><span class="o">=</span><span class="n">conditional_realisations</span><span class="p">,</span>
-            <span class="p">)</span>
+                <span class="n">var2</span><span class="o">=</span><span class="p">[</span><span class="n">source_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;n_perm_comp&#39;</span><span class="p">],</span>
+                <span class="n">conditional</span><span class="o">=</span><span class="p">[</span><span class="n">conditional_realisations</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;n_perm_comp&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">te_surrogates</span>
 
-    <span class="k">def</span> <span class="nf">_create_surrogate_distribution_between</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create the surrogate distribution for network inference.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_surrogate_distribution_between</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the surrogate distribution for network inference.</span>
 
 <span class="sd">        Create distribution by permuting data sets between conditions, re-</span>
 <span class="sd">        estimating CMI, and re-calculating the mean of differences. The</span>
@@ -902,8 +902,8 @@
             <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cmi_surr</span><span class="p">[</span><span class="n">t</span><span class="p">][:,</span> <span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">surrogate</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_p_value_union</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate the p-value for the CMI between each source and target.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_p_value_union</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the p-value for the CMI between each source and target.&quot;&quot;&quot;</span>
         <span class="c1"># Test each original difference against its surrogate distribution.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">significance</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pvalue</span> <span class="o">=</span> <span class="p">{}</span>
@@ -923,8 +923,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">significance</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sig</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">pvalue</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
 
-    <span class="k">def</span> <span class="nf">_union_indices_to_lags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Clean up bevor returning.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_union_indices_to_lags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up bevor returning.&quot;&quot;&quot;</span>
         <span class="c1"># convert time indices to lags for selected variables</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">_single_target</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s2">&quot;selected_vars_sources&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_to_lag</span><span class="p">(</span>
@@ -936,8 +936,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="p">[</span><span class="s2">&quot;max_lag&quot;</span><span class="p">],</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_permuted_replications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return realisations with replications permuted betw. two data sets.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_permuted_replications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_a</span><span class="p">,</span> <span class="n">data_b</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return realisations with replications permuted betw. two data sets.</span>
 
 <span class="sd">        Return surrogate data for a given target for the conditioning and the</span>
 
@@ -968,27 +968,24 @@
         <span class="p">)</span>
 
         <span class="c1"># Get realisations of the current value and the full conditioning set.</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">data_a</span><span class="o">.</span><span class="n">n_replications</span> <span class="o">==</span> <span class="n">data_b</span><span class="o">.</span><span class="n">n_replications</span>
-        <span class="p">),</span> <span class="s2">&quot;Unequal no. replications in the two data sets.&quot;</span>
-        <span class="p">[</span><span class="n">cur_val_a_real</span><span class="p">,</span> <span class="n">repl_idx_a</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="n">current_val</span><span class="p">,</span> <span class="p">[</span><span class="n">current_val</span><span class="p">]</span>
-        <span class="p">)</span>
-        <span class="p">[</span><span class="n">cur_val_b_real</span><span class="p">,</span> <span class="n">repl_idx_b</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_b</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span>
-            <span class="n">current_val</span><span class="p">,</span> <span class="p">[</span><span class="n">current_val</span><span class="p">]</span>
-        <span class="p">)</span>
-        <span class="n">cond_a_real</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="n">idx_cond_full</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">cond_b_real</span> <span class="o">=</span> <span class="n">data_b</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="n">idx_cond_full</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">data_a</span><span class="o">.</span><span class="n">n_replications</span> <span class="o">==</span> <span class="n">data_b</span><span class="o">.</span><span class="n">n_replications</span><span class="p">,</span> <span class="p">(</span>
+                            <span class="s1">&#39;Unequal no. replications in the two data sets.&#39;</span><span class="p">)</span>
+        <span class="n">cur_val_a_real</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="p">[</span><span class="n">current_val</span><span class="p">])</span>
+        <span class="n">cur_val_b_real</span> <span class="o">=</span> <span class="n">data_b</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="p">[</span><span class="n">current_val</span><span class="p">])</span>
+        <span class="n">cond_a_real</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="n">idx_cond_full</span><span class="p">)</span>
+        <span class="n">cond_b_real</span> <span class="o">=</span> <span class="n">data_b</span><span class="o">.</span><span class="n">get_realisations</span><span class="p">(</span><span class="n">current_val</span><span class="p">,</span> <span class="n">idx_cond_full</span><span class="p">)</span>
 
         <span class="c1"># Get no. replications and no. samples per replication.</span>
-        <span class="n">n_repl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">repl_idx_a</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">n_per_repl</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">repl_idx_a</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">n_repl</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">n_replications</span>
+        <span class="n">n_per_repl</span> <span class="o">=</span> <span class="n">data_a</span><span class="o">.</span><span class="n">n_realisations_samples</span><span class="p">(</span><span class="n">current_val</span><span class="p">)</span>
 
         <span class="c1"># Make copies such that arrays in the caller scope are not overwritten.</span>
-        <span class="n">cond_a_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cond_a_real</span><span class="p">)</span>
-        <span class="n">cond_b_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cond_b_real</span><span class="p">)</span>
-        <span class="n">cur_val_a_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cur_val_a_real</span><span class="p">)</span>
-        <span class="n">cur_val_b_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cur_val_b_real</span><span class="p">)</span>
+        <span class="c1"># Also converts LazyArrays to regular numpy arrays by slicing, as LazyArrays</span>
+        <span class="c1"># do not support exchange of data between different LazyArrays.</span>
+        <span class="n">cond_a_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cond_a_real</span><span class="p">)[:]</span>
+        <span class="n">cond_b_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cond_b_real</span><span class="p">)[:]</span>
+        <span class="n">cur_val_a_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cur_val_a_real</span><span class="p">)[:]</span>
+        <span class="n">cur_val_b_perm</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cur_val_b_real</span><span class="p">)[:]</span>
 
         <span class="c1"># Swap or permute realisations of the conditioning set depending on the</span>
         <span class="c1"># stats type.</span>
@@ -1011,11 +1008,11 @@
             <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">resample_a</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="n">n_repl</span><span class="p">:</span>  <span class="c1"># take realisation from cond B</span>
                     <span class="n">r_perm</span> <span class="o">=</span> <span class="n">r</span> <span class="o">-</span> <span class="n">n_repl</span>
-                    <span class="n">cond_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_b_real</span><span class="p">[</span><span class="n">repl_idx_b</span> <span class="o">==</span> <span class="n">r_perm</span><span class="p">,</span> <span class="p">:]</span>
-                    <span class="n">cur_val_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_b_real</span><span class="p">[</span><span class="n">repl_idx_b</span> <span class="o">==</span> <span class="n">r_perm</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cond_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_b_real</span><span class="p">[</span><span class="n">r_perm</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r_perm</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cur_val_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_b_real</span><span class="p">[</span><span class="n">r_perm</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r_perm</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># take realisation from cond A otherwise</span>
-                    <span class="n">cond_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_a_real</span><span class="p">[</span><span class="n">repl_idx_a</span> <span class="o">==</span> <span class="n">r</span><span class="p">,</span> <span class="p">:]</span>
-                    <span class="n">cur_val_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_a_real</span><span class="p">[</span><span class="n">repl_idx_a</span> <span class="o">==</span> <span class="n">r</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cond_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_a_real</span><span class="p">[</span><span class="n">r</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cur_val_a_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_a_real</span><span class="p">[</span><span class="n">r</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
                 <span class="n">i_0</span> <span class="o">=</span> <span class="n">i_1</span>
                 <span class="n">i_1</span> <span class="o">=</span> <span class="n">i_0</span> <span class="o">+</span> <span class="n">n_per_repl</span>
 
@@ -1025,11 +1022,11 @@
             <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">resample_b</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="n">n_repl</span><span class="p">:</span>  <span class="c1"># take realisation from cond B</span>
                     <span class="n">r_perm</span> <span class="o">=</span> <span class="n">r</span> <span class="o">-</span> <span class="n">n_repl</span>
-                    <span class="n">cond_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_b_real</span><span class="p">[</span><span class="n">repl_idx_b</span> <span class="o">==</span> <span class="n">r_perm</span><span class="p">,</span> <span class="p">:]</span>
-                    <span class="n">cur_val_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_b_real</span><span class="p">[</span><span class="n">repl_idx_b</span> <span class="o">==</span> <span class="n">r_perm</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cond_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_b_real</span><span class="p">[</span><span class="n">r_perm</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r_perm</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cur_val_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_b_real</span><span class="p">[</span><span class="n">r_perm</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r_perm</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># take realisation from cond A otherwise</span>
-                    <span class="n">cond_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_a_real</span><span class="p">[</span><span class="n">repl_idx_a</span> <span class="o">==</span> <span class="n">r</span><span class="p">,</span> <span class="p">:]</span>
-                    <span class="n">cur_val_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_a_real</span><span class="p">[</span><span class="n">repl_idx_a</span> <span class="o">==</span> <span class="n">r</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cond_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cond_a_real</span><span class="p">[</span><span class="n">r</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">cur_val_b_perm</span><span class="p">[</span><span class="n">i_0</span><span class="p">:</span><span class="n">i_1</span><span class="p">,]</span> <span class="o">=</span> <span class="n">cur_val_a_real</span><span class="p">[</span><span class="n">r</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">:(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">n_per_repl</span><span class="p">,</span> <span class="p">:]</span>
                 <span class="n">i_0</span> <span class="o">=</span> <span class="n">i_1</span>
                 <span class="n">i_1</span> <span class="o">=</span> <span class="n">i_0</span> <span class="o">+</span> <span class="n">n_per_repl</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1039,8 +1036,8 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">cond_a_perm</span><span class="p">,</span> <span class="n">cur_val_a_perm</span><span class="p">,</span> <span class="n">cond_b_perm</span><span class="p">,</span> <span class="n">cur_val_b_perm</span>
 
-    <span class="k">def</span> <span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check input and set analysis settings to initial values.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check input and set analysis settings to initial values.&quot;&quot;&quot;</span>
         <span class="c1"># Check if the type of comparison was specified.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;stats_type&quot;</span><span class="p">]</span>
@@ -1066,8 +1063,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;permute_in_time&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="n">stats</span><span class="o">.</span><span class="n">check_n_perm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;n_perm_comp&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;alpha_comp&quot;</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset instance after analysis.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span>
@@ -1075,8 +1072,8 @@
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmi_surr</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cmi_estimator</span>
 
-    <span class="k">def</span> <span class="nf">_link_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check if link is part of the union network.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_link_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if link is part of the union network.&quot;&quot;&quot;</span>
         <span class="n">source</span> <span class="o">=</span> <span class="n">link</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">link</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">targets_analysed</span><span class="p">:</span>
@@ -1084,15 +1081,16 @@
         <span class="k">if</span> <span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="o">.</span><span class="n">_single_target</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">sources</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
@@ -1100,13 +1098,13 @@
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1115,14 +1113,14 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl 1.6.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IDTxl2.0 2.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">idtxl.network_comparison</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    &#169; Copyright 2026, Michael Lindner, Patricia Wollstadt, Joseph T. Lizier, Raul Vicente, Conor Finn, Mario Martinez-Zarzuela, Pedro Mediano, Leonardo Novelli, Michael Wibral.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     </div>
   </body>
 </html>
