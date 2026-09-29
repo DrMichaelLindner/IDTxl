@@ -25,7 +25,7 @@ import os
 import sys
 from pathlib import Path
 import numpy as np
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtWidgets import (
     QPushButton, 
     QMainWindow, 
@@ -44,6 +44,7 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
+    QDialog,
     QWidget)
 
 
@@ -1059,7 +1060,8 @@ class Window(QMainWindow):
         self.data_order_label.setStyleSheet("color: black;")
         self.data_order_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         self.data_order_box = QComboBox()
-        self.data_order_box.setStyleSheet(f"background-color: {red};")
+        self.data_order_box.setStyleSheet(f"background-color: {red}; \
+            color: black")
         self.data_order_box.setToolTip("Specify the order of your data:\
             \n'p' - Processes\n's' - samples\n'r' - replications")
         self.data_order_box.activated.connect(self.getDataOrder)
@@ -1077,7 +1079,8 @@ class Window(QMainWindow):
         self.source_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         self.source = QLineEdit()
         self.source.setText("")
-        self.source.setStyleSheet("background-color: white; border: 2px inset gray")
+        self.source.setStyleSheet("background-color: white; color: black; \
+            border: 2px inset gray")
         self.stclayout.addWidget(self.source_label)
         self.stclayout.addWidget(self.source)  
 
@@ -1088,7 +1091,8 @@ class Window(QMainWindow):
         self.target_label.setAlignment(Qt.AlignmentFlag.AlignRight)   
         self.target = QLineEdit()
         self.target.setText("")
-        self.target.setStyleSheet("background-color: white; border: 2px inset gray")
+        self.target.setStyleSheet("background-color: white;  color: black; \
+            border: 2px inset gray")
         self.stclayout.addWidget(self.target_label)
         self.stclayout.addWidget(self.target)
 
@@ -1227,7 +1231,7 @@ class Window(QMainWindow):
 
         self.save_file = QLineEdit()
         self.save_file.setText("")
-        self.save_file.setStyleSheet("background-color: white; border: 2px inset gray")
+        self.save_file.setStyleSheet("background-color: white; color: black; border: 2px inset gray")
         self.save_file_layout.addWidget(self.save_file)
         self.savelayout.addLayout(self.save_file_layout)
         self.inputlayout.addLayout(self.savelayout)
@@ -1316,7 +1320,8 @@ class Window(QMainWindow):
             filename, file_extension = os.path.splitext(selected_file[0])
             self.datatype = str(file_extension)
             self.cleanOutput()
-            self.data_order_box.setStyleSheet(f"background-color: {red};")
+            self.data_order_box.setStyleSheet(f"background-color: {red}; \
+                color: black")
 
     def loadSettings(self, AIS=None, PID=None):
         """load parameter, input fields, tooltips etc. depending on label and selected estimator"""
@@ -1366,7 +1371,7 @@ class Window(QMainWindow):
 
         # load appropriate parameters for each estimator and set buttons if neccessary  
         if self.label in ["network_analysis", "multivariate"]:
-            params = parameters[self.selectedBiMulti] | parameters["permutations"]
+            params = parameters[self.selectedBiMulti] | parameters[self.selectedEstimator] | parameters["permutations"]
 
         elif self.label == "ais":
 
@@ -1660,7 +1665,8 @@ class Window(QMainWindow):
         """get len of data order and show replication, id neccessary"""
         self.datadim = len(str(self.data_order_box.currentText()))
         self.dataorder = str(self.data_order_box.currentText())
-        self.data_order_box.setStyleSheet(f"background-color: {lightblue};")
+        self.data_order_box.setStyleSheet(f"background-color: {lightblue}; \
+            color: black")
         if self.label in ["MIestimator", "TEestimator"]:
             if self.datadim == 3:
                 self.rep_label.setVisible(True)
@@ -1849,7 +1855,6 @@ class Window(QMainWindow):
                 self.script_estimator_import = loadspiketrian + loadestimator
             else:
                 self.script_estimator_import = f"from idtxl.{estimator_source[self.selectedEstimator]} import {self.selectedEstimator}\n\n"
-            
         else:
                 self.script_estimator_import = f"from idtxl.{estimator_source[self.selectedEstimator]} import {self.selectedEstimator}\n\n"
 
@@ -1924,7 +1929,29 @@ class Window(QMainWindow):
             initstring = ""
 
         settings = ""
-        if self.label in ["network_analysis", "multivariate"]:
+        if self.label in ["network_analysis"]:
+            settings += f"{initstring}    \"cmi_estimator\": \"{self.selectedEstimator}\",\n"
+            # add source and target for nonlinear analysis
+            if self.nonlin_granger_box.isChecked():
+                target = str(self.target.text())
+                if target == "all":
+                    target = ""
+                if target != "":
+                    settings += f"{initstring}    \"target\": {target},\n"
+                
+                source = str(self.source.text())
+                if source == "all":
+                    source = ""
+                if source != "":
+                    if source.isdigit():
+                        settings += f"{initstring}    \"sources\": {source},\n"
+                    else:
+                        settings += f"{initstring}    \"sources\": [{source}],\n"
+
+            # combine bi/multivariate settings
+            params = parameters[self.selectedBiMulti] | parameters[self.selectedEstimator] | parameters["permutations"]
+
+        elif self.label in ["multivariate"]:
             settings += f"{initstring}    \"cmi_estimator\": \"{self.selectedEstimator}\",\n"
             # add source and target for nonlinear analysis
             if self.nonlin_granger_box.isChecked():
@@ -1944,7 +1971,8 @@ class Window(QMainWindow):
                         settings += f"{initstring}    \"sources\": [{source}],\n"
 
             # combine bi/multivariate settings
-            params = parameters[self.selectedBiMulti] | parameters["permutations"]
+            params = parameters[self.selectedBiMulti] | parameters[self.selectedEstimator] | parameters["permutations"]
+
 
         elif self.label == "ais":
             if self.selectedEstimator == "ActiveInformationStorage":
@@ -1966,6 +1994,7 @@ class Window(QMainWindow):
         # get parameters and and input values
         row = 0
         for key in params.keys():
+
             value = str(self.parameters.item(row, 0).text())
             # check if all mandatory paramters are specified
             # and add exceptions for not filled in parameters
@@ -1978,7 +2007,10 @@ class Window(QMainWindow):
                 if value == "" and key == "add_conditionals":
                     settings = settings
                 else:
-                    settings += f"{initstring}    \"{key}\": {value},\n"
+                    if isinstance(params[key], str) and params[key] != "":
+                        settings += f"{initstring}    \"{key}\": \"{value}\",\n"
+                    else:
+                        settings += f"{initstring}    \"{key}\": {value},\n"
             else:
                 # add only modified parameters to script
                 if value != str(params[key]):
@@ -2471,7 +2503,8 @@ class Window(QMainWindow):
 
     def editScript(self):
         """make script editable"""
-        self.script.setStyleSheet(f"background-color: white; border: 2px inset {darkbrown}")
+        self.script.setStyleSheet(f"background-color: white; color: black; \
+            border: 2px inset {darkbrown}")
         self.script.setReadOnly(False)
 
     def saveScript(self):
@@ -2516,7 +2549,7 @@ class Window(QMainWindow):
                 self.run_button.setEnabled(False)
 
         self.script.setReadOnly(True)
-        self.script.setStyleSheet(f"background-color: {brown}; border: 2px inset {darkbrown}")
+        self.script.setStyleSheet(f"background-color: {brown}; color: white; border: 2px inset {darkbrown}")
 
     def runScript(self):
         """run last saved script"""

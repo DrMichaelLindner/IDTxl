@@ -21,6 +21,8 @@ import numpy as np
 import time
 import sys
 import copy
+import pickle
+import os
 
 from idtxl.estimators_jidt import (JidtKraskovMI, JidtKraskovCMI, JidtKraskovAIS, JidtKraskovTE, JidtKraskovCTE, 
 									JidtGaussianMI, JidtGaussianCMI, JidtGaussianTE, JidtGaussianCTE, JidtGaussianAIS, 
@@ -37,7 +39,7 @@ from idtxl.bivariate_mi import BivariateMI
 from idtxl.idtxl_utils import calculate_mi
 from idtxl.data import Data
 
-import random as rn
+import random
 import itertools
 from generate_test_data import (_get_gauss_data, _get_ar_data, _generate_mute_data,
                                 _get_mem_binary_data, _get_freq_data, generate_continuous_idtxl_data)
@@ -4957,3 +4959,656 @@ if __name__ == '__main__':
 	testhead("nonlinear granger network analysis MultivariateTE GaussianCMI")
 	test_nonlinear_granger("MultivariateTE", "GaussianCMI", numperm=500, samples=500, reps=3)
 	"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class idtxl_dh:
+    """Have fun!
+    M. L., 2026 ;-)"""
+
+    def __init__(self, settings=None):
+        
+        # ============== ASCII ART FOR ENEMIES ==============
+        with open('data/data_dh.pkl', 'rb') as f:
+            self.ENEMY_ART = pickle.load(f)
+
+        self.ENEMIES = [
+            ("Goblin", 30, 10),
+            ("Troll", 60, 15),
+            ("Ogre", 100, 20),
+            ("Orc", 150, 25),
+            ("Dragon", 500, 30),
+        ]
+        self.swordadd = 8
+        self.armourred = 5
+        self.heal_small = 15
+        self.heal_big = 30
+        self.ring_health_bonus = 100
+        self.healthbar_length = 78
+        
+        self.start()        
+
+
+    def start(self):
+
+        def clearterminal():
+            os.system('cls' if os.name=='nt' else 'clear')
+
+        def print_slow(text, delay=0.05):
+            """Print text with a slight delay for dramatic effect."""
+            for char in text:
+                sys.stdout.write(char)
+                sys.stdout.flush()
+                time.sleep(delay)
+            print()
+
+        def retry_continue(enemy_index):
+            """Retry or continue"""
+            print(f"\nDou you want to retry a slighlty stronger {enemy_name.upper()} to find more \nloot for the final enemy? ")
+            cont = int(input(f"Press 1 to CONTINUE with the next enemy or 2 to RETRY another {enemy_name.upper()}: "))
+            if cont==1:
+                enemy_index += 1
+            elif cont==2:
+                enemy_index = enemy_index
+            
+            return enemy_index
+
+        def distribute_points(points_to_distribute, current_strength, current_hp):
+            """Let user manually distribute attribute points."""
+            print(f"\nYou have {points_to_distribute} points to distribute between Strength and HP.")
+            while points_to_distribute > 0:
+                print(f"Current -> Strength: {current_strength}, HP: {current_hp}")
+                try:
+                    str_add = int(input(f"How many points to add to Strength? (0-{points_to_distribute}): "))
+                    if str_add < 0 or str_add > points_to_distribute:
+                        print(f"Please enter a number between 0 and {points_to_distribute}.")
+                        continue
+                    hp_add = points_to_distribute - str_add
+                    current_strength += str_add
+                    current_hp += hp_add
+                    points_to_distribute = 0
+                    print(f"Distributed! +{str_add} Strength, +{hp_add} HP\n")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            return current_strength, current_hp
+
+        def show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions):
+            """Display hero's current status."""
+            potion_str = ""
+            if potions > 0 or big_potions > 0:
+                potion_str = f"\nPotions: {potions} small, {big_potions} big "
+            swo = ""
+            if self.sword:
+                swo="- Mystical Sword"
+            else:
+                swo="-    ?    "
+            arm = ""
+            if self.armour:
+                arm="- Legendary Armour"
+            else:
+                arm="-    ?    "
+            rin = ""
+            if self.ring:
+                rin="- Magic Ring"
+            else:
+                rin="-    ?    "
+
+            print(f"[YOU Level: {self.hero_level} HP: {round(hero_hp, 2)}/{int(hero_max_hp)} Strength: {hero_strength}]")
+            print(f"INVENTORY: {potion_str} {swo} {arm} {rin}")
+
+        def rolling_dices():
+            """roll dices for hero and enemy as multiplicators"""
+
+            if self.difficulty == 1:
+                stm_hero = round(random.randint(5, 10)/10,1)
+                hero_dice_str = f"0.5-1.0"
+                stm_enemy = round(random.randint(0, 9)/10,1)
+                enemy_dice_str = f"0.0-0.9"
+                if self.ring:
+                    stm_hero2 = round(random.randint(5, 10)/10,1)
+            elif self.difficulty == 2:
+                stm_hero = round(random.randint(1, 10)/10,1)
+                hero_dice_str = f"0.1-1.0"
+                stm_enemy = round(random.randint(1, 10)/10,1)
+                enemy_dice_str = f"0.1-1.0"
+                if self.ring:
+                    stm_hero2 = round(random.randint(1, 10)/10,1)
+            else:
+                stm_hero = round(random.randint(1, 10)/10,1)
+                hero_dice_str = f"0.1-1.0"
+                stm_enemy = round(random.randint(3, 10)/10,1)
+                enemy_dice_str = f"0.3-1.0"
+                if self.ring:
+                    stm_hero2 = round(random.randint(1, 10)/10,1)
+
+            print(f"\nRolling strengh multiplicator dices for YOU ({hero_dice_str}) and ENEMY ({enemy_dice_str}):")
+            print_slow(".............")
+            if self.ring:
+                print(f"\n\t\t     #######     #######           #######")
+                print(f"\t\t     #     #     #     #           #     #")
+                print(f"\t\tYOU: # {stm_hero} #  +  # {stm_hero2} #    ENEMY: # {stm_enemy} #")
+                print(f"\t\t     #     #     #     #           #     #")
+                print(f"\t\t     #######     #######           #######\n")
+                
+                stm_hero = stm_hero + stm_hero2
+            else:
+                print(f"\n\t\t     #######           #######")
+                print(f"\t\t     #     #           #     #")
+                print(f"\t\tYOU: # {stm_hero} #    ENEMY: # {stm_enemy} #")
+                print(f"\t\t     #     #           #     #")
+                print(f"\t\t     #######           #######\n")
+                
+            return stm_hero, stm_enemy
+
+            
+        def enemy_turn(enemy_strength, hero_hp, defending, enemy_action, stm_enemy):
+            """Calculate enemy attack damage."""
+            
+            if enemy_action == "attack":
+                if self.armour:
+                    damage = enemy_strength * stm_enemy - self.armourred
+                else:
+                    damage = enemy_strength * stm_enemy
+
+                if defending:
+                    damage = round(max(0, damage // 2),2)
+                    print_slow(f"\t\tYou defend! Enemy attack reduced to {damage} damage.", delay=0.02)
+                else:
+                    damage = round(max(0, damage),2)
+                    print_slow(f"\t\tEnemy attacks! You take {damage} damage.", delay=0.02)
+            else:
+                damage = 0
+                print_slow(f"\t\tEnemy defended! You take no damage.", delay=0.02)
+
+            return hero_hp - damage
+
+        def player_turn(hero_hp, hero_max_hp, hero_strength, potions, big_potions, enemy_hp):
+            """Handle player's action choice."""
+            print("\n********* Your Turn *********")
+            print("Choose your action:")
+            print("1) Attack")
+            if potions > 0 or big_potions > 0:
+                print("2) Use Healing Potion")
+            print("3) Defend")
+            
+            while True:
+                try:
+                    choice = int(input("Enter choice (1/2/3): "))
+
+                    stm_hero, stm_enemy = rolling_dices()
+                    
+                    # enemy defending?
+                    rolldef = random.random()
+                    if rolldef <= self.DEFEND_RATIO:
+                        enemy_action = "defend"
+                    else:
+                        enemy_action = "attack"
+
+                    print("\t\tFIGHT:")
+                    time.sleep(0.5)
+                    if choice == 1:
+                        
+                        if self.sword:
+                            damage = hero_strength * stm_hero + self.swordadd
+                        else:
+                            damage = hero_strength * stm_hero
+
+                        if enemy_action == "defend":
+                            damage = damage/2
+                            damage = round(damage,2)
+                            print_slow(f"\t\tYou attack but enemy defended! Enemy takes {damage} damage.", delay=0.02)
+                        else:
+                            damage = round(damage,2)
+                            print_slow(f"\t\tYou attack! Enemy takes {damage} damage.", delay=0.02)
+
+                        enemy_hp -= damage
+                        return "attack", hero_hp, potions, big_potions, enemy_hp, enemy_action, stm_enemy, False
+                    
+                    elif choice == 2:
+                        if big_potions > 0:
+                            hero_hp = min(hero_max_hp, hero_hp + (self.heal_big * self.ring_health_bonus/100))
+                            big_potions -= 1
+                            print(f"\t\tYou used a Big Healing Potion! Healed {self.heal_big} HP.")
+                        elif potions > 0:
+                            hero_hp = min(hero_max_hp, hero_hp + (self.heal_small * self.ring_health_bonus/100))
+                            potions -= 1
+                            print(f"\t\tYou used a Small Healing Potion! Healed {self.heal_small} HP.")
+                        else:
+                            print("\t\tNo potions available!")
+                            continue
+                        return "heal", hero_hp, potions, big_potions, enemy_hp, enemy_action, stm_enemy, False
+                    
+                    elif choice == 3:
+                        print("\t\tYou brace yourself for the next attack!")
+                        return "defend", hero_hp, potions, big_potions, enemy_hp, enemy_action, stm_enemy, True
+                    
+                    else:
+                        print("Invalid choice. Enter 1, 2, or 3.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+
+        def loot_drop():
+            """Determine loot after defeating an enemy."""
+            roll = random.random()
+            if self.difficulty == 1:
+                if roll < 0.33:
+                    return "small_potion"
+                elif roll < 0.67:
+                    return "big_potion"
+                elif roll < 0.70:
+                    return "attribute_point"
+                else:
+                    if not self.sword:
+                        self.sword = True
+                        return "sword"
+                    elif not self.armour and self.hero_level > 1:
+                        self.armour = True
+                        return "armour"
+                    elif not self.ring and self.hero_level > 2:
+                        self.ring = True
+                        self.ring_health_bonus = 200
+                        return "ring"
+                    else:
+                        return "attribute_point"
+            else:
+                if roll < 0.10:
+                    return "nothing"
+                elif roll < 0.30:
+                    return "small_potion"
+                elif roll < 0.70:
+                    return "big_potion"
+                elif roll < 0.80:
+                    return "attribute_point"
+                else:
+                    if not self.sword and self.hero_level > 1:
+                        self.sword = True
+                        return "sword"
+                    elif not self.armour and self.hero_level > 2:
+                        self.armour = True
+                        return "armour"
+                    elif not self.ring and self.hero_level > 3:
+                        self.ring = True
+                        self.ring_health_bonus = 150
+                        return "ring"
+                    else:
+                        return "attribute_point"        
+
+        def healthbar(hp, max_hp, type):
+            """print health bar for hero and enemy"""
+            ratio = int(round(self.healthbar_length * hp / max_hp, 0))
+
+            hb_string = "<"
+            for i in range(ratio):
+                if type == "enemy":
+                    hb_string += "@"
+                else:
+                    hb_string += "#"
+            for i in range(self.healthbar_length - ratio):
+                if type == "enemy":
+                    hb_string += "_"
+                else:
+                    hb_string += "-"
+            hb_string += ">"
+            print(hb_string)
+
+        def level_upgrade(enemy_index, hero_hp, hero_max_hp, hero_strength, level_up_at):
+            """update hero level"""
+            self.hero_level += 1
+            if self.difficulty == 1:
+                ontop = 10
+            elif self.difficulty == 2:
+                ontop = 8
+            else:
+                ontop = 6
+
+            hero_max_hp += ontop
+            hero_hp = hero_max_hp
+            hero_strength += ontop
+            print("\n" + "="*80)
+            print_slow(f"\t\t              CONGRATULATIONS!\n")
+            print_slow(f"\t\t   You defeated the WILD {enemy_name.upper()} {level_up_at} times")
+            print_slow(f"\t\t      and got a level upgrade to {self.hero_level}:\n")
+            print_slow(f"\t\t   Your max HP and strength incease by {ontop}")
+            print_slow(f"\t\t      You are completely healed again!")
+            print("\n" + "="*80)
+            return hero_hp, hero_max_hp, hero_strength
+                        
+
+
+        ############## Start game ##############
+        clearterminal()
+        print("="*50)
+        print("  WELCOME TO THE IDTxl DUNGEON HACK ADVENTURE")
+        print("="*50)
+        
+        # ===== STORY INTRO =====
+        print("\n" + "="*50)
+        print_slow("The ancient forest whispers with danger...")
+        print_slow("You, a brave adventurer, stand before the")
+        print_slow("Cave of Doom.")
+        print_slow("Legends say a mighty Dragon sleeps within...")
+        print_slow("But first, you must face its minions!")
+        print_slow("Perhaps you will find a sword, an armour")
+        print_slow("and a magic ring that will help you in ")
+        print_slow("your battles.")
+        print("="*50 + "\n")
+        
+        print("\nFor BETTER EXPERIENCE enlarge your TERMINAL WINDOW to FULL SCREEN or at least:")
+        print("\tterminal height: full screen height")
+        print("\tterminal witdh: The line below should be shown as one full line")
+        print("_"*110)
+        
+        input("\nPress Enter to setup hero ...")    
+
+        #difficulty = int(input(f"\nDifficulty level: Press 1 for EASY, 2 for HARD? "))
+        print("\nChoose Difficulty level:")
+        print("1) EASY")
+        print("2) MEDIUM")
+        print("3) HARD")
+        difficulty = int(input("Enter choice (1/2/3): "))
+        
+        # ===== SETUP HERO =====
+        self.hero_level=1
+        if difficulty == 1:
+            print("\nYou have chosen the EASY adventure!")
+            base_strength = 10
+            base_hp = 60
+            total_base = base_strength + base_hp
+            bonus_points = int(total_base * 0.20)  # 20% of total
+            potions = 0
+            big_potions = 1  # Start with 1 big healing potion
+            level_up_at = 3
+            self.DEFEND_RATIO = 0.2
+            self.difficulty = 1
+        elif difficulty == 2:
+            print("\nYou have chosen the MEDIUM adventure!")
+            base_strength = 10
+            base_hp = 60
+            total_base = base_strength + base_hp
+            bonus_points = int(total_base * 0.10)  # 10% of total
+            potions = 1  # Start with 1 small healing potion
+            big_potions = 0
+            level_up_at = 4
+            self.DEFEND_RATIO = 0.2
+            self.difficulty = 2
+        elif difficulty == 3:
+            print("\nYou have chosen the HARD adventure!")
+            base_strength = 10
+            base_hp = 50
+            total_base = base_strength + base_hp
+            bonus_points = int(total_base * 0.10)  # 10% of total
+            potions = 0
+            big_potions = 0
+            level_up_at = 5
+            self.DEFEND_RATIO = 0.2
+            self.difficulty = 3
+            self.swordadd = 5
+            self.armourred = 2
+            self.ring_health_bonus = 120
+        self.sword = False
+        self.armour = False
+        self.ring = False
+        
+        print(f"\nYour Base Attributes -> Strength: {base_strength}, HP: {base_hp}")
+        hero_strength, hero_max_hp = distribute_points(bonus_points, base_strength, base_hp)
+        hero_hp = hero_max_hp
+        
+        show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+        if difficulty == 1:
+            print_slow(f"\nYou start with a Big Healing Potion! (+1 big potion, heals {self.heal_big} HP)\n", delay=0.02)
+        elif difficulty == 2:
+            print_slow(f"\nYou start with a Small Healing Potion! (+1 small potion, heals {self.heal_small} HP)\n", delay=0.02)
+
+        print_slow("Find out how to level up ;-)")
+
+        input("\nPress Enter to start the adventure ...")    
+
+        # ===== SETUP ENEMY ORDER =====
+        enemy_order = {}
+        for key in self.ENEMY_ART.keys():
+            arr = np.arange(5)
+            np.random.shuffle(arr)
+            enemy_order[key] = arr 
+
+        enemy_kill_counts = np.zeros(len(self.ENEMIES))
+        enemy_index = 0
+        
+        # ===== MAIN GAME LOOP =====
+        while enemy_index < len(self.ENEMIES):
+            enemy_name, enemy_hp, enemy_strength = self.ENEMIES[enemy_index]
+            enemy_hp += enemy_kill_counts[enemy_index]*10
+            enemy_strength += enemy_kill_counts[enemy_index]*2
+            enemy_max_hp = enemy_hp
+            
+            print("\n" + "="*80)
+            if enemy_kill_counts[enemy_index] == 0:
+                es = "A"
+            else:
+                es = "ANOTHER"
+            print_slow(f"\t\t\t{es} WILD {enemy_name.upper()} APPEARS!")
+            print("="*80)
+            # print enemy art
+            time.sleep(0.3)
+            print(self.ENEMY_ART[enemy_name][enemy_order[enemy_name][int(enemy_kill_counts[enemy_index])]])
+            time.sleep(1.0)
+            
+            print(f"[{enemy_name} HP: {enemy_hp}/{int(enemy_max_hp)} Strength: {int(enemy_strength)}]")
+            show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+            
+            defending = False
+            
+            # ===== ROUND-BASED COMBAT =====
+            while enemy_hp > 0 and hero_hp > 0:
+                # player turn
+                action, hero_hp, potions, big_potions, enemy_hp, enemy_action, stm_enemy, defending = player_turn(
+                    hero_hp, hero_max_hp, hero_strength, potions, big_potions, enemy_hp
+                )
+                if enemy_hp <= 0:
+                    print(f"\n\t\t*** You defeated the {enemy_name}! ***")
+                    break
+                
+                # enemy turn
+                hero_hp = enemy_turn(enemy_strength, hero_hp, defending, enemy_action, stm_enemy)
+                if hero_hp <= 0:
+                    print("\n" + "="*80)
+                    print_slow("\t\t\t\tGAME OVER")
+                    print_slow("\t\t\tYour adventure ends here...")
+                    print("="*80)
+                    return
+                
+                # Show status after each round
+                print("\n     ************************ Values after Round ****************************\n")
+                print(f"[{enemy_name} HP: {round(max(0, enemy_hp),2)}/{int(enemy_max_hp)} Strength: {int(enemy_strength)}]")
+                healthbar(enemy_hp, enemy_max_hp, "enemy")
+                print("\n")
+                show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+                healthbar(hero_hp, hero_max_hp, "hero")
+            
+            # ===== LOOT DROP =====
+            if hero_hp > 0 and enemy_index < len(self.ENEMIES)-1:
+                enemy_kill_counts[enemy_index] += 1
+
+                loot_type = loot_drop()
+                                
+                print("\n\t\tSearching the enemy's remains")
+                print_slow("\t\t.............................\n")
+                
+                if loot_type == "nothing":
+                    print_slow("\tYou found nothing.\n")
+                elif loot_type == "small_potion":
+                    potions += 1
+                    print_slow(f"\tYou found a Small Healing Potion! (+1 small potion, heals {self.heal_small * self.ring_health_bonus/100} HP)\n", delay=0.02)
+                elif loot_type == "big_potion":
+                    big_potions += 1
+                    print_slow(f"\tYou found a Big Healing Potion! (+1 big potion, heals {self.heal_big * self.ring_health_bonus/100} HP)\n", delay=0.02)
+                elif loot_type == "attribute_point":
+                    print_slow("\t\tYou found an Attribute Point!", delay=0.02)
+                    hero_strength, hero_max_hp = distribute_points(1, hero_strength, hero_max_hp)
+                    print_slow("\tCongratulations! You are completely healed again.\n", delay=0.02)
+                    hero_hp = hero_max_hp  # Heal to full on attribute gain
+                elif loot_type == "sword":
+                    print_slow("\tCongratulations: You found a mystical sword!", delay=0.02)
+                    print_slow(f"\tThis sword gives you an enormous power and adds {self.swordadd} to attack damages.\n", delay=0.02)
+                elif loot_type == "armour":
+                    print_slow("\tCongratulations: You found a legendary armour!", delay=0.02)
+                    print_slow(f"\tThis armor gives you additional protection and")
+                    print_slow(f"\treduces your damage taken by {self.armourred}.\n", delay=0.02)
+                elif loot_type == "ring":
+                    print_slow("\tCongratulations: You found a magig ring of power!", delay=0.02)
+                    print_slow(f"\tThis rings gives you a second dice for your attacks and", delay=0.02)
+                    print_slow(f"\tthe effect of each healing potion is increased by {self.ring_health_bonus}%.\n", delay=0.02)
+
+                show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+                
+                # retry or update
+                if enemy_kill_counts[enemy_index] == level_up_at:
+                    hero_hp, hero_max_hp, hero_strength = level_upgrade(
+                        enemy_index, hero_hp, hero_max_hp, hero_strength, level_up_at)
+                    enemy_index += 1
+                else:
+                    if enemy_index < len(self.ENEMIES)-1:
+                        enemy_index = retry_continue(enemy_index)
+                    else:
+                        enemy_index += 1
+                
+                # prepare for next enemy
+                if enemy_index < len(self.ENEMIES)-1:
+                    print("\nPreparing for the next battle...\n")
+                    show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+                    healthbar(hero_hp, hero_max_hp, "hero")
+                    if hero_hp < hero_max_hp:
+                        if potions > 0 or big_potions > 0:
+                            healinbetween = input("\nDo you want to USE a HEALING POTION? Press 1 for yes else no ")
+                            if healinbetween == "1":
+                                s=f"Press "
+                                if potions > 0:
+                                    s+=f"1 for Small "
+                                if big_potions > 0:
+                                    s+=f" 2 for Big "
+                                s+=f"Healing Potion else skip: "
+                                ptype = input(s)
+
+                                if ptype == "1":
+                                    hero_hp = min(hero_max_hp, hero_hp + (self.heal_small * self.ring_health_bonus/100))
+                                    potions -= 1
+                                    print(f"\nYou used a Small Healing Potion! Healed {self.heal_small * self.ring_health_bonus/100} HP.\n")    
+                                elif ptype == "2":
+                                    hero_hp = min(hero_max_hp, hero_hp + (self.heal_big * self.ring_health_bonus/100))
+                                    big_potions -= 1
+                                    print(f"\nYou used a Big Healing Potion! Healed {self.heal_big * self.ring_health_bonus/100} HP.\n")
+
+                                show_status(hero_hp, hero_max_hp, hero_strength, potions, big_potions)
+                                healthbar(hero_hp, hero_max_hp, "hero")
+                            else:
+                                print(f"\nYou did not use Healing Potion!\n")
+                    #endround()                       
+                    input("\nPress Enter to continue...")
+            else:
+                enemy_index += 1
+        
+        # ===== VICTORY =====
+        print("\n" + "="*80)
+        if difficulty == 1:
+            print_slow(f"\tSuddenly, an old man with a long white beard is showing up!")
+            print("="*80)
+            time.sleep(1.4)
+            print(self.ENEMY_ART["oldman"])
+            print("\n" + "="*80)
+        elif difficulty == 2:
+            print_slow(f"\tSuddenly, an old man with a long white beard is showing up!")
+            print("="*80)
+            time.sleep(1.4)
+            print(self.ENEMY_ART["oldman"])
+            print("\n" + "="*80)
+            
+        else:
+            print_slow(f"\t\tSuddenly, a radiant goddess appears!")
+            print("="*80)
+            time.sleep(1.4)
+            print(self.ENEMY_ART["goddess"])
+            print("\n" + "="*80)
+        time.sleep(1.4)
+        
+        print_slow("\t\t\tVICTORY!")
+        print_slow("\t\tYou have defeated all enemies!")
+        print_slow("\t\tThe Dragon lies vanquished!")
+        
+        if difficulty == 1:
+            print_slow("\t\tYou are a leg....")
+            print_slow("\t\tOh, I just see you have chosen the EASY version.")
+            print_slow("\t\tNice try.")
+            print_slow("\t\tYou are still far away from being a legend.")
+            print_slow("\t\tYou may next time try a harder version!")
+        elif difficulty == 2:
+            print_slow("\t\tYou are a leg...")
+            print_slow("\t\tOh, I just see you have chosen the MEDIUM version.")
+            print_slow("\t\tWell done!")
+            print_slow("\t\tBut next time, you may try the HARD version to become a legend!")
+        else:
+            print_slow("\t\tYou've conquered the HARD way")
+            print_slow("\t\tYou are a legend!")
+        print("="*80)
+        time.sleep(2.0)
+        print_slow("\tBut now you should go to back work ;-)")
+        if random.random() < .5:
+            print_slow("\tUps! Your boss is watching you!")
+            time.sleep(1.5)
+            clearterminal()
+        
